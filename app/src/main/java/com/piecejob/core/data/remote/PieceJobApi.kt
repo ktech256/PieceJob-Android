@@ -2,6 +2,7 @@ package com.piecejob.core.data.remote
 
 import com.piecejob.core.data.remote.dto.*
 import retrofit2.http.*
+import okhttp3.MultipartBody
 
 interface PieceJobApi {
 
@@ -28,6 +29,37 @@ interface PieceJobApi {
 
     @GET("wallets/balance")
     suspend fun getWalletBalance(): ApiResponse<WalletDto>
+
+    // =========================
+    // ✅ JOB & MATCHING ROUTES
+    // =========================
+    @POST("jobs")
+    suspend fun createJob(@Body request: CreateJobRequest): ApiResponse<JobDto>
+
+    @GET("jobs/{jobId}")
+    suspend fun getJobById(@Path("jobId") jobId: String): ApiResponse<JobDto>
+
+    @PATCH("jobs/{jobId}/cancel")
+    suspend fun cancelJob(@Path("jobId") jobId: String): ApiResponse<Unit>
+
+    @GET("providers/jobs/broadcasted")
+    suspend fun getAvailableJobs(): ApiResponse<List<JobDto>>
+
+    @PATCH("providers/jobs/{jobId}/accept")
+    suspend fun acceptJob(@Path("jobId") jobId: String): ApiResponse<JobDto>
+
+    @POST("sos/trigger")
+    suspend fun triggerSos(@Body request: SosRequest): ApiResponse<SosResponse>
+
+    @PATCH("providers/me/status")
+    suspend fun updateProviderStatus(@Body request: ProviderStatusRequest): ApiResponse<Unit>
+
+    @Multipart
+    @PATCH("providers/me/documents")
+    suspend fun uploadDocuments(
+        @Part idDocument: MultipartBody.Part?,
+        @Part license: MultipartBody.Part?
+    ): ApiResponse<Unit>
 }
 
 data class ApiResponse<T>(
