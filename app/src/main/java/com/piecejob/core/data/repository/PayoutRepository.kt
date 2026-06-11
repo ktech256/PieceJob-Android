@@ -6,20 +6,20 @@ import com.piecejob.core.data.remote.ApiResponse
 import com.piecejob.core.data.remote.ApiError
 import javax.inject.Inject
 
-class WalletRepository @Inject constructor(
+class PayoutRepository @Inject constructor(
     private val api: PieceJobApi
 ) {
-    suspend fun getWalletBalance(): ApiResponse<WalletDto> {
+    suspend fun getPayouts(): ApiResponse<List<PayoutDto>> {
         return try {
-            api.getWalletBalance()
+            api.getPayouts()
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
     }
 
-    suspend fun getWalletHistory(): ApiResponse<List<WalletTransactionDto>> {
+    suspend fun getStatements(): ApiResponse<List<StatementDto>> {
         return try {
-            api.getWalletHistory()
+            api.getStatements()
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }

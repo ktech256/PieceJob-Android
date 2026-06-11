@@ -37,6 +37,15 @@ class SocketManager @Inject constructor() {
         println("Sent location update for job $jobId: $lat, $lng")
     }
 
+    fun sendSosGpsPing(incidentId: String, lat: Double, lng: Double) {
+        val data = JSONObject().apply {
+            put("incidentId", incidentId)
+            put("coordinates", listOf(lng, lat))
+        }
+        // socket?.emit("sos_gps_ping", data)
+        println("Sent SOS GPS ping for incident $incidentId: $lat, $lng")
+    }
+
     fun onLocationUpdated(callback: (Double, Double) -> Unit) {
         /*
         socket?.on("location_updated") { args ->

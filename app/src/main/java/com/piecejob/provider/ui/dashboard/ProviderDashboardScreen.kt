@@ -11,6 +11,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
+import androidx.hilt.navigation.compose.hiltViewModel
 
 // Provider Theme Colors
 val ForestGreen = Color(0xFF006400)
@@ -19,11 +22,28 @@ val CadetGray = Color(0xFF91A3B0)
 
 @Composable
 fun ProviderDashboardScreen(
+    viewModel: ProviderDashboardViewModel = hiltViewModel(),
     onAcceptJob: (String) -> Unit,
     onRejectJob: (String) -> Unit,
     onStartJob: (String) -> Unit,
-    onCompleteJob: (String) -> Unit
+    onCompleteJob: (String) -> Unit,
+    onSosTrigger: () -> Unit
 ) {
+    val stats by viewModel.stats.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val isOnline by viewModel.isOnline.collectAsState()
+    val isShadowBanned by viewModel.isShadowBanned.collectAsState()
+
+    // 60s Heartbeat Effect
+    LaunchedEffect(isOnline) {
+        if (isOnline) {
+            while (true) {
+                viewModel.sendHeartbeat(-26.2041, 28.0473) // Example Jo'burg coords
+                kotlinx.coroutines.delay(60000)
+            }
+        }
+    }
+
     // Mocking an incoming job state
     var incomingJob by remember { mutableStateOf<String?>(null) }
     var activeJob by remember { mutableStateOf<String?>(null) }
@@ -49,18 +69,58 @@ fun ProviderDashboardScreen(
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
+            Row(modifier = Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onSosTrigger) {
+                    Box(modifier = Modifier.size(32.dp).background(Color.Red, CircleShape), contentAlignment = Alignment.Center) {
+                        Text("!", color = Color.White, fontWeight = FontWeight.Black)
+                    }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Switch(
+                    checked = isOnline,
+                    onCheckedChange = { viewModel.toggleOnlineStatus() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = Color.Green,
+                        uncheckedThumbColor = Color.LightGray,
+                        uncheckedTrackColor = Color.DarkGray
+                    )
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Earnings Summary Placeholder
+        if (isShadowBanned) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+            ) {
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(24.dp).background(Color.Red, CircleShape), contentAlignment = Alignment.Center) {
+                        Text("!", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text("Shadow Ban Active", fontWeight = FontWeight.Bold, color = Color.Red, fontSize = 14.sp)
+                        Text("Your account integrity is under review. Broadcasts are temporarily restricted.", fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+
+        // Earnings Summary
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = CadetGray.copy(alpha = 0.1f))
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(text = "Today's Earnings", fontSize = 14.sp, color = Color.Gray)
-                Text(text = "$450.00", fontSize = 28.sp, fontWeight = FontWeight.Black, color = ForestGreen)
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = ForestGreen)
+                } else {
+                    Text(text = "$${String.format("%.2f", stats?.earningsToday ?: 0.0)}", fontSize = 28.sp, fontWeight = FontWeight.Black, color = ForestGreen)
+                }
             }
         }
 

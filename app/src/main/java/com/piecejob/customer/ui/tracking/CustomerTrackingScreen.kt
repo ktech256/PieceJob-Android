@@ -28,7 +28,8 @@ fun CustomerTrackingScreen(
     customerLocation: Pair<Double, Double>,
     eta: String,
     onCancelJob: () -> Unit,
-    onChatOpen: () -> Unit
+    onChatOpen: () -> Unit,
+    onSosTrigger: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         // Map Integrated
@@ -102,7 +103,7 @@ fun CustomerTrackingScreen(
                 // SECTION 9.1: Stealth SOS Trigger
                 // Disguised as a "Safety Center" to remain stealthy
                 OutlinedButton(
-                    onClick = { /* Stealth: In production, use long-press or triple-tap */ },
+                    onClick = onSosTrigger,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = EarthyRed),
                     border = androidx.compose.foundation.BorderStroke(1.dp, EarthyRed)

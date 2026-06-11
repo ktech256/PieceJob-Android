@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "288646031149",
+    "project_id": "piecejob-b596e",
+    "storage_bucket": "piecejob-b596e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:288646031149:android:59754728653b48588215a4",
+        "android_client_info": {
+          "package_name": "com.piecejob.provider"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLxPEgQSzZ0ut9LJY6Q6X4zR_4GL3a0mM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

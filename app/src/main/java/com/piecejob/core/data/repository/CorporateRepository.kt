@@ -4,34 +4,30 @@ import com.piecejob.core.data.remote.PieceJobApi
 import com.piecejob.core.data.remote.dto.*
 import com.piecejob.core.data.remote.ApiResponse
 import com.piecejob.core.data.remote.ApiError
-import com.piecejob.core.data.remote.SosRequest
-import com.piecejob.core.data.remote.SosResponse
-import com.piecejob.core.data.remote.AudioUploadRequest
-import com.piecejob.core.data.remote.PhotoUploadRequest
 import javax.inject.Inject
 
-class SosRepository @Inject constructor(
+class CorporateRepository @Inject constructor(
     private val api: PieceJobApi
 ) {
-    suspend fun triggerSos(lat: Double, lng: Double, jobId: String?): ApiResponse<SosResponse> {
+    suspend fun getCompanyProfile(): ApiResponse<CompanyDto> {
         return try {
-            api.triggerSos(SosRequest(listOf(lng, lat), jobId))
+            api.getCompanyProfile()
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
     }
 
-    suspend fun uploadAudio(incidentId: String, url: String, duration: Int): ApiResponse<Unit> {
+    suspend fun getEmployees(): ApiResponse<List<UserDto>> {
         return try {
-            api.uploadSosAudio(incidentId, AudioUploadRequest(url, duration))
+            api.getEmployees()
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
     }
 
-    suspend fun uploadPhoto(incidentId: String, url: String, lat: Double, lng: Double): ApiResponse<Unit> {
+    suspend fun getSchedules(): ApiResponse<List<CorporateScheduleDto>> {
         return try {
-            api.uploadSosPhoto(incidentId, PhotoUploadRequest(url, listOf(lng, lat)))
+            api.getSchedules()
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
