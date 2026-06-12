@@ -1,10 +1,16 @@
 package com.piecejob.core.ui.onboarding
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,13 +22,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import com.piecejob.BuildConfig
 import com.piecejob.core.ui.auth.AuthViewModel
 import com.piecejob.core.ui.auth.AuthState
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,9 +50,57 @@ fun RegistrationDetailsScreen(
     val authState by viewModel.authState.collectAsState()
     val isProvider = BuildConfig.FLAVOR == "provider"
 
+    // Date Picker State
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                return utcTimeMillis <= System.currentTimeMillis()
+            }
+        }
+    )
+
+    // Form Validation Logic (CHAIN AUDIT FIX)
+    val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    val isPasswordMatch = password == confirmPassword && password.isNotEmpty()
+    val isPasswordStrong = password.length >= 6
+    
+    val isFormValid = firstName.trim().isNotBlank() && 
+                     lastName.trim().isNotBlank() && 
+                     isEmailValid && 
+                     dob.isNotBlank() && 
+                     idNumber.trim().isNotBlank() && 
+                     isPasswordStrong && 
+                     isPasswordMatch &&
+                     authState !is AuthState.Loading
+
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {
             onSuccess()
+        }
+    }
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        viewModel.dob.value = sdf.format(Date(millis))
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
         }
     }
 
@@ -83,23 +135,65 @@ fun RegistrationDetailsScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // READ-ONLY VERIFIED FIELDS
-            ReadOnlyField(label = "Verified Country", value = selectedCountry?.name ?: "")
-            Spacer(modifier = Modifier.height(16.dp))
-            ReadOnlyField(label = "Verified Phone", value = phoneNumber)
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Box(modifier = Modifier.weight(1f)) {
+                    ReadOnlyField(label = "Country", value = selectedCountry?.name ?: "")
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Box(modifier = Modifier.weight(1f)) {
+                    ReadOnlyField(label = "Phone", value = phoneNumber)
+                }
+            }
             
             Spacer(modifier = Modifier.height(24.dp))
             HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(24.dp))
 
-            DetailField(label = "First Name", value = firstName, onValueChange = { viewModel.firstName.value = it })
+            // FIRST NAME + LAST NAME (ROW LAYOUT IMPROVEMENT)
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Box(modifier = Modifier.weight(1f)) {
+                    DetailField(label = "First Name", value = firstName, onValueChange = { viewModel.firstName.value = it })
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Box(modifier = Modifier.weight(1f)) {
+                    DetailField(label = "Last Name", value = lastName, onValueChange = { viewModel.lastName.value = it })
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
-            DetailField(label = "Last Name", value = lastName, onValueChange = { viewModel.lastName.value = it })
-            Spacer(modifier = Modifier.height(16.dp))
+
             DetailField(label = "Email Address", value = email, onValueChange = { viewModel.email.value = it }, keyboardType = KeyboardType.Email)
+            
             Spacer(modifier = Modifier.height(16.dp))
-            DetailField(label = "Date of Birth (YYYY-MM-DD)", value = dob, onValueChange = { viewModel.dob.value = it })
+
+            // DATE OF BIRTH (MODERN DATE PICKER IMPROVEMENT)
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = dob,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Date of Birth", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    trailingIcon = {
+                        Icon(Icons.Default.CalendarToday, contentDescription = "Select Date")
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+                // Overlay for click detection
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { showDatePicker = true }
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
+
             DetailField(label = "ID / Passport Number", value = idNumber, onValueChange = { viewModel.idNumber.value = it })
+            
             Spacer(modifier = Modifier.height(16.dp))
 
             // Password
@@ -154,7 +248,7 @@ fun RegistrationDetailsScreen(
                     .fillMaxWidth()
                     .height(58.dp),
                 shape = RoundedCornerShape(16.dp),
-                enabled = firstName.isNotBlank() && lastName.isNotBlank() && password.length >= 6 && password == confirmPassword && authState !is AuthState.Loading
+                enabled = isFormValid
             ) {
                 if (authState is AuthState.Loading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
