@@ -1,5 +1,7 @@
 package com.piecejob.provider.ui.wallet
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,21 +12,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.piecejob.core.data.remote.dto.WalletDto
-
-// Provider Theme Colors (Aligned with Section 2.1)
-val ForestGreen = Color(0xFF006400)
-val CadetGray = Color(0xFF91A3B0)
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.piecejob.core.data.remote.dto.*
+import java.util.Locale
 
 @Composable
 fun ProviderWalletScreen(
-    wallet: WalletDto,
-    transactions: List<TransactionItem>,
+    viewModel: ProviderWalletViewModel = hiltViewModel(),
     onWithdrawClick: () -> Unit
 ) {
+    val wallet by viewModel.wallet.collectAsState()
+    val history by viewModel.history.collectAsState()
+    val statements by viewModel.statements.collectAsState()
+    val invoices by viewModel.invoices.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -32,116 +39,161 @@ fun ProviderWalletScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = "My Wallet",
+            text = "Earnings & Wallet",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = ForestGreen
+            color = Color(0xFF212121)
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Balance Cards
-        Row(
+        if (isLoading) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Main Balance Card
+        Card(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF212121))
         ) {
-            BalanceCard(
-                title = "Available",
-                amount = wallet.balanceMain,
-                containerColor = ForestGreen,
-                contentColor = Color.White,
-                modifier = Modifier.weight(1f)
-            )
-            BalanceCard(
-                title = "Escrow",
-                amount = wallet.balanceEscrow,
-                containerColor = CadetGray.copy(alpha = 0.2f),
-                contentColor = ForestGreen,
-                modifier = Modifier.weight(1f)
-            )
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text(text = "Available for Withdrawal", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                Text(
+                    text = String.format(Locale.getDefault(), "$%.2f", wallet?.balanceMain ?: 0.0),
+                    color = Color.White,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Black
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Button(
+                    onClick = onWithdrawClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = (wallet?.balanceMain ?: 0.0) >= 50.0
+                ) {
+                    Text("WITHDRAW FUNDS", fontWeight = FontWeight.Bold)
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Button(
-            onClick = onWithdrawClick,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text("Request Withdrawal", fontWeight = FontWeight.Bold)
+        var activeTab by remember { mutableStateOf(0) }
+        TabRow(selectedTabIndex = activeTab) {
+            Tab(selected = activeTab == 0, onClick = { activeTab = 0 }, text = { Text("Recent") })
+            Tab(selected = activeTab == 1, onClick = { activeTab = 1 }, text = { Text("Statements") })
+            Tab(selected = activeTab == 2, onClick = { activeTab = 2 }, text = { Text("Invoices") })
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Text(
-            text = "Recent Transactions",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold
-        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(transactions) { tx ->
-                TransactionRow(tx)
+            when (activeTab) {
+                0 -> {
+                    items(history) { tx -> TransactionItem(tx) }
+                    if (history.isEmpty() && !isLoading) {
+                        item { EmptyState("No transaction history.") }
+                    }
+                }
+                1 -> {
+                    items(statements) { statement ->
+                        StatementRow(statement, onDownload = { url ->
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            context.startActivity(intent)
+                        })
+                    }
+                    if (statements.isEmpty() && !isLoading) {
+                        item { EmptyState("No statements generated yet.") }
+                    }
+                }
+                2 -> {
+                    items(invoices) { invoice ->
+                        InvoiceItem(invoice, onDownload = { url ->
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            context.startActivity(intent)
+                        })
+                    }
+                    if (invoices.isEmpty() && !isLoading) {
+                        item { EmptyState("No invoices available.") }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun BalanceCard(
-    title: String,
-    amount: Double,
-    containerColor: Color,
-    contentColor: Color,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        shape = RoundedCornerShape(12.dp)
+fun EmptyState(message: String) {
+    Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
+        Text(message, color = Color.Gray)
+    }
+}
+
+@Composable
+fun TransactionItem(tx: WalletTransactionDto) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = title, fontSize = 12.sp, color = contentColor.copy(alpha = 0.7f))
+        Column {
+            Text(text = tx.type.replace("_", " "), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text(text = tx.createdAt.take(10), fontSize = 10.sp, color = Color.Gray)
+        }
+        Text(
+            text = String.format(Locale.getDefault(), "${if (tx.amount > 0) "+" else ""}$%.2f", tx.amount),
+            fontWeight = FontWeight.Black,
+            color = if (tx.amount > 0) Color(0xFF2E7D32) else Color(0xFFD32F2F)
+        )
+    }
+}
+
+@Composable
+fun StatementRow(statement: StatementDto, onDownload: (String) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(text = "Statement ${statement.periodStart}", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(text = "${statement.summary.jobCount} Jobs Completed", fontSize = 10.sp, color = Color.Gray)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "$${String.format("%.2f", amount)}",
-                fontSize = 20.sp,
+                text = String.format(Locale.getDefault(), "$%.2f", statement.summary.netEarnings),
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = contentColor
+                modifier = Modifier.padding(end = 8.dp)
             )
+            TextButton(onClick = { onDownload(statement.pdfUrl) }) {
+                Text("PDF", fontSize = 12.sp)
+            }
         }
     }
 }
 
 @Composable
-fun TransactionRow(tx: TransactionItem) {
+fun InvoiceItem(invoice: InvoiceDto, onDownload: (String) -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text(text = tx.type, fontWeight = FontWeight.Medium)
-            Text(text = tx.date, fontSize = 12.sp, color = Color.Gray)
+            Text(text = invoice.invoiceNumber, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(text = invoice.createdAt.take(10), fontSize = 10.sp, color = Color.Gray)
         }
-        Text(
-            text = "${if (tx.isCredit) "+" else "-"}$${String.format("%.2f", tx.amount)}",
-            fontWeight = FontWeight.Bold,
-            color = if (tx.isCredit) Color(0xFF2E7D32) else Color.Red
-        )
+        TextButton(onClick = { invoice.pdfUrl?.let { onDownload(it) } }) {
+            Text("Download", fontSize = 12.sp)
+        }
     }
 }
-
-data class TransactionItem(
-    val type: String,
-    val amount: Double,
-    val date: String,
-    val isCredit: Boolean
-)

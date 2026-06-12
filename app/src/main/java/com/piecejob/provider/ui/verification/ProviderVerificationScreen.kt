@@ -13,15 +13,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.piecejob.core.data.remote.VerificationStatusDto
 import com.piecejob.core.data.remote.VerificationDocDto
 
 @Composable
 fun ProviderVerificationScreen(
-    status: VerificationStatusDto?,
-    onUploadClick: (String) -> Unit,
-    onSubmitRequest: (String) -> Unit
+    viewModel: ProviderVerificationViewModel = hiltViewModel(),
+    onUploadClick: (String) -> Unit
 ) {
+    val status by viewModel.status.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -36,6 +40,11 @@ fun ProviderVerificationScreen(
         )
         
         Spacer(modifier = Modifier.height(24.dp))
+
+        if (isLoading) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         // Status Banner
         Card(
@@ -80,7 +89,7 @@ fun ProviderVerificationScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(text = "Rejection Reason", fontWeight = FontWeight.Bold, color = Color(0xFFC62828), fontSize = 12.sp)
-                    Text(text = status.latestRequest.rejectionReason, fontSize = 14.sp)
+                    Text(text = status?.latestRequest?.rejectionReason ?: "", fontSize = 14.sp)
                 }
             }
         }
@@ -108,11 +117,11 @@ fun ProviderVerificationScreen(
         Spacer(modifier = Modifier.weight(1f))
 
         Button(
-            onClick = { onSubmitRequest("STANDARD") },
+            onClick = { viewModel.submitVerification("STANDARD", emptyList()) }, // In real app, pass collected docs
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400)),
             shape = RoundedCornerShape(12.dp),
-            enabled = status?.currentStatus != "PENDING"
+            enabled = status?.currentStatus != "PENDING" && !isLoading
         ) {
             Text("Submit for Standard Review", fontWeight = FontWeight.Bold)
         }

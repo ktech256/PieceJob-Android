@@ -3,9 +3,9 @@ package com.piecejob.core.ui.components
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-// import com.google.android.gms.maps.model.CameraPosition
-// import com.google.android.gms.maps.model.LatLng
-// import com.google.maps.android.compose.*
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
 
 @Composable
 fun LiveTrackingMap(
@@ -13,10 +13,6 @@ fun LiveTrackingMap(
     customerLocation: Pair<Double, Double>,
     modifier: Modifier = Modifier
 ) {
-    // This is a professional scaffolding for Google Maps Compose
-    // In production, uncomment the lines below after adding dependencies
-    
-    /*
     val customerLatLng = LatLng(customerLocation.first, customerLocation.second)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(customerLatLng, 15f)
@@ -25,7 +21,7 @@ fun LiveTrackingMap(
     GoogleMap(
         modifier = modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
-        properties = MapProperties(isMyLocationEnabled = true),
+        properties = MapProperties(isMyLocationEnabled = false), // We provide markers
         uiSettings = MapUiSettings(zoomControlsEnabled = false)
     ) {
         Marker(
@@ -38,17 +34,8 @@ fun LiveTrackingMap(
             Marker(
                 state = MarkerState(position = providerLatLng),
                 title = "Provider",
-                // icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                // In full implementation, use a custom car/provider icon here
             )
         }
-    }
-    */
-    
-    // Placeholder UI for validation
-    androidx.compose.foundation.layout.Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = androidx.compose.ui.Alignment.Center
-    ) {
-        androidx.compose.material3.Text("Google Map Integration Active")
     }
 }

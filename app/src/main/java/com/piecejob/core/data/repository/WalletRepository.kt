@@ -24,4 +24,12 @@ class WalletRepository @Inject constructor(
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
     }
+
+    suspend fun getInvoices(): ApiResponse<List<InvoiceDto>> {
+        return try {
+            api.getInvoices()
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
 }

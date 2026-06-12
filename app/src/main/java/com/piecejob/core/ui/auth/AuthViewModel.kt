@@ -1,56 +1,193 @@
 package com.piecejob.core.ui.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.piecejob.BuildConfig
 import com.piecejob.core.data.repository.AuthRepository
-import com.piecejob.core.data.remote.dto.LoginResponse
+import com.piecejob.core.data.local.SessionManager
+import com.piecejob.core.data.remote.dto.*
 import com.piecejob.core.data.remote.ApiResponse
+import com.piecejob.core.data.remote.CountryDto
+import com.piecejob.core.data.remote.LanguageDto
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val repository: AuthRepository
+    private val repository: AuthRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState
 
-    fun requestOtp(phoneNumber: String) {
+    // Registration Data
+    val availableCountries = MutableStateFlow<List<CountryDto>>(emptyList())
+    val availableLanguages = MutableStateFlow<List<LanguageDto>>(emptyList())
+    
+    val selectedCountry = MutableStateFlow<CountryDto?>(null)
+    val selectedLanguage = MutableStateFlow<LanguageDto?>(null)
+    
+    val phoneNumber = MutableStateFlow("")
+    val loginIdentifier = MutableStateFlow("") // Prefilled from last session
+    
+    // User details
+    val firstName = MutableStateFlow("")
+    val lastName = MutableStateFlow("")
+    val email = MutableStateFlow("")
+    val dob = MutableStateFlow("")
+    val idNumber = MutableStateFlow("")
+    val password = MutableStateFlow("")
+
+    // Provider Specific
+    val selectedServices = MutableStateFlow<List<String>>(emptyList())
+
+    private val TAG = "AuthViewModel"
+
+    init {
+        loginIdentifier.value = sessionManager.getLastPhoneNumber() ?: ""
+        loadConfigs()
+    }
+
+    fun loadConfigs() {
+        viewModelScope.launch {
+            Log.d(TAG, "Loading configurations from backend...")
+            
+            val countryRes = repository.getCountries()
+            if (countryRes.success) {
+                Log.d(TAG, "Countries loaded: ${countryRes.data?.size ?: 0}")
+                availableCountries.value = countryRes.data ?: emptyList()
+                // Auto-select based on session or default to ZA
+                selectedCountry.value = availableCountries.value.find { it.code == "ZA" } 
+                    ?: availableCountries.value.firstOrNull()
+            } else {
+                Log.e(TAG, "Failed to load countries: ${countryRes.message}")
+            }
+            
+            val langRes = repository.getLanguages()
+            if (langRes.success) {
+                Log.d(TAG, "Languages loaded: ${langRes.data?.size ?: 0}")
+                availableLanguages.value = langRes.data ?: emptyList()
+                selectedLanguage.value = availableLanguages.value.find { it.code == "en" }
+                    ?: availableLanguages.value.firstOrNull()
+            } else {
+                Log.e(TAG, "Failed to load languages: ${langRes.message}")
+            }
+        }
+    }
+
+    fun requestOtp(phone: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            val response = repository.requestOtp(phoneNumber)
+            Log.d(TAG, "Requesting OTP for $phone")
+            val response = repository.requestOtp(phone)
             if (response.success) {
+                phoneNumber.value = phone
                 _authState.value = AuthState.OtpSent
+                Log.d(TAG, "OTP Sent successfully")
             } else {
                 _authState.value = AuthState.Error(response.error?.message ?: "Failed to send OTP")
+                Log.e(TAG, "OTP Request failed: ${response.error?.message}")
             }
         }
     }
 
-    fun verifyOtp(phoneNumber: String, otp: String) {
+    fun verifyOtp(otp: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            val response = repository.verifyOtp(phoneNumber, otp)
+            Log.d(TAG, "Verifying OTP: $otp")
+            val response = repository.verifyOtp(phoneNumber.value, otp)
             if (response.success) {
                 _authState.value = AuthState.OtpVerified
+                Log.d(TAG, "OTP Verified successfully")
             } else {
                 _authState.value = AuthState.Error(response.error?.message ?: "Invalid OTP")
+                Log.e(TAG, "OTP Verification failed: ${response.error?.message}")
             }
         }
     }
 
-    fun login(identifier: String, password: String) {
+    fun register() {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            val response = repository.login(identifier, password, null)
+            val deviceId = sessionManager.getDeviceId()
+            val countryCode = selectedCountry.value?.code ?: "ZA"
+            
+            val isProvider = BuildConfig.FLAVOR == "provider"
+
+            val response = if (!isProvider) {
+                val request = CustomerRegisterRequest(
+                    firstName = firstName.value,
+                    lastName = lastName.value,
+                    email = email.value,
+                    phoneNumber = phoneNumber.value,
+                    password = password.value,
+                    countryCode = countryCode,
+                    dob = dob.value,
+                    idNumber = idNumber.value,
+                    deviceId = deviceId
+                )
+                repository.registerCustomer(request)
+            } else {
+                val request = ProviderRegisterRequest(
+                    firstName = firstName.value,
+                    lastName = lastName.value,
+                    email = email.value,
+                    phoneNumber = phoneNumber.value,
+                    password = password.value,
+                    countryCode = countryCode,
+                    deviceId = deviceId,
+                    gender = "M",
+                    dob = dob.value,
+                    nationalityType = "Citizen",
+                    idOrPassportNumber = idNumber.value,
+                    servicesOffered = selectedServices.value
+                )
+                repository.registerProvider(request)
+            }
+
+            if (response.success) {
+                sessionManager.saveLastPhoneNumber(phoneNumber.value)
+                login(phoneNumber.value, password.value)
+            } else {
+                _authState.value = AuthState.Error(response.error?.message ?: "Registration failed")
+            }
+        }
+    }
+
+    fun login(identifier: String, pass: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            val deviceId = sessionManager.getDeviceId()
+            val response = repository.login(identifier, pass, deviceId)
             if (response.success && response.data != null) {
-                _authState.value = AuthState.Authenticated(response.data)
+                val data = response.data
+                sessionManager.saveAuthToken(data.token)
+                sessionManager.saveRefreshToken(data.refreshToken)
+                sessionManager.saveUser(
+                    userId = data.user.id,
+                    role = data.user.role,
+                    firstName = data.user.firstName
+                )
+                sessionManager.saveCountryCode(data.user.countryCode)
+                sessionManager.saveLastPhoneNumber(identifier)
+                _authState.value = AuthState.Authenticated(data)
             } else {
                 _authState.value = AuthState.Error(response.error?.message ?: "Login failed")
             }
         }
+    }
+
+    fun resetState() {
+        _authState.value = AuthState.Idle
+    }
+    
+    fun isLoggedIn(): Boolean {
+        return sessionManager.getAuthToken() != null
     }
 }
 

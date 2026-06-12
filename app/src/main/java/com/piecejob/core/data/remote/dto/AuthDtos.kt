@@ -8,6 +8,8 @@ data class LoginResponse(val token: String, val refreshToken: String, val user: 
 data class RefreshRequest(val refreshToken: String)
 data class RefreshResponse(val token: String)
 
+data class FcmTokenRequest(val fcmToken: String)
+
 data class UserDto(
     val id: String,
     val firstName: String,
@@ -57,6 +59,17 @@ data class StatementSummaryDto(
     val platformCommission: Double,
     val netEarnings: Double,
     val jobCount: Int
+)
+
+data class InvoiceDto(
+    val id: String,
+    val invoiceNumber: String,
+    val jobId: String,
+    val amount: Double,
+    val currency: String,
+    val status: String,
+    val pdfUrl: String?,
+    val createdAt: String
 )
 
 data class CompanyDto(

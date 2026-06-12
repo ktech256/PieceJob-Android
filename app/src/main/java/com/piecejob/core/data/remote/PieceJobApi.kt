@@ -27,6 +27,9 @@ interface PieceJobApi {
     @GET("users/profile")
     suspend fun getProfile(): ApiResponse<UserDto>
 
+    @PATCH("users/fcm-token")
+    suspend fun updateFcmToken(@Body request: FcmTokenRequest): ApiResponse<Unit>
+
     @GET("wallets/balance")
     suspend fun getWalletBalance(): ApiResponse<WalletDto>
 
@@ -38,6 +41,9 @@ interface PieceJobApi {
 
     @GET("wallets/statements")
     suspend fun getStatements(): ApiResponse<List<StatementDto>>
+
+    @GET("wallets/invoices")
+    suspend fun getInvoices(): ApiResponse<List<InvoiceDto>>
 
     @GET("wallets/commission-rate")
     suspend fun getCommissionRate(): ApiResponse<CommissionRateDto>
@@ -62,6 +68,15 @@ interface PieceJobApi {
 
     @PATCH("providers/jobs/{jobId}/accept")
     suspend fun acceptJob(@Path("jobId") jobId: String): ApiResponse<JobDto>
+
+    @PATCH("providers/jobs/{jobId}/arrive")
+    suspend fun markArrival(@Path("jobId") jobId: String): ApiResponse<Unit>
+
+    @PATCH("providers/jobs/{jobId}/start")
+    suspend fun startJob(@Path("jobId") jobId: String): ApiResponse<Unit>
+
+    @PATCH("providers/jobs/{jobId}/complete")
+    suspend fun completeJob(@Path("jobId") jobId: String): ApiResponse<Unit>
 
     @POST("sos/trigger")
     suspend fun triggerSos(@Body request: SosRequest): ApiResponse<SosResponse>
@@ -110,6 +125,12 @@ interface PieceJobApi {
         @Query("lng") lng: Double
     ): ApiResponse<ZoneDto>
 
+    @GET("config/countries")
+    suspend fun getCountries(): ApiResponse<List<CountryDto>>
+
+    @GET("config/languages")
+    suspend fun getLanguages(): ApiResponse<List<LanguageDto>>
+
     // =========================
     // ✅ CORPORATE B2B ROUTES
     // =========================
@@ -130,6 +151,24 @@ interface PieceJobApi {
 
     @GET("support/tickets")
     suspend fun getMyTickets(): ApiResponse<List<TicketDto>>
+
+    // =========================
+    // ✅ CHAT ROUTES
+    // =========================
+    @GET("chat/{jobId}")
+    suspend fun getChatMessages(@Path("jobId") jobId: String): ApiResponse<List<MessageDto>>
+
+    @POST("chat")
+    suspend fun sendMessage(@Body request: SendMessageRequest): ApiResponse<MessageDto>
+
+    // =========================
+    // ✅ ANALYTICS ROUTES
+    // =========================
+    @GET("analytics/provider/summary")
+    suspend fun getProviderAnalytics(): ApiResponse<ProviderAnalyticsDto>
+
+    @GET("analytics/customer/summary")
+    suspend fun getCustomerAnalytics(): ApiResponse<CustomerAnalyticsDto>
 }
 
 data class SubmitTicketRequest(
@@ -177,9 +216,13 @@ data class CountryDto(
     val name: String,
     val code: String,
     val currency: String,
-    val timezone: String,
-    val language: String,
-    val locale: String
+    val phoneCode: String? = null,
+    val flagEmoji: String? = null
+)
+
+data class LanguageDto(
+    val code: String,
+    val name: String
 )
 
 data class SettingsDto(

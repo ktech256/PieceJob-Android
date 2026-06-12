@@ -11,20 +11,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-// Provider Theme Colors (Aligned with Section 2.1)
-val ForestGreen = Color(0xFF006400)
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.piecejob.provider.ui.verification.ProviderVerificationViewModel
 
 @Composable
 fun DocumentUploadScreen(
+    viewModel: ProviderVerificationViewModel = hiltViewModel(),
     onUploadComplete: () -> Unit
 ) {
+    val isLoading by viewModel.isLoading.collectAsState()
+    
     val documents = listOf(
-        "Government ID / Passport",
-        "Criminal Background Check",
-        "Professional Certification",
-        "Trade License (Optional)",
-        "Proof of Equipment"
+        "GOVERNMENT_ID",
+        "CRIMINAL_CHECK",
+        "PROFESSIONAL_CERT",
+        "TRADE_LICENSE",
+        "EQUIPMENT_PROOF"
     )
 
     Column(
@@ -34,10 +36,10 @@ fun DocumentUploadScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Provider Verification",
+            text = "Verification Documents",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = ForestGreen
+            color = Color(0xFF212121)
         )
         Text(
             text = "Upload the required documents for your services",
@@ -48,6 +50,10 @@ fun DocumentUploadScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        if (isLoading) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+
         documents.forEach { docType ->
             DocumentItem(docName = docType)
             Spacer(modifier = Modifier.height(16.dp))
@@ -56,14 +62,19 @@ fun DocumentUploadScreen(
         Spacer(modifier = Modifier.weight(1f))
 
         Button(
-            onClick = onUploadComplete,
+            onClick = { 
+                // In full implementation, we'd send the actual URLs from S3/Firebase Storage
+                viewModel.submitVerification("STANDARD", emptyList())
+                onUploadComplete() 
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
-            shape = RoundedCornerShape(8.dp)
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF212121)),
+            shape = RoundedCornerShape(12.dp),
+            enabled = !isLoading
         ) {
-            Text("Submit for Verification", fontWeight = FontWeight.Bold)
+            Text("SUBMIT ALL DOCUMENTS", fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -85,22 +96,22 @@ fun DocumentItem(docName: String) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text(text = docName, fontWeight = FontWeight.Medium)
+                Text(text = docName.replace("_", " "), fontWeight = FontWeight.Medium)
                 Text(
-                    text = if (isUploaded) "Uploaded" else "Pending",
+                    text = if (isUploaded) "Ready" else "Missing",
                     fontSize = 12.sp,
-                    color = if (isUploaded) Color(0xFF2E7D32) else Color.Red
+                    color = if (isUploaded) Color(0xFF2E7D32) else Color(0xFFD32F2F)
                 )
             }
             
             Button(
                 onClick = { isUploaded = true },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isUploaded) Color.Gray else ForestGreen
+                    containerColor = if (isUploaded) Color.Gray else Color(0xFF212121)
                 ),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
             ) {
-                Text(if (isUploaded) "Edit" else "Upload", fontSize = 12.sp)
+                Text(if (isUploaded) "Edit" else "Capture", fontSize = 12.sp)
             }
         }
     }

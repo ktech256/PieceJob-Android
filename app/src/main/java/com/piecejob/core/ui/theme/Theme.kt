@@ -1,29 +1,32 @@
 package com.piecejob.core.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 
 private val CustomerColorScheme = lightColorScheme(
-    primary = EarthyRed,
-    secondary = DeepMauve,
-    tertiary = Cream,
+    primary = CustomerPrimary,
+    secondary = CustomerSecondary,
+    tertiary = CustomerAccent,
     background = White,
     surface = White,
     onPrimary = White,
     onSecondary = White,
-    onTertiary = EarthyRed
+    onTertiary = White,
+    error = ErrorRed,
+    onError = White
 )
 
 private val ProviderColorScheme = lightColorScheme(
-    primary = ForestGreen,
-    secondary = OliveDrab,
-    tertiary = CadetGray,
+    primary = ProviderPrimary,
+    secondary = ProviderSecondary,
+    tertiary = ProviderAccent,
     background = White,
     surface = White,
     onPrimary = White,
     onSecondary = White,
-    onTertiary = ForestGreen
+    onTertiary = White,
+    error = ErrorRed,
+    onError = White
 )
 
 @Composable

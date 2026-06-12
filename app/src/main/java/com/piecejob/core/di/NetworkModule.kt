@@ -16,6 +16,9 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
+    // RENDER PUBLIC ENDPOINT
+    private const val BASE_URL = "https://piecejob-backend.onrender.com/api/v1/"
+
     @Provides
     @Singleton
     fun provideAuthInterceptor(sessionManager: SessionManager): AuthInterceptor {
@@ -25,8 +28,14 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
+        val logging = okhttp3.logging.HttpLoggingInterceptor().apply {
+            level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
+        }
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
+            .addInterceptor(logging)
+            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
             .build()
     }
 
@@ -34,7 +43,7 @@ object NetworkModule {
     @Singleton
     fun providePieceJobApi(okHttpClient: OkHttpClient): PieceJobApi {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:5000/api/v1/")
+            .baseUrl(BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

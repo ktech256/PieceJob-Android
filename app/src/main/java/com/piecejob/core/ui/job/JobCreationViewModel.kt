@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.repository.JobRepository
 import com.piecejob.core.data.remote.dto.CreateJobRequest
+import com.piecejob.core.data.remote.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,21 @@ class JobCreationViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<JobCreationState>(JobCreationState.Idle)
     val uiState: StateFlow<JobCreationState> = _uiState
 
+    private val _priceEstimate = MutableStateFlow<PriceEstimateDto?>(null)
+    val priceEstimate: StateFlow<PriceEstimateDto?> = _priceEstimate
+
+    fun getPriceEstimate(serviceCode: String, lat: Double, lng: Double) {
+        viewModelScope.launch {
+            val zoneResult = jobRepository.resolveZone(lat, lng)
+            val zoneId = zoneResult.data?.id
+            
+            val result = jobRepository.getPriceEstimate(serviceCode, zoneId, false)
+            if (result.success) {
+                _priceEstimate.value = result.data
+            }
+        }
+    }
+
     fun createJob(serviceCode: String, lat: Double, lng: Double, address: String) {
         viewModelScope.launch {
             _uiState.value = JobCreationState.Loading
@@ -25,7 +41,7 @@ class JobCreationViewModel @Inject constructor(
             if (result.success) {
                 _uiState.value = JobCreationState.Success(result.data?.id ?: "")
             } else {
-                _uiState.value = JobCreationState.Error(result.message ?: "Failed to create job")
+                _uiState.value = JobCreationState.Error(result.error?.message ?: "Failed to create job")
             }
         }
     }

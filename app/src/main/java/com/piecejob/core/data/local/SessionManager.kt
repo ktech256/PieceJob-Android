@@ -2,11 +2,14 @@ package com.piecejob.core.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SessionManager @Inject constructor(context: Context) {
+class SessionManager @Inject constructor(
+    @ApplicationContext context: Context
+) {
     private val prefs: SharedPreferences = context.getSharedPreferences("piecejob_prefs", Context.MODE_PRIVATE)
 
     fun saveAuthToken(token: String) {
@@ -30,7 +33,12 @@ class SessionManager @Inject constructor(context: Context) {
     }
 
     fun getDeviceId(): String? {
-        return prefs.getString("device_id", null)
+        var id = prefs.getString("device_id", null)
+        if (id == null) {
+            id = java.util.UUID.randomUUID().toString()
+            saveDeviceId(id)
+        }
+        return id
     }
 
     fun saveCountryCode(countryCode: String) {
@@ -40,6 +48,26 @@ class SessionManager @Inject constructor(context: Context) {
     fun getCountryCode(): String? {
         return prefs.getString("country_code", "ZA") // Default to ZA
     }
+
+    fun saveLastPhoneNumber(phone: String) {
+        prefs.edit().putString("last_phone", phone).apply()
+    }
+
+    fun getLastPhoneNumber(): String? = prefs.getString("last_phone", null)
+
+    fun saveUser(userId: String, role: String, firstName: String) {
+        prefs.edit().apply {
+            putString("user_id", userId)
+            putString("role", role)
+            putString("first_name", firstName)
+            putBoolean("is_provider", role.equals("provider", ignoreCase = true))
+        }.apply()
+    }
+
+    fun getUserId(): String? = prefs.getString("user_id", null)
+    fun getRole(): String? = prefs.getString("role", null)
+    fun getFirstName(): String? = prefs.getString("first_name", null)
+    fun isProvider(): Boolean = prefs.getBoolean("is_provider", false)
 
     fun clearSession() {
         prefs.edit().remove("auth_token").apply()

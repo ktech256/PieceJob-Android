@@ -1,6 +1,6 @@
 package com.piecejob.core.data.repository
 
-import com.piecejob.core.data.remote.PieceJobApi
+import com.piecejob.core.data.remote.*
 import com.piecejob.core.data.remote.dto.*
 import com.piecejob.core.data.remote.ApiResponse
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +29,38 @@ class AuthRepository @Inject constructor(
     suspend fun login(identifier: String, password: String, deviceId: String?): ApiResponse<LoginResponse> {
         return try {
             api.login(LoginRequest(identifier, password, deviceId))
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun registerCustomer(request: CustomerRegisterRequest): ApiResponse<Unit> {
+        return try {
+            api.registerCustomer(request)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun registerProvider(request: ProviderRegisterRequest): ApiResponse<Unit> {
+        return try {
+            api.registerProvider(request)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun getCountries(): ApiResponse<List<CountryDto>> {
+        return try {
+            api.getCountries()
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun getLanguages(): ApiResponse<List<LanguageDto>> {
+        return try {
+            api.getLanguages()
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }

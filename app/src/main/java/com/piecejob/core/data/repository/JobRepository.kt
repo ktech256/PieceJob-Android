@@ -1,9 +1,7 @@
 package com.piecejob.core.data.repository
 
-import com.piecejob.core.data.remote.PieceJobApi
+import com.piecejob.core.data.remote.*
 import com.piecejob.core.data.remote.dto.*
-import com.piecejob.core.data.remote.ApiResponse
-import com.piecejob.core.data.remote.ApiError
 import javax.inject.Inject
 
 class JobRepository @Inject constructor(
@@ -44,6 +42,46 @@ class JobRepository @Inject constructor(
     suspend fun acceptJob(jobId: String): ApiResponse<JobDto> {
         return try {
             api.acceptJob(jobId)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun markArrival(jobId: String): ApiResponse<Unit> {
+        return try {
+            api.markArrival(jobId)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun startJob(jobId: String): ApiResponse<Unit> {
+        return try {
+            api.startJob(jobId)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun completeJob(jobId: String): ApiResponse<Unit> {
+        return try {
+            api.completeJob(jobId)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun resolveZone(lat: Double, lng: Double): ApiResponse<ZoneDto> {
+        return try {
+            api.resolveZone(lat, lng)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun getPriceEstimate(serviceCode: String, zoneId: String?, isEmergency: Boolean): ApiResponse<PriceEstimateDto> {
+        return try {
+            api.getPriceEstimate(serviceCode, zoneId, isEmergency)
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }

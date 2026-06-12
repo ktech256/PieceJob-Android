@@ -13,54 +13,54 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.piecejob.core.ui.components.LiveTrackingMap
-
-// Customer Theme Colors
-val EarthyRed = Color(0xFF410200)
-val DeepMauve = Color(0xFF4A2C2A)
-val Cream = Color(0xFFEFDECD)
 
 @Composable
 fun CustomerTrackingScreen(
-    providerName: String,
-    providerRating: Float,
-    providerLocation: Pair<Double, Double>?,
-    customerLocation: Pair<Double, Double>,
-    eta: String,
-    onCancelJob: () -> Unit,
-    onChatOpen: () -> Unit,
-    onSosTrigger: () -> Unit
+    jobId: String,
+    viewModel: JobTrackingViewModel = hiltViewModel(),
+    onChatOpen: (String) -> Unit,
+    onSosTrigger: () -> Unit,
+    onBack: () -> Unit
 ) {
+    val job by viewModel.job.collectAsState()
+    val providerLocation by viewModel.providerLocation.collectAsState()
+    
+    // Hardcoded for demo, in real app extract from job object
+    val customerLocation = 0.0 to 0.0 
+
+    LaunchedEffect(jobId) {
+        viewModel.initTracking(jobId)
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        // Map Integrated
         LiveTrackingMap(
             providerLocation = providerLocation,
             customerLocation = customerLocation,
             modifier = Modifier.fillMaxSize()
         )
 
-        // Top Status Bar
+        // Top Status Bar (Customer Red)
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(top = 48.dp, start = 16.dp, end = 16.dp)
                 .align(Alignment.TopCenter),
-            colors = CardDefaults.cardColors(containerColor = EarthyRed),
-            shape = RoundedCornerShape(12.dp)
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFD32F2F)),
+            shape = RoundedCornerShape(16.dp)
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = "Provider is en route", color = Color.White, fontSize = 14.sp)
-                    Text(text = "Estimated Arrival: $eta", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(text = "Status: ${job?.status ?: "Connecting..."}", color = Color.White, fontSize = 12.sp)
+                    Text(text = "Job #${jobId.takeLast(6)}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 }
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = Cream,
-                    strokeWidth = 2.dp
-                )
+                if (job?.status == "ACCEPTED" || job?.status == "ARRIVED") {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+                }
             }
         }
 
@@ -69,57 +69,57 @@ fun CustomerTrackingScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter),
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Profile Photo Placeholder
                     Box(
                         modifier = Modifier
-                            .size(60.dp)
+                            .size(56.dp)
                             .clip(CircleShape)
-                            .background(DeepMauve),
+                            .background(Color(0xFFFDECEA)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = providerName.take(1), color = Color.White, fontSize = 24.sp)
+                        Text(text = "P", color = Color(0xFFD32F2F), fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     }
                     
                     Spacer(modifier = Modifier.width(16.dp))
                     
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = providerName, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        Text(text = "⭐ $providerRating • Professional Level", color = Color.Gray, fontSize = 14.sp)
+                        Text(text = "Provider assigned", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                        Text(text = "⭐ 4.8 • Top Rated", color = Color.Gray, fontSize = 14.sp)
                     }
                     
-                    Button(onClick = onChatOpen, colors = ButtonDefaults.buttonColors(containerColor = EarthyRed)) {
-                        Text("Chat")
+                    IconButton(
+                        onClick = { job?.providerId?.let { onChatOpen(it) } },
+                        modifier = Modifier.size(48.dp).background(Color(0xFFF5F5F5), CircleShape)
+                    ) {
+                        Text("💬")
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // SECTION 9.1: Stealth SOS Trigger
-                // Disguised as a "Safety Center" to remain stealthy
-                OutlinedButton(
-                    onClick = onSosTrigger,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = EarthyRed),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, EarthyRed)
-                ) {
-                    Text("Safety Center & Support")
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Button(
-                    onClick = onCancelJob,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(text = "Cancel Request", color = Color.DarkGray)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(
+                        onClick = onSosTrigger,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red)
+                    ) {
+                        Text("SOS", color = Color.Red)
+                    }
+                    
+                    Button(
+                        onClick = { viewModel.cancelJob(); onBack() },
+                        modifier = Modifier.weight(2f),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(text = "Cancel Job", color = Color.DarkGray)
+                    }
                 }
             }
         }
