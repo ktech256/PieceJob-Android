@@ -1,5 +1,6 @@
 package com.piecejob.core.ui.onboarding
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -39,6 +40,7 @@ fun RegistrationDetailsScreen(
     val lastName by viewModel.lastName.collectAsState()
     val email by viewModel.email.collectAsState()
     val dob by viewModel.dob.collectAsState()
+    val gender by viewModel.gender.collectAsState()
     val idNumber by viewModel.idNumber.collectAsState()
     val password by viewModel.password.collectAsState()
     var confirmPassword by remember { mutableStateOf("") }
@@ -61,18 +63,40 @@ fun RegistrationDetailsScreen(
     )
 
     // Form Validation Logic (CHAIN AUDIT FIX)
-    val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-    val isPasswordMatch = password == confirmPassword && password.isNotEmpty()
+    val isFirstNameValid = firstName.trim().isNotBlank()
+    val isLastNameValid = lastName.trim().isNotBlank()
+    val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
+    val isDobValid = dob.isNotBlank()
+    val isGenderValid = gender.isNotBlank()
+    val isIdNumberValid = idNumber.trim().isNotBlank()
     val isPasswordStrong = password.length >= 6
+    val isPasswordMatch = password == confirmPassword && password.isNotEmpty()
     
-    val isFormValid = firstName.trim().isNotBlank() && 
-                     lastName.trim().isNotBlank() && 
+    val isFormValid = isFirstNameValid && 
+                     isLastNameValid && 
                      isEmailValid && 
-                     dob.isNotBlank() && 
-                     idNumber.trim().isNotBlank() && 
+                     isDobValid && 
+                     isGenderValid &&
+                     isIdNumberValid && 
                      isPasswordStrong && 
                      isPasswordMatch &&
                      authState !is AuthState.Loading
+
+    // DEBUG OUTPUT (As requested in Investigation)
+    LaunchedEffect(firstName, lastName, email, dob, gender, idNumber, password, confirmPassword) {
+        Log.d("RegistrationAudit", """
+            VALIDATION CHAIN:
+            First Name: $isFirstNameValid (${firstName.trim()})
+            Last Name: $isLastNameValid (${lastName.trim()})
+            Email: $isEmailValid (${email.trim()})
+            DOB: $isDobValid ($dob)
+            Gender: $isGenderValid ($gender)
+            ID Number: $isIdNumberValid (${idNumber.trim()})
+            Password Strong: $isPasswordStrong (Length: ${password.length})
+            Password Match: $isPasswordMatch
+            Form Valid: $isFormValid
+        """.trimIndent())
+    }
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {
@@ -166,6 +190,47 @@ fun RegistrationDetailsScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
 
+            // GENDER SELECTION (NEW MANDATORY FEATURE)
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "GENDER",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    val options = listOf("Male", "Female")
+                    options.forEach { option ->
+                        val isSelected = (gender == option.take(1)) // Store "M" or "F"
+                        
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp)
+                                .clickable { viewModel.gender.value = option.take(1) },
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                            border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = option,
+                                    color = if (isSelected) Color.White else Color.Black,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // DATE OF BIRTH (MODERN DATE PICKER IMPROVEMENT)
             Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
@@ -190,6 +255,7 @@ fun RegistrationDetailsScreen(
                         .clickable { showDatePicker = true }
                 )
             }
+            
             Spacer(modifier = Modifier.height(16.dp))
 
             DetailField(label = "ID / Passport Number", value = idNumber, onValueChange = { viewModel.idNumber.value = it })
@@ -239,9 +305,9 @@ fun RegistrationDetailsScreen(
             Button(
                 onClick = { 
                     if (isProvider) {
-                        onSuccess() // Navigates to service selection
+                        onSuccess() 
                     } else {
-                        viewModel.register() // Finalizes customer registration
+                        viewModel.register() 
                     }
                 },
                 modifier = Modifier

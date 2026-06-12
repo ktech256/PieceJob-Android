@@ -40,6 +40,7 @@ class AuthViewModel @Inject constructor(
     val lastName = MutableStateFlow("")
     val email = MutableStateFlow("")
     val dob = MutableStateFlow("")
+    val gender = MutableStateFlow("") // New Field
     val idNumber = MutableStateFlow("")
     val password = MutableStateFlow("")
 
@@ -129,6 +130,7 @@ class AuthViewModel @Inject constructor(
                     countryCode = countryCode,
                     dob = dob.value,
                     idNumber = idNumber.value,
+                    gender = gender.value,
                     deviceId = deviceId
                 )
                 repository.registerCustomer(request)
@@ -141,7 +143,7 @@ class AuthViewModel @Inject constructor(
                     password = password.value,
                     countryCode = countryCode,
                     deviceId = deviceId,
-                    gender = "M",
+                    gender = gender.value,
                     dob = dob.value,
                     nationalityType = "Citizen",
                     idOrPassportNumber = idNumber.value,

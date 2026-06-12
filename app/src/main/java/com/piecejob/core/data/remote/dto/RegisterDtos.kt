@@ -9,6 +9,7 @@ data class CustomerRegisterRequest(
     val countryCode: String,
     val dob: String,
     val idNumber: String,
+    val gender: String,
     val deviceId: String? = null
 )
 
