@@ -62,7 +62,6 @@ class AuthViewModel @Inject constructor(
             if (countryRes.success) {
                 Log.d(TAG, "Countries loaded: ${countryRes.data?.size ?: 0}")
                 availableCountries.value = countryRes.data ?: emptyList()
-                // Auto-select based on session or default to ZA
                 selectedCountry.value = availableCountries.value.find { it.code == "ZA" } 
                     ?: availableCountries.value.firstOrNull()
             } else {
@@ -89,10 +88,8 @@ class AuthViewModel @Inject constructor(
             if (response.success) {
                 phoneNumber.value = phone
                 _authState.value = AuthState.OtpSent
-                Log.d(TAG, "OTP Sent successfully")
             } else {
                 _authState.value = AuthState.Error(response.error?.message ?: "Failed to send OTP")
-                Log.e(TAG, "OTP Request failed: ${response.error?.message}")
             }
         }
     }
@@ -104,21 +101,22 @@ class AuthViewModel @Inject constructor(
             val response = repository.verifyOtp(phoneNumber.value, otp)
             if (response.success) {
                 _authState.value = AuthState.OtpVerified
-                Log.d(TAG, "OTP Verified successfully")
             } else {
                 _authState.value = AuthState.Error(response.error?.message ?: "Invalid OTP")
-                Log.e(TAG, "OTP Verification failed: ${response.error?.message}")
             }
         }
     }
 
     fun register() {
         viewModelScope.launch {
+            Log.d(TAG, "Entering register() coroutine")
             _authState.value = AuthState.Loading
+            
             val deviceId = sessionManager.getDeviceId()
             val countryCode = selectedCountry.value?.code ?: "ZA"
-            
             val isProvider = BuildConfig.FLAVOR == "provider"
+
+            Log.d(TAG, "Registration Details - isProvider: $isProvider, Country: $countryCode, Phone: ${phoneNumber.value}")
 
             val response = if (!isProvider) {
                 val request = CustomerRegisterRequest(
@@ -133,6 +131,7 @@ class AuthViewModel @Inject constructor(
                     gender = gender.value,
                     deviceId = deviceId
                 )
+                Log.d(TAG, "Submitting Customer Registration API call")
                 repository.registerCustomer(request)
             } else {
                 val request = ProviderRegisterRequest(
@@ -149,13 +148,16 @@ class AuthViewModel @Inject constructor(
                     idOrPassportNumber = idNumber.value,
                     servicesOffered = selectedServices.value
                 )
+                Log.d(TAG, "Submitting Provider Registration API call")
                 repository.registerProvider(request)
             }
 
             if (response.success) {
+                Log.d(TAG, "Registration Success! Proceeding to auto-login.")
                 sessionManager.saveLastPhoneNumber(phoneNumber.value)
-                login(phoneNumber.value, password.value)
+                loginInternal(phoneNumber.value, password.value)
             } else {
+                Log.e(TAG, "Registration Failed: ${response.error?.message}")
                 _authState.value = AuthState.Error(response.error?.message ?: "Registration failed")
             }
         }
@@ -163,24 +165,32 @@ class AuthViewModel @Inject constructor(
 
     fun login(identifier: String, pass: String) {
         viewModelScope.launch {
-            _authState.value = AuthState.Loading
-            val deviceId = sessionManager.getDeviceId()
-            val response = repository.login(identifier, pass, deviceId)
-            if (response.success && response.data != null) {
-                val data = response.data
-                sessionManager.saveAuthToken(data.token)
-                sessionManager.saveRefreshToken(data.refreshToken)
-                sessionManager.saveUser(
-                    userId = data.user.id,
-                    role = data.user.role,
-                    firstName = data.user.firstName
-                )
-                sessionManager.saveCountryCode(data.user.countryCode)
-                sessionManager.saveLastPhoneNumber(identifier)
-                _authState.value = AuthState.Authenticated(data)
-            } else {
-                _authState.value = AuthState.Error(response.error?.message ?: "Login failed")
-            }
+            loginInternal(identifier, pass)
+        }
+    }
+
+    private suspend fun loginInternal(identifier: String, pass: String) {
+        Log.d(TAG, "Executing loginInternal for $identifier")
+        _authState.value = AuthState.Loading
+        val deviceId = sessionManager.getDeviceId()
+        val response = repository.login(identifier, pass, deviceId)
+        
+        if (response.success && response.data != null) {
+            Log.d(TAG, "Login Success for $identifier")
+            val data = response.data
+            sessionManager.saveAuthToken(data.token)
+            sessionManager.saveRefreshToken(data.refreshToken)
+            sessionManager.saveUser(
+                userId = data.user.id,
+                role = data.user.role,
+                firstName = data.user.firstName
+            )
+            sessionManager.saveCountryCode(data.user.countryCode)
+            sessionManager.saveLastPhoneNumber(identifier)
+            _authState.value = AuthState.Authenticated(data)
+        } else {
+            Log.e(TAG, "Login Failed for $identifier: ${response.error?.message}")
+            _authState.value = AuthState.Error(response.error?.message ?: "Login failed")
         }
     }
 

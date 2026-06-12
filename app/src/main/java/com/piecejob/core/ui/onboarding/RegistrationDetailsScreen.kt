@@ -52,6 +52,8 @@ fun RegistrationDetailsScreen(
     val authState by viewModel.authState.collectAsState()
     val isProvider = BuildConfig.FLAVOR == "provider"
 
+    val TAG = "RegistrationAction"
+
     // Date Picker State
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
@@ -63,43 +65,43 @@ fun RegistrationDetailsScreen(
     )
 
     // Form Validation Logic (CHAIN AUDIT FIX)
-    val isFirstNameValid = firstName.trim().isNotBlank()
-    val isLastNameValid = lastName.trim().isNotBlank()
-    val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
-    val isDobValid = dob.isNotBlank()
-    val isGenderValid = gender.isNotBlank()
-    val isIdNumberValid = idNumber.trim().isNotBlank()
-    val isPasswordStrong = password.length >= 6
-    val isPasswordMatch = password == confirmPassword && password.isNotEmpty()
-    
-    val isFormValid = isFirstNameValid && 
-                     isLastNameValid && 
-                     isEmailValid && 
-                     isDobValid && 
-                     isGenderValid &&
-                     isIdNumberValid && 
-                     isPasswordStrong && 
-                     isPasswordMatch &&
-                     authState !is AuthState.Loading
+    val isFormValid by remember {
+        derivedStateOf {
+            val isFirstNameValid = firstName.trim().isNotBlank()
+            val isLastNameValid = lastName.trim().isNotBlank()
+            val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
+            val isDobValid = dob.isNotBlank()
+            val isGenderValid = gender.isNotBlank()
+            val isIdNumberValid = idNumber.trim().isNotBlank()
+            val isPasswordStrong = password.length >= 6
+            val isPasswordMatch = password == confirmPassword && password.isNotEmpty()
+
+            isFirstNameValid && isLastNameValid && isEmailValid && isDobValid && 
+            isGenderValid && isIdNumberValid && isPasswordStrong && isPasswordMatch &&
+            authState !is AuthState.Loading
+        }
+    }
 
     // DEBUG OUTPUT (As requested in Investigation)
-    LaunchedEffect(firstName, lastName, email, dob, gender, idNumber, password, confirmPassword) {
+    LaunchedEffect(firstName, lastName, email, dob, gender, idNumber, password, confirmPassword, authState) {
         Log.d("RegistrationAudit", """
             VALIDATION CHAIN:
-            First Name: $isFirstNameValid (${firstName.trim()})
-            Last Name: $isLastNameValid (${lastName.trim()})
-            Email: $isEmailValid (${email.trim()})
-            DOB: $isDobValid ($dob)
-            Gender: $isGenderValid ($gender)
-            ID Number: $isIdNumberValid (${idNumber.trim()})
-            Password Strong: $isPasswordStrong (Length: ${password.length})
-            Password Match: $isPasswordMatch
+            First Name: ${firstName.trim().isNotBlank()}
+            Last Name: ${lastName.trim().isNotBlank()}
+            Email: ${android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()}
+            DOB: ${dob.isNotBlank()}
+            Gender: ${gender.isNotBlank()}
+            ID Number: ${idNumber.trim().isNotBlank()}
+            Password Strong: ${password.length >= 6}
+            Password Match: ${password == confirmPassword}
+            Loading: ${authState is AuthState.Loading}
             Form Valid: $isFormValid
         """.trimIndent())
     }
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {
+            Log.d(TAG, "Authenticated state detected. Triggering onSuccess for Customer.")
             onSuccess()
         }
     }
@@ -173,7 +175,7 @@ fun RegistrationDetailsScreen(
             HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(24.dp))
 
-            // FIRST NAME + LAST NAME (ROW LAYOUT IMPROVEMENT)
+            // FIRST NAME + LAST NAME
             Row(modifier = Modifier.fillMaxWidth()) {
                 Box(modifier = Modifier.weight(1f)) {
                     DetailField(label = "First Name", value = firstName, onValueChange = { viewModel.firstName.value = it })
@@ -190,7 +192,7 @@ fun RegistrationDetailsScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
 
-            // GENDER SELECTION (NEW MANDATORY FEATURE)
+            // GENDER SELECTION
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = "GENDER",
@@ -206,13 +208,16 @@ fun RegistrationDetailsScreen(
                 ) {
                     val options = listOf("Male", "Female")
                     options.forEach { option ->
-                        val isSelected = (gender == option.take(1)) // Store "M" or "F"
+                        val isSelected = (gender == option.take(1))
                         
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(56.dp)
-                                .clickable { viewModel.gender.value = option.take(1) },
+                                .clickable { 
+                                    viewModel.gender.value = option.take(1)
+                                    Log.d(TAG, "Gender selected: ${option.take(1)}")
+                                },
                             shape = RoundedCornerShape(16.dp),
                             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                             border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray)
@@ -231,7 +236,7 @@ fun RegistrationDetailsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // DATE OF BIRTH (MODERN DATE PICKER IMPROVEMENT)
+            // DATE OF BIRTH
             Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
                     value = dob,
@@ -248,11 +253,13 @@ fun RegistrationDetailsScreen(
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
-                // Overlay for click detection
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .clickable { showDatePicker = true }
+                        .clickable { 
+                            Log.d(TAG, "DOB box clicked")
+                            showDatePicker = true 
+                        }
                 )
             }
             
@@ -304,9 +311,12 @@ fun RegistrationDetailsScreen(
 
             Button(
                 onClick = { 
+                    Log.d(TAG, "PRIMARY BUTTON CLICKED. isProvider: $isProvider")
                     if (isProvider) {
+                        Log.d(TAG, "Provider flow: navigating to Trades.")
                         onSuccess() 
                     } else {
+                        Log.d(TAG, "Customer flow: calling register().")
                         viewModel.register() 
                     }
                 },

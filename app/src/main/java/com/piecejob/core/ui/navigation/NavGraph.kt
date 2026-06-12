@@ -1,5 +1,6 @@
 package com.piecejob.core.ui.navigation
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -11,11 +12,9 @@ import com.piecejob.core.ui.auth.*
 import com.piecejob.core.ui.onboarding.*
 import com.piecejob.customer.ui.wallet.CustomerWalletScreen
 import com.piecejob.customer.ui.tracking.CustomerTrackingScreen
-import com.piecejob.customer.ui.tracking.JobTrackingViewModel
 import com.piecejob.customer.ui.corporate.CorporateProfileScreen
 import com.piecejob.customer.ui.support.ReportIssueScreen
 import com.piecejob.provider.ui.dashboard.ProviderDashboardScreen
-import com.piecejob.provider.ui.dashboard.ProviderDashboardViewModel
 import com.piecejob.provider.ui.wallet.ProviderWalletScreen
 import com.piecejob.provider.ui.verification.ProviderVerificationScreen
 import com.piecejob.provider.ui.onboarding.DocumentUploadScreen
@@ -31,7 +30,7 @@ fun NavGraph(
     navController: NavHostController,
     authViewModel: AuthViewModel
 ) {
-    // Specification: Skip onboarding for authenticated users
+    val TAG = "NavGraphTrace"
     val startDest = if (authViewModel.isLoggedIn()) Screen.Dashboard.route else Screen.Welcome.route
 
     NavHost(
@@ -52,6 +51,7 @@ fun NavGraph(
                     navController.navigate(Screen.Otp.passPhoneNumber(phoneNumber))
                 },
                 onLoginSuccess = {
+                    Log.d(TAG, "Login Success. Navigating to Dashboard.")
                     navController.navigate(Screen.Dashboard.route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
@@ -87,6 +87,7 @@ fun NavGraph(
                 phoneNumber = phoneNumber,
                 viewModel = authViewModel,
                 onOtpVerified = {
+                    Log.d(TAG, "OTP Verified. Navigating to Personal Details.")
                     navController.navigate(Screen.RegistrationDetails.route)
                 },
                 onBack = { navController.popBackStack() }
@@ -97,10 +98,12 @@ fun NavGraph(
             RegistrationDetailsScreen(
                 viewModel = authViewModel,
                 onSuccess = {
+                    Log.d(TAG, "RegistrationDetails onSuccess triggered. Flavor: ${BuildConfig.FLAVOR}")
                     if (BuildConfig.FLAVOR == "provider") {
+                        Log.d(TAG, "Navigating to ProviderServiceSelection")
                         navController.navigate(Screen.ProviderServiceSelection.route)
                     } else {
-                        // Customer flows directly to dashboard after registration
+                        Log.d(TAG, "Navigating to Customer Dashboard")
                         navController.navigate(Screen.Dashboard.route) {
                             popUpTo(Screen.Welcome.route) { inclusive = true }
                         }
@@ -114,6 +117,7 @@ fun NavGraph(
             ProviderTradeSelectionScreen(
                 authViewModel = authViewModel,
                 onSuccess = {
+                    Log.d(TAG, "Trade Selection Success. Navigating to Provider Dashboard.")
                     navController.navigate(Screen.Dashboard.route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
