@@ -9,12 +9,13 @@ import javax.inject.Singleton
 @Singleton
 class VerificationRepository @Inject constructor(
     private val api: PieceJobApi
-) {
+) : BaseRepository() {
+
     suspend fun getVerificationStatus(): ApiResponse<VerificationStatusDto> {
         return try {
             api.getVerificationStatus()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -22,7 +23,7 @@ class VerificationRepository @Inject constructor(
         return try {
             api.getVerificationRequirements()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -30,7 +31,7 @@ class VerificationRepository @Inject constructor(
         return try {
             api.submitVerification(request)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -38,7 +39,7 @@ class VerificationRepository @Inject constructor(
         return try {
             api.uploadDocuments(idDocument, license)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 }

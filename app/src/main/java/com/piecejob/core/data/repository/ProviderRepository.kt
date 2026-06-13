@@ -8,16 +8,21 @@ import javax.inject.Singleton
 @Singleton
 class ProviderRepository @Inject constructor(
     private val api: PieceJobApi
-) {
+) : BaseRepository() {
+
     suspend fun getDashboardStats(): ApiResponse<ProviderStatsDto> {
-        return api.getProviderDashboardStats()
+        return try {
+            api.getProviderDashboardStats()
+        } catch (e: Exception) {
+            handleError(e)
+        }
     }
 
     suspend fun getProfile(): ApiResponse<UserDto> {
         return try {
             api.getProfile()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -25,7 +30,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.getProviderProfile()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -33,7 +38,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.updateProviderProfile(request)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -41,7 +46,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.getMyServices()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -49,7 +54,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.updateMyServices(UpdateServicesRequest(codes))
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -57,7 +62,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.getMyEquipment()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -65,7 +70,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.addEquipment(equipment)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -73,7 +78,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.getMyCertifications()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -81,7 +86,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.addCertification(cert)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -89,7 +94,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.getMyExperience()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -97,7 +102,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.addExperience(exp)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -105,7 +110,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.getBankDetails()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -113,7 +118,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.updateBankDetails(request)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -121,7 +126,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.updateWalletSettings(settings)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -129,7 +134,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.updateNotificationSettings(settings)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -137,7 +142,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.updateProviderStatus(com.piecejob.core.data.remote.dto.ProviderStatusRequest(isOnline))
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -145,7 +150,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.sendHeartbeat(HeartbeatRequest(listOf(lng, lat), hardwareId, isMock))
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -153,15 +158,15 @@ class ProviderRepository @Inject constructor(
         return try {
             api.getVerificationStatus()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
-    suspend fun getVerificationRequirements(): ApiResponse<VerificationRequirementsDto> {
+    suspend fun getVerificationRequirements(): ApiResponse<com.piecejob.core.data.remote.dto.VerificationRequirementsDto> {
         return try {
             api.getVerificationRequirements()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 
@@ -169,7 +174,7 @@ class ProviderRepository @Inject constructor(
         return try {
             api.submitVerification(request)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, null)
+            handleError(e)
         }
     }
 }

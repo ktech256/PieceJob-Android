@@ -3,18 +3,18 @@ package com.piecejob.core.data.repository
 import com.piecejob.core.data.remote.*
 import com.piecejob.core.data.remote.dto.*
 import com.piecejob.core.data.remote.ApiResponse
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import retrofit2.HttpException
 import javax.inject.Inject
 
 class AuthRepository @Inject constructor(
     private val api: PieceJobApi
-) {
+) : BaseRepository() {
+
     suspend fun requestOtp(phoneNumber: String): ApiResponse<Unit> {
         return try {
             api.requestOtp(OtpRequest(phoneNumber))
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -22,7 +22,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.verifyOtp(OtpVerifyRequest(phoneNumber, otp))
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -30,7 +30,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.login(LoginRequest(identifier, password, deviceId))
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -38,7 +38,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.changePassword(ChangePasswordRequest(current, next))
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -46,7 +46,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.logoutAllDevices()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -54,7 +54,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.getAuthorizedDevices()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -62,7 +62,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.removeDevice(id)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -70,7 +70,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.requestPhoneChange(PhoneChangeRequest(phone))
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -78,7 +78,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.verifyPhoneChange(PhoneVerifyRequest(phone, otp))
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -86,7 +86,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.requestEmailChange(EmailChangeRequest(email))
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -94,7 +94,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.verifyEmailChange(EmailVerifyRequest(email, code))
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -102,7 +102,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.registerCustomer(request)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -110,7 +110,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.registerProvider(request)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -118,7 +118,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.getCountries()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -126,7 +126,7 @@ class AuthRepository @Inject constructor(
         return try {
             api.getLanguages()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 }

@@ -6,12 +6,12 @@ import javax.inject.Inject
 
 class JobRepository @Inject constructor(
     private val api: PieceJobApi
-) {
+) : BaseRepository() {
     suspend fun createJob(request: CreateJobRequest): ApiResponse<JobDto> {
         return try {
             api.createJob(request)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -19,7 +19,7 @@ class JobRepository @Inject constructor(
         return try {
             api.getJobById(jobId)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -27,7 +27,7 @@ class JobRepository @Inject constructor(
         return try {
             api.cancelJob(jobId)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -35,7 +35,7 @@ class JobRepository @Inject constructor(
         return try {
             api.getAvailableJobs()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -43,7 +43,7 @@ class JobRepository @Inject constructor(
         return try {
             api.acceptJob(jobId)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -51,7 +51,7 @@ class JobRepository @Inject constructor(
         return try {
             api.markArrival(jobId)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -59,7 +59,7 @@ class JobRepository @Inject constructor(
         return try {
             api.startJob(jobId)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -67,7 +67,7 @@ class JobRepository @Inject constructor(
         return try {
             api.completeJob(jobId)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -75,7 +75,7 @@ class JobRepository @Inject constructor(
         return try {
             api.resolveZone(lat, lng)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -83,7 +83,7 @@ class JobRepository @Inject constructor(
         return try {
             api.getPriceEstimate(serviceCode, zoneId, isEmergency)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -91,7 +91,7 @@ class JobRepository @Inject constructor(
         return try {
             api.getMyDisputes()
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 
@@ -99,7 +99,7 @@ class JobRepository @Inject constructor(
         return try {
             api.raiseDispute(request)
         } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+            handleError(e)
         }
     }
 }
