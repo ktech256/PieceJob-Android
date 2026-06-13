@@ -36,6 +36,8 @@ fun ProviderDashboardScreen(
     
     val context = LocalContext.current
 
+    // PULL TO REFRESH logic could be added here
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -64,11 +66,11 @@ fun ProviderDashboardScreen(
                         Column {
                             Text("Welcome, Provider", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black)
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("GOLD TIER", color = Color(0xFFFFA000), fontSize = 10.sp, fontWeight = FontWeight.Black)
+                                Text(stats?.tier ?: "BRONZE", color = Color(0xFFFFA000), fontSize = 10.sp, fontWeight = FontWeight.Black)
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text("•", color = Color.Gray)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("VERIFIED", color = Color(0xFF4CAF50), fontSize = 10.sp, fontWeight = FontWeight.Black)
+                                Text(stats?.verificationStatus ?: "PENDING", color = if(stats?.verificationStatus == "APPROVED") Color(0xFF4CAF50) else Color.Gray, fontSize = 10.sp, fontWeight = FontWeight.Black)
                             }
                         }
                     }
@@ -136,12 +138,12 @@ fun ProviderDashboardScreen(
         ) {
             if (isShadowBanned) item { ShadowBanNotice() }
 
-            // CARD 1: TODAY'S EARNINGS
+            // CARD 1: EARNINGS SUMMARY
             item {
                 StatsCard(
                     title = "Earnings Summary",
                     mainValue = "$${String.format("%.2f", stats?.earningsToday ?: 0.0)}",
-                    subValues = listOf("Week: $0.00", "Month: $0.00"),
+                    subValues = listOf("Week: $${String.format("%.2f", stats?.earningsWeekly ?: 0.0)}", "Month: $${String.format("%.2f", stats?.earningsMonthly ?: 0.0)}"),
                     icon = Icons.Default.Payments,
                     color = Color(0xFF2E7D32)
                 )
@@ -149,19 +151,23 @@ fun ProviderDashboardScreen(
 
             // CARD 2: PERFORMANCE OVERVIEW
             item {
-                PerformanceCard()
+                PerformanceCard(
+                    rating = stats?.rating ?: 0.0,
+                    acceptance = stats?.acceptanceRate ?: 0.0,
+                    arrival = stats?.arrivalRate ?: 0.0
+                )
             }
 
             // CARD 3: TIER PROGRESSION
             item {
-                TierCard()
+                TierCard(tier = stats?.tier ?: "BRONZE", progress = stats?.tierProgress?.toFloat() ?: 0f)
             }
 
             // CARD 4: JOB ACTIVITY
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    MiniActivityCard("Active Jobs", "1", Icons.Default.Sync, Modifier.weight(1f))
-                    MiniActivityCard("Completed", "12", Icons.Default.CheckCircle, Modifier.weight(1f))
+                    MiniActivityCard("Active Jobs", (stats?.jobsActive ?: 0).toString(), Icons.Default.Sync, Modifier.weight(1f))
+                    MiniActivityCard("Completed", (stats?.jobsCompleted ?: 0).toString(), Icons.Default.CheckCircle, Modifier.weight(1f))
                 }
             }
 
@@ -169,7 +175,7 @@ fun ProviderDashboardScreen(
             item {
                 StatsCard(
                     title = "Wallet Balance",
-                    mainValue = "$0.00",
+                    mainValue = "$0.00", // Will wire wallet later
                     subValues = listOf("Escrow: $0.00", "Pending: $0.00"),
                     icon = Icons.Default.AccountBalanceWallet,
                     color = Color(0xFF1976D2)
@@ -241,7 +247,7 @@ fun StatsCard(title: String, mainValue: String, subValues: List<String>, icon: I
 }
 
 @Composable
-fun PerformanceCard() {
+fun PerformanceCard(rating: Double, acceptance: Double, arrival: Double) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -251,9 +257,9 @@ fun PerformanceCard() {
             Text("Performance Overview", fontSize = 14.sp, fontWeight = FontWeight.Black)
             Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                MetricItem("Rating", "4.9", Icons.Default.Star, Color(0xFFFFA000))
-                MetricItem("Acceptance", "98%", Icons.Default.ThumbUp, Color(0xFF1976D2))
-                MetricItem("Arrival", "100%", Icons.Default.Timer, Color(0xFF4CAF50))
+                MetricItem("Rating", String.format("%.1f", rating), Icons.Default.Star, Color(0xFFFFA000))
+                MetricItem("Acceptance", "${(acceptance * 100).toInt()}%", Icons.Default.ThumbUp, Color(0xFF1976D2))
+                MetricItem("Arrival", "${(arrival * 100).toInt()}%", Icons.Default.Timer, Color(0xFF4CAF50))
             }
         }
     }
@@ -269,7 +275,7 @@ fun MetricItem(label: String, value: String, icon: ImageVector, color: Color) {
 }
 
 @Composable
-fun TierCard() {
+fun TierCard(tier: String, progress: Float) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -277,12 +283,12 @@ fun TierCard() {
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Tier: GOLD", color = Color(0xFFFFA000), fontWeight = FontWeight.Black)
-                Text("78% to Platinum", color = Color.White, fontSize = 10.sp)
+                Text("Tier: $tier", color = Color(0xFFFFA000), fontWeight = FontWeight.Black)
+                Text("${(progress * 100).toInt()}% to Next Tier", color = Color.White, fontSize = 10.sp)
             }
             Spacer(modifier = Modifier.height(12.dp))
             LinearProgressIndicator(
-                progress = 0.78f,
+                progress = progress,
                 modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
                 color = Color(0xFFFFA000),
                 trackColor = Color.White.copy(alpha = 0.1f)

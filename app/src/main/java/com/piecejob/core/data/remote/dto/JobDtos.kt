@@ -14,8 +14,15 @@ data class JobDto(
     val customerId: String,
     val providerId: String?,
     val bookingFee: Double,
+    val serviceFee: Double?,
     val currency: String,
+    val location: LocationDto?,
     val createdAt: String
+)
+
+data class LocationDto(
+    val coordinates: List<Double>,
+    val address: String?
 )
 
 data class ProviderStatusRequest(

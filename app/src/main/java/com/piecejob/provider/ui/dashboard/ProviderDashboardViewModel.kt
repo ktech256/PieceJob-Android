@@ -1,6 +1,7 @@
 package com.piecejob.provider.ui.dashboard
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.repository.ProviderRepository
@@ -41,9 +42,38 @@ class ProviderDashboardViewModel @Inject constructor(
     val activeJob: StateFlow<JobDto?> = _activeJob
 
     init {
-        loadStats()
-        loadProfile()
+        loadDashboard()
         observeSocket()
+    }
+
+    private fun loadDashboard() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                // Parallel fetching
+                launch { loadStats() }
+                launch { loadProfile() }
+                launch { loadAvailableJobs() }
+                launch { fetchActiveJob() }
+            } catch (e: Exception) {
+                Log.e("ProviderDashboard", "Error loading dashboard", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    private suspend fun fetchActiveJob() {
+        // Find if there's any job currently in progress for this provider
+        val response = jobRepository.getAvailableJobs() // We reuse this or have a specific 'active' endpoint
+        if (response.success) {
+            val active = response.data?.find { it.status in listOf("ACCEPTED", "ARRIVED", "STARTED") }
+            _activeJob.value = active
+            if (active != null) {
+                LocationService.activeJobId = active.id
+                socketManager.joinJob(active.id)
+            }
+        }
     }
 
     private fun observeSocket() {
@@ -52,17 +82,36 @@ class ProviderDashboardViewModel @Inject constructor(
                 _activeJob.value = currentJob.copy(status = status)
             }
         }
+        
+        socketManager.onNewBroadcast { job: JobDto ->
+            val current = _availableJobs.value.toMutableList()
+            if (current.none { it.id == job.id }) {
+                current.add(0, job)
+                _availableJobs.value = current
+            }
+        }
     }
 
-    private fun loadProfile() {
-        viewModelScope.launch {
-            try {
-                val response = repository.getProfile()
-                if (response.success) {
-                    _isShadowBanned.value = response.data?.isShadowBanned ?: false
-                }
-            } catch (e: Exception) {}
-        }
+    fun refresh() {
+        loadDashboard()
+    }
+
+    private suspend fun loadProfile() {
+        try {
+            val response = repository.getProfile()
+            if (response.success) {
+                _isShadowBanned.value = response.data?.isShadowBanned ?: false
+            }
+        } catch (e: Exception) {}
+    }
+
+    private suspend fun loadStats() {
+        try {
+            val response = repository.getDashboardStats()
+            if (response.success) {
+                _stats.value = response.data
+            }
+        } catch (e: Exception) {}
     }
 
     fun toggleOnlineStatus(context: Context) {
@@ -89,21 +138,6 @@ class ProviderDashboardViewModel @Inject constructor(
             val response = jobRepository.getAvailableJobs()
             if (response.success) {
                 _availableJobs.value = response.data ?: emptyList()
-            }
-        }
-    }
-
-    fun loadStats() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val response = repository.getDashboardStats()
-                if (response.success) {
-                    _stats.value = response.data
-                }
-            } catch (e: Exception) {
-            } finally {
-                _isLoading.value = false
             }
         }
     }

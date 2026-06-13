@@ -18,19 +18,29 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.piecejob.core.ui.navigation.Screen
+import com.piecejob.provider.ui.dashboard.ProviderDashboardViewModel
 
 @Composable
 fun ProviderProfileScreen(
+    viewModel: ProviderDashboardViewModel = hiltViewModel(),
     onLogout: () -> Unit,
     onNavigate: (Screen) -> Unit
 ) {
+    val stats by viewModel.stats.collectAsState()
+    
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
         item {
-            ProfileHeader()
+            ProfileHeader(
+                name = "Provider Name",
+                tier = stats?.tier ?: "BRONZE",
+                rating = stats?.rating ?: 0.0,
+                isVerified = stats?.verificationStatus == "APPROVED"
+            )
         }
 
         val menuItems = listOf(
@@ -81,7 +91,7 @@ fun ProviderProfileScreen(
 }
 
 @Composable
-fun ProfileHeader() {
+fun ProfileHeader(name: String, tier: String, rating: Double, isVerified: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -101,27 +111,27 @@ fun ProfileHeader() {
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        Text(text = "Provider Name", fontSize = 20.sp, fontWeight = FontWeight.Black)
+        Text(text = name, fontSize = 20.sp, fontWeight = FontWeight.Black)
         
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "GOLD TIER", color = Color(0xFFFFA000), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text(text = "$tier TIER", color = Color(0xFFFFA000), fontWeight = FontWeight.Bold, fontSize = 12.sp)
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = "•", color = Color.Gray)
             Spacer(modifier = Modifier.width(8.dp))
             Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(14.dp))
-            Text(text = "4.9", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text(text = String.format("%.1f", rating), fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
         
         Surface(
-            color = Color(0xFFE8F5E9),
+            color = if (isVerified) Color(0xFFE8F5E9) else Color(0xFFF5F5F5),
             shape = CircleShape
         ) {
             Text(
-                text = "VERIFIED", 
+                text = if (isVerified) "VERIFIED" else "PENDING", 
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                color = Color(0xFF2E7D32),
+                color = if (isVerified) Color(0xFF2E7D32) else Color.Gray,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Black
             )

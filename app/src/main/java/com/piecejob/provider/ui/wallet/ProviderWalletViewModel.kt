@@ -2,8 +2,8 @@ package com.piecejob.provider.ui.wallet
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.piecejob.core.data.repository.WalletRepository
 import com.piecejob.core.data.remote.dto.*
-import com.piecejob.core.data.repository.ProviderWalletRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,14 +12,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProviderWalletViewModel @Inject constructor(
-    private val repository: ProviderWalletRepository
+    private val walletRepository: WalletRepository
 ) : ViewModel() {
 
     private val _wallet = MutableStateFlow<WalletDto?>(null)
     val wallet: StateFlow<WalletDto?> = _wallet
 
-    private val _history = MutableStateFlow<List<WalletTransactionDto>>(emptyList())
-    val history: StateFlow<List<WalletTransactionDto>> = _history
+    private val _transactions = MutableStateFlow<List<WalletTransactionDto>>(emptyList())
+    val transactions: StateFlow<List<WalletTransactionDto>> = _transactions
 
     private val _statements = MutableStateFlow<List<StatementDto>>(emptyList())
     val statements: StateFlow<List<StatementDto>> = _statements
@@ -37,26 +37,27 @@ class ProviderWalletViewModel @Inject constructor(
     fun loadWalletData() {
         viewModelScope.launch {
             _isLoading.value = true
-            val balanceResponse = repository.getWalletBalance()
-            if (balanceResponse.success) {
-                _wallet.value = balanceResponse.data
+            try {
+                // Parallel load
+                launch {
+                    val balanceRes = walletRepository.getWalletBalance()
+                    if (balanceRes.success) _wallet.value = balanceRes.data
+                }
+                launch {
+                    val historyRes = walletRepository.getWalletHistory()
+                    if (historyRes.success) _transactions.value = historyRes.data ?: emptyList()
+                }
+                launch {
+                    val invRes = walletRepository.getInvoices()
+                    if (invRes.success) _invoices.value = invRes.data ?: emptyList()
+                }
+            } catch (e: Exception) {
+            } finally {
+                _isLoading.value = false
             }
-            
-            val historyResponse = repository.getWalletHistory()
-            if (historyResponse.success) {
-                _history.value = historyResponse.data ?: emptyList()
-            }
-
-            val statementResponse = repository.getStatements()
-            if (statementResponse.success) {
-                _statements.value = statementResponse.data ?: emptyList()
-            }
-
-            val invoiceResponse = repository.getInvoices()
-            if (invoiceResponse.success) {
-                _invoices.value = invoiceResponse.data ?: emptyList()
-            }
-            _isLoading.value = false
         }
     }
+
+    // Support legacy UI access
+    val history: StateFlow<List<WalletTransactionDto>> get() = transactions
 }

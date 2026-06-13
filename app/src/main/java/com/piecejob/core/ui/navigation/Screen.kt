@@ -21,6 +21,10 @@ sealed class Screen(val route: String) {
     object CustomerMessages : Screen("customer_messages")
     object CustomerAccountTab : Screen("customer_account_tab")
 
+    // Customer Legacy/Sub Screens (referenced in NavGraph)
+    object CustomerWallet : Screen("customer_wallet")
+    object CustomerAnalytics : Screen("customer_analytics")
+    
     // Customer Account Sub-Screens
     object CustomerPersonalDetails : Screen("customer_personal_details")
     object CustomerAddresses : Screen("customer_addresses")
@@ -73,6 +77,11 @@ sealed class Screen(val route: String) {
     object ProviderAnalytics : Screen("provider_analytics")
     object DocumentUpload : Screen("document_upload")
     
+    // Provider Legacy/Other
+    object ProviderDashboard : Screen("provider_dashboard")
+    object ProviderWallet : Screen("provider_wallet")
+    object ProviderVerification : Screen("provider_verification")
+
     // Common
     object Referral : Screen("referral")
     object Chat : Screen("chat/{jobId}/{otherUserId}") {
