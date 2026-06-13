@@ -66,6 +66,38 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    suspend fun requestPhoneChange(phone: String): ApiResponse<Unit> {
+        return try {
+            api.requestPhoneChange(PhoneChangeRequest(phone))
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun verifyPhoneChange(phone: String, otp: String): ApiResponse<Unit> {
+        return try {
+            api.verifyPhoneChange(PhoneVerifyRequest(phone, otp))
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun requestEmailChange(email: String): ApiResponse<Unit> {
+        return try {
+            api.requestEmailChange(EmailChangeRequest(email))
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun verifyEmailChange(email: String, code: String): ApiResponse<Unit> {
+        return try {
+            api.verifyEmailChange(EmailVerifyRequest(email, code))
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
     suspend fun registerCustomer(request: CustomerRegisterRequest): ApiResponse<Unit> {
         return try {
             api.registerCustomer(request)

@@ -25,10 +25,76 @@ fun ProviderSecurityScreen(
 ) {
     val isLoading by viewModel.isLoading.collectAsState()
     val message by viewModel.message.collectAsState()
+    val otpSent by viewModel.otpSent.collectAsState()
+    val emailCodeSent by viewModel.emailCodeSent.collectAsState()
 
     var showPassDialog by remember { mutableStateOf(false) }
     var currentPass by remember { mutableStateOf("") }
     var newPass by remember { mutableStateOf("") }
+
+    var showPhoneDialog by remember { mutableStateOf(false) }
+    var newPhone by remember { mutableStateOf("") }
+    var phoneOtp by remember { mutableStateOf("") }
+
+    var showEmailDialog by remember { mutableStateOf(false) }
+    var newEmail by remember { mutableStateOf("") }
+    var emailCode by remember { mutableStateOf("") }
+
+    if (showPhoneDialog) {
+        AlertDialog(
+            onDismissRequest = { showPhoneDialog = false },
+            title = { Text(if (!otpSent) "Change Phone Number" else "Verify New Number") },
+            text = {
+                Column {
+                    if (!otpSent) {
+                        OutlinedTextField(value = newPhone, onValueChange = { newPhone = it }, label = { Text("New Phone Number") })
+                    } else {
+                        OutlinedTextField(value = phoneOtp, onValueChange = { phoneOtp = it }, label = { Text("OTP sent to $newPhone") })
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (!otpSent) {
+                        viewModel.requestPhoneChange(newPhone)
+                    } else {
+                        viewModel.verifyPhoneChange(newPhone, phoneOtp)
+                        showPhoneDialog = false
+                        newPhone = ""
+                        phoneOtp = ""
+                    }
+                }) { Text(if (!otpSent) "Send OTP" else "Verify") }
+            }
+        )
+    }
+
+    if (showEmailDialog) {
+        AlertDialog(
+            onDismissRequest = { showEmailDialog = false },
+            title = { Text(if (!emailCodeSent) "Change Email Address" else "Verify New Email") },
+            text = {
+                Column {
+                    if (!emailCodeSent) {
+                        OutlinedTextField(value = newEmail, onValueChange = { newEmail = it }, label = { Text("New Email") })
+                    } else {
+                        OutlinedTextField(value = emailCode, onValueChange = { emailCode = it }, label = { Text("Code sent to $newEmail") })
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (!emailCodeSent) {
+                        viewModel.requestEmailChange(newEmail)
+                    } else {
+                        viewModel.verifyEmailChange(newEmail, emailCode)
+                        showEmailDialog = false
+                        newEmail = ""
+                        emailCode = ""
+                    }
+                }) { Text(if (!emailCodeSent) "Send Code" else "Verify") }
+            }
+        )
+    }
 
     if (showPassDialog) {
         AlertDialog(
@@ -80,6 +146,18 @@ fun ProviderSecurityScreen(
                     showPassDialog = true
                 }
                 
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                SecurityActionRow("Change Phone Number", "Update your primary contact number") {
+                    showPhoneDialog = true
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                SecurityActionRow("Change Email Address", "Update your account email") {
+                    showEmailDialog = true
+                }
+
                 HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                 
                 SecurityActionRow("Logout All Devices", "End all active sessions on other devices") {

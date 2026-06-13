@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.repository.ProviderRepository
 import com.piecejob.core.data.repository.ServiceRepository
 import com.piecejob.core.data.remote.ServiceDto
+import com.piecejob.core.data.remote.dto.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,8 +24,17 @@ class ProviderServicesViewModel @Inject constructor(
     private val _allServices = MutableStateFlow<List<ServiceDto>>(emptyList())
     val allServices: StateFlow<List<ServiceDto>> = _allServices
 
+    private val _tempServiceCodes = MutableStateFlow<Set<String>>(emptySet())
+    val tempServiceCodes: StateFlow<Set<String>> = _tempServiceCodes
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _saveSuccess = MutableStateFlow<Boolean?>(null)
+    val saveSuccess: StateFlow<Boolean?> = _saveSuccess
+
+    private val _pendingRequirements = MutableStateFlow<Map<String, ServiceRequirementDto>>(emptyMap())
+    val pendingRequirements: StateFlow<Map<String, ServiceRequirementDto>> = _pendingRequirements
 
     init {
         loadData()
@@ -35,7 +45,10 @@ class ProviderServicesViewModel @Inject constructor(
             _isLoading.value = true
             launch {
                 val res = providerRepository.getMyServices()
-                if (res.success) _myServices.value = res.data ?: emptyList()
+                if (res.success) {
+                    _myServices.value = res.data ?: emptyList()
+                    _tempServiceCodes.value = _myServices.value.map { it.code }.toSet()
+                }
             }
             launch {
                 val res = serviceRepository.getServices()
@@ -46,20 +59,44 @@ class ProviderServicesViewModel @Inject constructor(
     }
 
     fun toggleService(code: String) {
-        val currentCodes = _myServices.value.map { it.code }.toMutableList()
-        if (currentCodes.contains(code)) {
-            currentCodes.remove(code)
+        val current = _tempServiceCodes.value.toMutableSet()
+        if (current.contains(code)) {
+            current.remove(code)
         } else {
-            currentCodes.add(code)
+            current.add(code)
         }
+        _tempServiceCodes.value = current
+    }
 
+    fun hasUnsavedChanges(): Boolean {
+        val original = _myServices.value.map { it.code }.toSet()
+        return original != _tempServiceCodes.value
+    }
+
+    fun discardChanges() {
+        _tempServiceCodes.value = _myServices.value.map { it.code }.toSet()
+    }
+
+    fun saveChanges() {
         viewModelScope.launch {
-            val res = providerRepository.updateMyServices(currentCodes)
-            if (res.success) {
-                // Refresh list
+            _isLoading.value = true
+            val res = providerRepository.updateMyServices(_tempServiceCodes.value.toList())
+            if (res.success && res.data != null) {
+                _pendingRequirements.value = res.data.requirements ?: emptyMap()
                 val resMy = providerRepository.getMyServices()
-                if (resMy.success) _myServices.value = resMy.data ?: emptyList()
+                if (resMy.success) {
+                    _myServices.value = resMy.data ?: emptyList()
+                    _tempServiceCodes.value = _myServices.value.map { it.code }.toSet()
+                }
+                _saveSuccess.value = true
+            } else {
+                _saveSuccess.value = false
             }
+            _isLoading.value = false
         }
+    }
+
+    fun resetSaveState() {
+        _saveSuccess.value = null
     }
 }

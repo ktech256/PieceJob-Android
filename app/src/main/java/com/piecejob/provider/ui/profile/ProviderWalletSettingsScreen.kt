@@ -104,7 +104,17 @@ fun ProviderWalletSettingsScreen(
                 Text(
                     text = "Threshold Info: Payouts are triggered once you reach the minimum threshold of R200.00.",
                     fontSize = 12.sp,
-                    color = Color.Gray
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = "Wallet Notifications: You will receive an alert for every credit, debit, and payout request. These cannot be disabled for financial security.",
+                    fontSize = 11.sp,
+                    color = Color.Gray,
+                    lineHeight = 16.sp
                 )
             }
         }

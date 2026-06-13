@@ -30,6 +30,18 @@ interface PieceJobApi {
     @POST("auth/logout-all")
     suspend fun logoutAllDevices(): ApiResponse<Unit>
 
+    @POST("auth/request-phone-change")
+    suspend fun requestPhoneChange(@Body request: PhoneChangeRequest): ApiResponse<Unit>
+
+    @POST("auth/verify-phone-change")
+    suspend fun verifyPhoneChange(@Body request: PhoneVerifyRequest): ApiResponse<Unit>
+
+    @POST("auth/request-email-change")
+    suspend fun requestEmailChange(@Body request: EmailChangeRequest): ApiResponse<Unit>
+
+    @POST("auth/verify-email-change")
+    suspend fun verifyEmailChange(@Body request: EmailVerifyRequest): ApiResponse<Unit>
+
     @GET("auth/devices")
     suspend fun getAuthorizedDevices(): ApiResponse<List<DeviceDto>>
 

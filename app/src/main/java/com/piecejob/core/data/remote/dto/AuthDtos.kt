@@ -10,6 +10,11 @@ data class RefreshResponse(val token: String)
 
 data class ChangePasswordRequest(val currentPassword: String, val newPassword: String)
 
+data class PhoneChangeRequest(val newPhoneNumber: String)
+data class PhoneVerifyRequest(val newPhoneNumber: String, val otp: String)
+data class EmailChangeRequest(val newEmail: String)
+data class EmailVerifyRequest(val newEmail: String, val code: String)
+
 data class FcmTokenRequest(val fcmToken: String)
 
 data class DeviceDto(
@@ -52,7 +57,17 @@ data class UserDto(
     val dob: String? = null,
     val idOrPassportNumber: String? = null,
     val province: String? = null,
-    val emergencyContact: EmergencyContactDto? = null
+    val emergencyContact: EmergencyContactDto? = null,
+    val pendingAddress: PendingAddressDto? = null
+)
+
+data class PendingAddressDto(
+    val province: String,
+    val city: String,
+    val address: String,
+    val proofOfResidenceUrl: String,
+    val submittedAt: String,
+    val status: String
 )
 
 data class WalletDto(

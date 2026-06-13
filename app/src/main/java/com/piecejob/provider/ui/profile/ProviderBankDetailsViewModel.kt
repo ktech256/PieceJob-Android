@@ -18,6 +18,9 @@ class ProviderBankDetailsViewModel @Inject constructor(
     private val _bankDetails = MutableStateFlow<BankDetailsDto?>(null)
     val bankDetails: StateFlow<BankDetailsDto?> = _bankDetails
 
+    private val _profile = MutableStateFlow<ProviderFullDto?>(null)
+    val profile: StateFlow<ProviderFullDto?> = _profile
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -25,15 +28,19 @@ class ProviderBankDetailsViewModel @Inject constructor(
     val isUpdateSuccess: StateFlow<Boolean> = _isUpdateSuccess
 
     init {
-        loadBankDetails()
+        loadData()
     }
 
-    fun loadBankDetails() {
+    fun loadData() {
         viewModelScope.launch {
             _isLoading.value = true
-            val response = repository.getBankDetails()
-            if (response.success) {
-                _bankDetails.value = response.data
+            launch {
+                val response = repository.getBankDetails()
+                if (response.success) _bankDetails.value = response.data
+            }
+            launch {
+                val response = repository.getProviderFullProfile()
+                if (response.success) _profile.value = response.data
             }
             _isLoading.value = false
         }

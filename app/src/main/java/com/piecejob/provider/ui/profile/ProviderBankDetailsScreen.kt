@@ -23,6 +23,7 @@ fun ProviderBankDetailsScreen(
     onBack: () -> Unit
 ) {
     val bankDetails by viewModel.bankDetails.collectAsState()
+    val profile by viewModel.profile.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     
     var bankName by remember { mutableStateOf("") }
@@ -34,10 +35,10 @@ fun ProviderBankDetailsScreen(
 
     LaunchedEffect(bankDetails) {
         bankDetails?.let {
-            bankName = it.bankName
-            accountHolder = it.accountHolder
-            accountNumber = it.accountNumberEncrypted
-            branchCode = it.branchCode
+            bankName = it.bankName ?: ""
+            accountHolder = it.accountHolder ?: ""
+            accountNumber = it.accountNumberEncrypted ?: ""
+            branchCode = it.branchCode ?: ""
             accountType = it.accountType ?: "Savings"
             confirmationUrl = it.bankConfirmationUrl
         }
@@ -63,7 +64,7 @@ fun ProviderBankDetailsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Text(
-                text = "The bank account holder must match the registered PieceJob provider. Third-party bank accounts are not permitted.",
+                text = "Account Holder Name must match PieceJob profile owner. Third-party bank accounts are not permitted.",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.error,
                 fontWeight = FontWeight.Bold,
@@ -71,19 +72,20 @@ fun ProviderBankDetailsScreen(
             )
 
             OutlinedTextField(
-                value = bankName,
-                onValueChange = { bankName = it },
-                label = { Text("Bank Name") },
+                value = accountHolder,
+                onValueChange = { accountHolder = it },
+                label = { Text("Account Holder Name") },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                placeholder = { Text("${profile?.userId?.firstName ?: ""} ${profile?.userId?.lastName ?: ""}") }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = accountHolder,
-                onValueChange = { accountHolder = it },
-                label = { Text("Account Holder Name") },
+                value = bankName,
+                onValueChange = { bankName = it },
+                label = { Text("Bank Name") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp)
             )

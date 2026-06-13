@@ -23,55 +23,108 @@ fun ProviderServicesScreen(
     viewModel: ProviderServicesViewModel = hiltViewModel(),
     onBack: () -> Unit
 ) {
-    val myServices by viewModel.myServices.collectAsState()
+    val tempCodes by viewModel.tempServiceCodes.collectAsState()
     val allServices by viewModel.allServices.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val saveSuccess by viewModel.saveSuccess.collectAsState()
+    val requirements by viewModel.pendingRequirements.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    var showUnsavedDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(saveSuccess) {
+        if (saveSuccess == true && requirements.isNotEmpty()) {
+            snackbarHostState.showSnackbar("Some services require additional documents for activation.")
+        }
+    }
+
+    val handleBack = {
+        if (viewModel.hasUnsavedChanges()) {
+            showUnsavedDialog = true
+        } else {
+            onBack()
+        }
+    }
+
+    if (showUnsavedDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnsavedDialog = false },
+            title = { Text("Unsaved Changes") },
+            text = { Text("You have unsaved service changes. Would you like to save before leaving?") },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.saveChanges()
+                    showUnsavedDialog = false
+                    onBack()
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = {
+                        viewModel.discardChanges()
+                        showUnsavedDialog = false
+                        onBack()
+                    }) { Text("Discard") }
+                    TextButton(onClick = {
+                        showUnsavedDialog = false
+                    }) { Text("Cancel") }
+                }
+            }
+        )
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("My Services", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = handleBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (viewModel.hasUnsavedChanges()) {
+                        TextButton(onClick = { viewModel.saveChanges() }) {
+                            Text("SAVE", fontWeight = FontWeight.Black)
+                        }
                     }
                 }
             )
         }
     ) { padding ->
-        if (isLoading && myServices.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        if (isLoading && allServices.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
+            val categories = listOf("HDS", "CSS", "HMS", "OPS", "LLS", "TSS")
+            val groupedServices = allServices.groupBy { it.category }
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                item {
-                    Text("ACTIVE SERVICES", fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
-                }
-
-                if (myServices.isEmpty()) {
-                    item {
-                        Text("No services active. Add some below.", color = androidx.compose.ui.graphics.Color.Gray, fontSize = 14.sp)
+                categories.forEach { cat ->
+                    val services = groupedServices[cat] ?: emptyList()
+                    if (services.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = cat,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                            )
+                        }
+                        items(services) { service ->
+                            val isActive = tempCodes.contains(service.code)
+                            ServiceItemRow(service, isActive) {
+                                viewModel.toggleService(service.code)
+                            }
+                        }
                     }
-                } else {
-                    items(myServices) { service ->
-                        ServiceItemRow(service, true) { viewModel.toggleService(service.code) }
-                    }
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text("AVAILABLE TO ADD", fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
-                }
-
-                val availableToAdd = allServices.filter { all -> myServices.none { my -> my.code == all.code } }
-
-                items(availableToAdd) { service ->
-                    ServiceItemRow(service, false) { viewModel.toggleService(service.code) }
                 }
             }
         }
