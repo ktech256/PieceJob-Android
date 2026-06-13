@@ -11,42 +11,37 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ProviderBankDetailsViewModel @Inject constructor(
+class ProviderWalletSettingsViewModel @Inject constructor(
     private val repository: ProviderRepository
 ) : ViewModel() {
 
-    private val _bankDetails = MutableStateFlow<BankDetailsDto?>(null)
-    val bankDetails: StateFlow<BankDetailsDto?> = _bankDetails
+    private val _payoutPrefs = MutableStateFlow<PayoutPreferencesDto?>(null)
+    val payoutPrefs: StateFlow<PayoutPreferencesDto?> = _payoutPrefs
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _isUpdateSuccess = MutableStateFlow(false)
-    val isUpdateSuccess: StateFlow<Boolean> = _isUpdateSuccess
-
     init {
-        loadBankDetails()
+        loadSettings()
     }
 
-    fun loadBankDetails() {
+    fun loadSettings() {
         viewModelScope.launch {
             _isLoading.value = true
-            val response = repository.getBankDetails()
+            val response = repository.getProviderFullProfile()
             if (response.success) {
-                _bankDetails.value = response.data
+                _payoutPrefs.value = response.data?.payoutPreferences
             }
             _isLoading.value = false
         }
     }
 
-    fun updateBankDetails(bank: String, holder: String, number: String, branch: String, type: String, confirmationUrl: String?) {
+    fun updateSettings(frequency: String, method: String) {
         viewModelScope.launch {
             _isLoading.value = true
-            val request = UpdateBankDetailsRequest(bank, holder, number, branch, type, confirmationUrl)
-            val response = repository.updateBankDetails(request)
+            val response = repository.updateWalletSettings(PayoutPreferencesDto(frequency, method))
             if (response.success) {
-                _bankDetails.value = response.data
-                _isUpdateSuccess.value = true
+                _payoutPrefs.value = response.data
             }
             _isLoading.value = false
         }

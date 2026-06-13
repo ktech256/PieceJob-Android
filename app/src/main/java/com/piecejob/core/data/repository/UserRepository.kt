@@ -26,4 +26,12 @@ class UserRepository @Inject constructor(
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
     }
+
+    suspend fun getReferralStats(): ApiResponse<ReferralStatsDto> {
+        return try {
+            api.getReferralStats()
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
 }

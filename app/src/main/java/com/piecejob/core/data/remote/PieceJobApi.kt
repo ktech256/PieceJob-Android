@@ -24,11 +24,26 @@ interface PieceJobApi {
     @POST("auth/refresh-token")
     suspend fun refreshToken(@Body request: RefreshRequest): ApiResponse<RefreshResponse>
 
+    @POST("auth/change-password")
+    suspend fun changePassword(@Body request: ChangePasswordRequest): ApiResponse<Unit>
+
+    @POST("auth/logout-all")
+    suspend fun logoutAllDevices(): ApiResponse<Unit>
+
+    @GET("auth/devices")
+    suspend fun getAuthorizedDevices(): ApiResponse<List<DeviceDto>>
+
+    @DELETE("auth/devices/{id}")
+    suspend fun removeDevice(@Path("id") deviceId: String): ApiResponse<Unit>
+
     @GET("users/profile")
     suspend fun getProfile(): ApiResponse<UserDto>
 
     @PATCH("users/fcm-token")
     suspend fun updateFcmToken(@Body request: FcmTokenRequest): ApiResponse<Unit>
+
+    @GET("users/referrals")
+    suspend fun getReferralStats(): ApiResponse<ReferralStatsDto>
 
     @GET("wallets/balance")
     suspend fun getWalletBalance(): ApiResponse<WalletDto>
@@ -58,7 +73,7 @@ interface PieceJobApi {
     suspend fun getMyServices(): ApiResponse<List<ServiceDto>>
 
     @POST("providers/services")
-    suspend fun updateMyServices(@Body request: UpdateServicesRequest): ApiResponse<List<String>>
+    suspend fun updateMyServices(@Body request: UpdateServicesRequest): ApiResponse<UpdateServicesResponse>
 
     @GET("providers/equipment")
     suspend fun getMyEquipment(): ApiResponse<List<EquipmentDto>>
@@ -66,11 +81,29 @@ interface PieceJobApi {
     @POST("providers/equipment")
     suspend fun addEquipment(@Body request: EquipmentDto): ApiResponse<List<EquipmentDto>>
 
+    @GET("providers/certifications")
+    suspend fun getMyCertifications(): ApiResponse<List<CertificationDto>>
+
+    @POST("providers/certifications")
+    suspend fun addCertification(@Body request: CertificationDto): ApiResponse<List<CertificationDto>>
+
+    @GET("providers/experience")
+    suspend fun getMyExperience(): ApiResponse<List<ExperienceDto>>
+
+    @POST("providers/experience")
+    suspend fun addExperience(@Body request: ExperienceDto): ApiResponse<List<ExperienceDto>>
+
     @GET("providers/bank")
     suspend fun getBankDetails(): ApiResponse<BankDetailsDto>
 
     @POST("providers/bank")
     suspend fun updateBankDetails(@Body request: UpdateBankDetailsRequest): ApiResponse<BankDetailsDto>
+
+    @PATCH("providers/wallet-settings")
+    suspend fun updateWalletSettings(@Body request: PayoutPreferencesDto): ApiResponse<PayoutPreferencesDto>
+
+    @PATCH("providers/notifications")
+    suspend fun updateNotificationSettings(@Body request: NotificationSettingsDto): ApiResponse<NotificationSettingsDto>
 
     @GET("providers/dashboard-stats")
     suspend fun getProviderDashboardStats(): ApiResponse<ProviderStatsDto>
@@ -177,6 +210,12 @@ interface PieceJobApi {
 
     @GET("support/tickets")
     suspend fun getMyTickets(): ApiResponse<List<TicketDto>>
+
+    @GET("disputes/me")
+    suspend fun getMyDisputes(): ApiResponse<List<DisputeDto>>
+
+    @POST("disputes")
+    suspend fun raiseDispute(@Body request: RaiseDisputeRequest): ApiResponse<Unit>
 
     // =========================
     // ✅ CHAT ROUTES

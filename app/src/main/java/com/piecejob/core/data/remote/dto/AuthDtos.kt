@@ -8,13 +8,38 @@ data class LoginResponse(val token: String, val refreshToken: String, val user: 
 data class RefreshRequest(val refreshToken: String)
 data class RefreshResponse(val token: String)
 
+data class ChangePasswordRequest(val currentPassword: String, val newPassword: String)
+
 data class FcmTokenRequest(val fcmToken: String)
+
+data class DeviceDto(
+    val id: String,
+    val name: String,
+    val platform: String,
+    val lastLogin: String
+)
+
+data class ReferralStatsDto(
+    val referralCode: String,
+    val totalReferrals: Int,
+    val pendingRewards: Double,
+    val paidRewards: Double,
+    val history: List<ReferralUserDto>
+)
+
+data class ReferralUserDto(
+    val firstName: String,
+    val lastName: String,
+    val createdAt: String,
+    val isVerified: Boolean
+)
 
 data class UserDto(
     val id: String,
     val firstName: String,
     val lastName: String,
     val email: String,
+    val phoneNumber: String,
     val role: String,
     val gender: String? = null,
     val countryCode: String,
@@ -23,7 +48,11 @@ data class UserDto(
     val isShadowBanned: Boolean? = false,
     val profilePhoto: String? = null,
     val city: String? = null,
-    val address: String? = null
+    val address: String? = null,
+    val dob: String? = null,
+    val idOrPassportNumber: String? = null,
+    val province: String? = null,
+    val emergencyContact: EmergencyContactDto? = null
 )
 
 data class WalletDto(

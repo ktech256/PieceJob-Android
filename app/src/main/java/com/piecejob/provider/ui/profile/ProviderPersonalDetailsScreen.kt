@@ -14,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,6 +34,12 @@ fun ProviderPersonalDetailsScreen(
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var idNumber by remember { mutableStateOf("") }
+    var gender by remember { mutableStateOf("") }
+    var dob by remember { mutableStateOf("") }
+    var country by remember { mutableStateOf("") }
+    var province by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
 
@@ -43,14 +48,19 @@ fun ProviderPersonalDetailsScreen(
             firstName = it.userId.firstName
             lastName = it.userId.lastName
             email = it.userId.email
-            // city = it.userId.city ?: ""
-            // address = it.userId.address ?: ""
+            phone = it.userId.phoneNumber
+            idNumber = it.idOrPassportNumber
+            gender = it.gender
+            dob = it.dob
+            country = it.countryCode
+            province = it.userId.province ?: ""
+            city = it.userId.city ?: ""
+            address = it.userId.address ?: ""
         }
     }
 
     if (isSuccess) {
         LaunchedEffect(Unit) {
-            // Show toast or snackbar
             viewModel.resetSuccessState()
         }
     }
@@ -99,53 +109,17 @@ fun ProviderPersonalDetailsScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                OutlinedTextField(
-                    value = firstName,
-                    onValueChange = { firstName = it },
-                    label = { Text("First Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = lastName,
-                    onValueChange = { lastName = it },
-                    label = { Text("Last Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email Address") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = city,
-                    onValueChange = { city = it },
-                    label = { Text("City") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = address,
-                    onValueChange = { address = it },
-                    label = { Text("Address") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                )
+                ProfileField("First Name", firstName) { firstName = it }
+                ProfileField("Last Name", lastName) { lastName = it }
+                ProfileField("ID / Passport Number", idNumber, enabled = false) { idNumber = it }
+                ProfileField("Phone Number", phone, enabled = false) { phone = it }
+                ProfileField("Email Address", email) { email = it }
+                ProfileField("Gender", gender) { gender = it }
+                ProfileField("Date of Birth", dob, enabled = false) { dob = it }
+                ProfileField("Country", country, enabled = false) { country = it }
+                ProfileField("Province / State", province) { province = it }
+                ProfileField("City", city) { city = it }
+                ProfileField("Address", address) { address = it }
 
                 Spacer(modifier = Modifier.height(40.dp))
 
@@ -155,10 +129,11 @@ fun ProviderPersonalDetailsScreen(
                             UpdateProfileRequest(
                                 firstName = firstName,
                                 lastName = lastName,
-                                gender = null,
-                                dob = null,
+                                gender = gender,
+                                dob = dob,
                                 profilePhoto = null,
                                 city = city,
+                                province = province,
                                 address = address,
                                 emergencyContact = null
                             )
@@ -176,4 +151,21 @@ fun ProviderPersonalDetailsScreen(
             }
         }
     }
+}
+
+@Composable
+fun ProfileField(label: String, value: String, enabled: Boolean = true, onValueChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+        enabled = enabled,
+        colors = OutlinedTextFieldDefaults.colors(
+            disabledTextColor = Color.Gray,
+            disabledBorderColor = Color.LightGray,
+            disabledLabelColor = Color.Gray
+        )
+    )
 }

@@ -21,7 +21,6 @@ import com.piecejob.provider.ui.verification.*
 import com.piecejob.customer.ui.main.CustomerMainScreen
 import com.piecejob.customer.ui.main.CustomerPlaceholderScreen
 import com.piecejob.provider.ui.onboarding.DocumentUploadScreen
-import com.piecejob.core.ui.referral.ReferralScreen
 import com.piecejob.customer.ui.dashboard.CustomerDashboardScreen
 import com.piecejob.core.ui.chat.ChatScreen
 import com.piecejob.core.ui.analytics.ProviderAnalyticsScreen
@@ -191,34 +190,34 @@ fun NavGraph(
             ProviderEquipmentScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.Certifications.route) {
-            ProviderPlaceholderScreen("Certifications") { navController.popBackStack() }
+            ProviderCertificationsScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.Experience.route) {
-            ProviderPlaceholderScreen("Experience") { navController.popBackStack() }
+            ProviderExperienceScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.WalletSettings.route) {
-            ProviderPlaceholderScreen("Wallet Settings") { navController.popBackStack() }
+            ProviderWalletSettingsScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.BankDetails.route) {
             ProviderBankDetailsScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.Notifications.route) {
-            ProviderPlaceholderScreen("Notifications") { navController.popBackStack() }
+            ProviderNotificationsScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.Security.route) {
-            ProviderPlaceholderScreen("Security") { navController.popBackStack() }
+            ProviderSecurityScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.DeviceManagement.route) {
-            ProviderPlaceholderScreen("Device Management") { navController.popBackStack() }
+            ProviderDeviceScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.ProviderStatements.route) {
             ProviderStatementsScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.Support.route) {
-            ProviderPlaceholderScreen("Support") { navController.popBackStack() }
+            ProviderSupportScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.Disputes.route) {
-            ProviderPlaceholderScreen("Disputes") { navController.popBackStack() }
+            ProviderDisputeScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.TermsPolicies.route) {
             ProviderTermsScreen(onBack = { navController.popBackStack() })
@@ -280,8 +279,8 @@ fun NavGraph(
             )
         }
         
-        composable(route = Screen.Referral.route) { 
-            ReferralScreen(referralCode = "REF123", onInviteClick = {}, themeColor = androidx.compose.ui.graphics.Color.Blue) 
+        composable(route = Screen.Referral.route) {
+            ProviderReferralScreen(onBack = { navController.popBackStack() })
         }
     }
 }

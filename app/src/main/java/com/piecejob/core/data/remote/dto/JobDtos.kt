@@ -25,6 +25,25 @@ data class LocationDto(
     val address: String?
 )
 
+data class DisputeDto(
+    val id: String,
+    val jobId: String,
+    val reason: String,
+    val description: String,
+    val status: String,
+    val evidenceUrls: List<String>,
+    val resolution: String?,
+    val adminNotes: String?,
+    val createdAt: String
+)
+
+data class RaiseDisputeRequest(
+    val jobId: String,
+    val reason: String,
+    val description: String,
+    val evidenceUrls: List<String> = emptyList()
+)
+
 data class ProviderStatusRequest(
     val isOnline: Boolean
 )

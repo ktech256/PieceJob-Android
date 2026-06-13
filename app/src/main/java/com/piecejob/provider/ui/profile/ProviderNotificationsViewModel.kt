@@ -11,42 +11,37 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ProviderBankDetailsViewModel @Inject constructor(
+class ProviderNotificationsViewModel @Inject constructor(
     private val repository: ProviderRepository
 ) : ViewModel() {
 
-    private val _bankDetails = MutableStateFlow<BankDetailsDto?>(null)
-    val bankDetails: StateFlow<BankDetailsDto?> = _bankDetails
+    private val _settings = MutableStateFlow<NotificationSettingsDto?>(null)
+    val settings: StateFlow<NotificationSettingsDto?> = _settings
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _isUpdateSuccess = MutableStateFlow(false)
-    val isUpdateSuccess: StateFlow<Boolean> = _isUpdateSuccess
-
     init {
-        loadBankDetails()
+        loadSettings()
     }
 
-    fun loadBankDetails() {
+    fun loadSettings() {
         viewModelScope.launch {
             _isLoading.value = true
-            val response = repository.getBankDetails()
+            val response = repository.getProviderFullProfile()
             if (response.success) {
-                _bankDetails.value = response.data
+                _settings.value = response.data?.notificationSettings
             }
             _isLoading.value = false
         }
     }
 
-    fun updateBankDetails(bank: String, holder: String, number: String, branch: String, type: String, confirmationUrl: String?) {
+    fun updateSettings(settings: NotificationSettingsDto) {
         viewModelScope.launch {
             _isLoading.value = true
-            val request = UpdateBankDetailsRequest(bank, holder, number, branch, type, confirmationUrl)
-            val response = repository.updateBankDetails(request)
+            val response = repository.updateNotificationSettings(settings)
             if (response.success) {
-                _bankDetails.value = response.data
-                _isUpdateSuccess.value = true
+                _settings.value = response.data
             }
             _isLoading.value = false
         }

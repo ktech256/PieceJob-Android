@@ -34,6 +34,38 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    suspend fun changePassword(current: String, next: String): ApiResponse<Unit> {
+        return try {
+            api.changePassword(ChangePasswordRequest(current, next))
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun logoutAll(): ApiResponse<Unit> {
+        return try {
+            api.logoutAllDevices()
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun getAuthorizedDevices(): ApiResponse<List<DeviceDto>> {
+        return try {
+            api.getAuthorizedDevices()
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun removeDevice(id: String): ApiResponse<Unit> {
+        return try {
+            api.removeDevice(id)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
     suspend fun registerCustomer(request: CustomerRegisterRequest): ApiResponse<Unit> {
         return try {
             api.registerCustomer(request)

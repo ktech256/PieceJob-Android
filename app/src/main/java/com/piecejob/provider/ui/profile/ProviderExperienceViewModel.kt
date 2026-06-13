@@ -11,42 +11,39 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ProviderBankDetailsViewModel @Inject constructor(
+class ProviderExperienceViewModel @Inject constructor(
     private val repository: ProviderRepository
 ) : ViewModel() {
 
-    private val _bankDetails = MutableStateFlow<BankDetailsDto?>(null)
-    val bankDetails: StateFlow<BankDetailsDto?> = _bankDetails
+    private val _experience = MutableStateFlow<List<ExperienceDto>>(emptyList())
+    val experience: StateFlow<List<ExperienceDto>> = _experience
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _isUpdateSuccess = MutableStateFlow(false)
-    val isUpdateSuccess: StateFlow<Boolean> = _isUpdateSuccess
-
     init {
-        loadBankDetails()
+        loadExperience()
     }
 
-    fun loadBankDetails() {
+    fun loadExperience() {
         viewModelScope.launch {
             _isLoading.value = true
-            val response = repository.getBankDetails()
+            val response = repository.getMyExperience()
             if (response.success) {
-                _bankDetails.value = response.data
+                _experience.value = response.data ?: emptyList()
             }
             _isLoading.value = false
         }
     }
 
-    fun updateBankDetails(bank: String, holder: String, number: String, branch: String, type: String, confirmationUrl: String?) {
+    fun addExperience(company: String, role: String, start: String, end: String?, desc: String?) {
         viewModelScope.launch {
             _isLoading.value = true
-            val request = UpdateBankDetailsRequest(bank, holder, number, branch, type, confirmationUrl)
-            val response = repository.updateBankDetails(request)
+            val response = repository.addExperience(
+                ExperienceDto(company, role, start, end, desc)
+            )
             if (response.success) {
-                _bankDetails.value = response.data
-                _isUpdateSuccess.value = true
+                _experience.value = response.data ?: emptyList()
             }
             _isLoading.value = false
         }

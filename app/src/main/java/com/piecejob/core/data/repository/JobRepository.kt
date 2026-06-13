@@ -86,4 +86,20 @@ class JobRepository @Inject constructor(
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
     }
+
+    suspend fun getMyDisputes(): ApiResponse<List<DisputeDto>> {
+        return try {
+            api.getMyDisputes()
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
+    suspend fun raiseDispute(request: RaiseDisputeRequest): ApiResponse<Unit> {
+        return try {
+            api.raiseDispute(request)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
 }

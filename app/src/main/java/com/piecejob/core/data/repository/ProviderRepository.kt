@@ -51,7 +51,7 @@ class ProviderRepository @Inject constructor(
         }
     }
 
-    suspend fun updateMyServices(codes: List<String>): ApiResponse<List<String>> {
+    suspend fun updateMyServices(codes: List<String>): ApiResponse<UpdateServicesResponse> {
         return try {
             api.updateMyServices(UpdateServicesRequest(codes))
         } catch (e: Exception) {
@@ -75,6 +75,38 @@ class ProviderRepository @Inject constructor(
         }
     }
 
+    suspend fun getMyCertifications(): ApiResponse<List<CertificationDto>> {
+        return try {
+            api.getMyCertifications()
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, null)
+        }
+    }
+
+    suspend fun addCertification(cert: CertificationDto): ApiResponse<List<CertificationDto>> {
+        return try {
+            api.addCertification(cert)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, null)
+        }
+    }
+
+    suspend fun getMyExperience(): ApiResponse<List<ExperienceDto>> {
+        return try {
+            api.getMyExperience()
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, null)
+        }
+    }
+
+    suspend fun addExperience(exp: ExperienceDto): ApiResponse<List<ExperienceDto>> {
+        return try {
+            api.addExperience(exp)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, null)
+        }
+    }
+
     suspend fun getBankDetails(): ApiResponse<BankDetailsDto> {
         return try {
             api.getBankDetails()
@@ -86,6 +118,22 @@ class ProviderRepository @Inject constructor(
     suspend fun updateBankDetails(request: UpdateBankDetailsRequest): ApiResponse<BankDetailsDto> {
         return try {
             api.updateBankDetails(request)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, null)
+        }
+    }
+
+    suspend fun updateWalletSettings(settings: PayoutPreferencesDto): ApiResponse<PayoutPreferencesDto> {
+        return try {
+            api.updateWalletSettings(settings)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, null)
+        }
+    }
+
+    suspend fun updateNotificationSettings(settings: NotificationSettingsDto): ApiResponse<NotificationSettingsDto> {
+        return try {
+            api.updateNotificationSettings(settings)
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, null)
         }

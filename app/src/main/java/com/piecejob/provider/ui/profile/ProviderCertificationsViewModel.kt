@@ -11,42 +11,39 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ProviderBankDetailsViewModel @Inject constructor(
+class ProviderCertificationsViewModel @Inject constructor(
     private val repository: ProviderRepository
 ) : ViewModel() {
 
-    private val _bankDetails = MutableStateFlow<BankDetailsDto?>(null)
-    val bankDetails: StateFlow<BankDetailsDto?> = _bankDetails
+    private val _certifications = MutableStateFlow<List<CertificationDto>>(emptyList())
+    val certifications: StateFlow<List<CertificationDto>> = _certifications
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _isUpdateSuccess = MutableStateFlow(false)
-    val isUpdateSuccess: StateFlow<Boolean> = _isUpdateSuccess
-
     init {
-        loadBankDetails()
+        loadCertifications()
     }
 
-    fun loadBankDetails() {
+    fun loadCertifications() {
         viewModelScope.launch {
             _isLoading.value = true
-            val response = repository.getBankDetails()
+            val response = repository.getMyCertifications()
             if (response.success) {
-                _bankDetails.value = response.data
+                _certifications.value = response.data ?: emptyList()
             }
             _isLoading.value = false
         }
     }
 
-    fun updateBankDetails(bank: String, holder: String, number: String, branch: String, type: String, confirmationUrl: String?) {
+    fun addCertification(name: String, institution: String, number: String, expiry: String?) {
         viewModelScope.launch {
             _isLoading.value = true
-            val request = UpdateBankDetailsRequest(bank, holder, number, branch, type, confirmationUrl)
-            val response = repository.updateBankDetails(request)
+            val response = repository.addCertification(
+                CertificationDto(name, institution, number, expiry, "PENDING")
+            )
             if (response.success) {
-                _bankDetails.value = response.data
-                _isUpdateSuccess.value = true
+                _certifications.value = response.data ?: emptyList()
             }
             _isLoading.value = false
         }

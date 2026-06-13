@@ -6,9 +6,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -29,20 +29,24 @@ fun ProviderBankDetailsScreen(
     var accountHolder by remember { mutableStateOf("") }
     var accountNumber by remember { mutableStateOf("") }
     var branchCode by remember { mutableStateOf("") }
+    var accountType by remember { mutableStateOf("Savings") }
+    var confirmationUrl by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(bankDetails) {
         bankDetails?.let {
             bankName = it.bankName
             accountHolder = it.accountHolder
-            accountNumber = "********" // Masked for safety
+            accountNumber = it.accountNumberEncrypted
             branchCode = it.branchCode
+            accountType = it.accountType ?: "Savings"
+            confirmationUrl = it.bankConfirmationUrl
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Bank Details", fontWeight = FontWeight.Bold) },
+                title = { Text("Banking Details", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -59,9 +63,10 @@ fun ProviderBankDetailsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Text(
-                text = "Enter the account where you want to receive your earnings.",
-                fontSize = 14.sp,
-                color = Color.Gray,
+                text = "The bank account holder must match the registered PieceJob provider. Third-party bank accounts are not permitted.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.error,
+                fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
@@ -86,6 +91,16 @@ fun ProviderBankDetailsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
+                value = accountType,
+                onValueChange = { accountType = it },
+                label = { Text("Account Type (e.g. Savings, Cheque)") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
                 value = accountNumber,
                 onValueChange = { if(it.all { c -> c.isDigit() }) accountNumber = it },
                 label = { Text("Account Number") },
@@ -103,11 +118,31 @@ fun ProviderBankDetailsScreen(
                 shape = RoundedCornerShape(16.dp)
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(text = "Bank Confirmation Letter", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { /* File Picker */ },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.UploadFile, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(if (confirmationUrl != null) "Replace Document" else "Upload Confirmation Letter")
+            }
+
+            if (bankDetails?.isVerified == true) {
+                Text("Status: VERIFIED", color = Color(0xFF2E7D32), fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 8.dp))
+            } else if (bankDetails != null) {
+                Text("Status: PENDING REVIEW", color = Color(0xFFEF6C00), fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 8.dp))
+            }
+
+            Spacer(modifier = Modifier.height(48.dp))
 
             Button(
                 onClick = {
-                    viewModel.updateBankDetails(bankName, accountHolder, accountNumber, branchCode)
+                    viewModel.updateBankDetails(bankName, accountHolder, accountNumber, branchCode, accountType, confirmationUrl)
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp)
@@ -115,18 +150,9 @@ fun ProviderBankDetailsScreen(
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("SAVE BANK DETAILS", fontWeight = FontWeight.Black)
+                    Text("SUBMIT FOR VERIFICATION", fontWeight = FontWeight.Black)
                 }
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Text(
-                text = "Security Note: Any changes to bank details will trigger an OTP verification for your protection.",
-                fontSize = 11.sp,
-                color = Color.Gray,
-                lineHeight = 16.sp
-            )
         }
     }
 }
