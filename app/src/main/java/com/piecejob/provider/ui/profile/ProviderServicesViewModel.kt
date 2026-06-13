@@ -7,8 +7,7 @@ import com.piecejob.core.data.repository.ServiceRepository
 import com.piecejob.core.data.remote.ServiceDto
 import com.piecejob.core.data.remote.dto.*
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -41,6 +40,10 @@ class ProviderServicesViewModel @Inject constructor(
     private val _providerLevel = MutableStateFlow("STANDARD")
     val providerLevel: StateFlow<String> = _providerLevel
 
+    val canSave: StateFlow<Boolean> = combine(_initialServiceCodes, _tempServiceCodes, _isLoading) { initial, temp, loading ->
+        initial != temp && !loading
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     init {
         loadData()
     }
@@ -58,9 +61,10 @@ class ProviderServicesViewModel @Inject constructor(
                 // 2. Load Active Services
                 val res = providerRepository.getMyServices()
                 if (res.success && res.data != null) {
+                    val combinedCodes = (res.data.approved.map { it.code } + res.data.pending.map { it.code }).toSet()
+                    _initialServiceCodes.value = combinedCodes
+                    _tempServiceCodes.value = combinedCodes
                     _myServices.value = res.data.approved + res.data.pending
-                    _initialServiceCodes.value = _myServices.value.map { it.code }.toSet()
-                    _tempServiceCodes.value = _initialServiceCodes.value
                 }
 
                 // 3. Load All Services
@@ -81,7 +85,11 @@ class ProviderServicesViewModel @Inject constructor(
         if (current.contains(code)) {
             current.remove(code)
         } else {
-            current.add(code)
+            // Remove hardcoded limit of 3 for testing, but let's stick to 3 if that was requested in logic replication
+            // Registration HAD a limit of 3. If the user selects 3, it should save 3.
+            if (current.size < 3) {
+                current.add(code)
+            }
         }
         _tempServiceCodes.value = current
     }
@@ -97,16 +105,18 @@ class ProviderServicesViewModel @Inject constructor(
     fun saveChanges() {
         viewModelScope.launch {
             _isLoading.value = true
-            val res = providerRepository.updateMyServices(_tempServiceCodes.value.toList())
+            val codesToSave = _tempServiceCodes.value.toList()
+            val res = providerRepository.updateMyServices(codesToSave)
             if (res.success && res.data != null) {
                 _pendingRequirements.value = res.data.requirements ?: emptyMap()
                 
                 // Refresh local data
                 val resMy = providerRepository.getMyServices()
                 if (resMy.success && resMy.data != null) {
+                    val combinedCodes = (resMy.data.approved.map { it.code } + resMy.data.pending.map { it.code }).toSet()
+                    _initialServiceCodes.value = combinedCodes
+                    _tempServiceCodes.value = combinedCodes
                     _myServices.value = resMy.data.approved + resMy.data.pending
-                    _initialServiceCodes.value = _myServices.value.map { it.code }.toSet()
-                    _tempServiceCodes.value = _initialServiceCodes.value
                 }
                 _saveSuccess.value = true
             } else {

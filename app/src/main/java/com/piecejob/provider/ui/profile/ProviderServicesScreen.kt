@@ -34,6 +34,7 @@ fun ProviderServicesScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val saveSuccess by viewModel.saveSuccess.collectAsState()
     val requirements by viewModel.pendingRequirements.collectAsState()
+    val canSave by viewModel.canSave.collectAsState()
 
     var showUnsavedDialog by remember { mutableStateOf(false) }
     var showRequirementsDialog by remember { mutableStateOf(false) }
@@ -144,7 +145,7 @@ fun ProviderServicesScreen(
                         .padding(24.dp)
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    enabled = viewModel.hasUnsavedChanges() && !isLoading
+                    enabled = canSave
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
