@@ -27,12 +27,22 @@ fun LoginScreen(
     onBack: () -> Unit
 ) {
     val prefilledPhone by viewModel.loginIdentifier.collectAsState()
-    var identifier by remember { mutableStateOf(prefilledPhone) }
+    val selectedCountry by viewModel.selectedCountry.collectAsState()
+    
+    var identifier by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val state by viewModel.authState.collectAsState()
 
     LaunchedEffect(prefilledPhone) {
-        identifier = prefilledPhone
+        if (prefilledPhone.isNotBlank()) {
+            // Remove country code for display if it matches
+            val code = selectedCountry?.phoneCode ?: "+27"
+            identifier = if (prefilledPhone.startsWith(code)) {
+                "0" + prefilledPhone.removePrefix(code)
+            } else {
+                prefilledPhone
+            }
+        }
     }
 
     Scaffold(
@@ -64,15 +74,34 @@ fun LoginScreen(
             
             Spacer(modifier = Modifier.height(48.dp))
 
-            OutlinedTextField(
-                value = identifier,
-                onValueChange = { identifier = it },
-                label = { Text("Phone Number") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                singleLine = true
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    modifier = Modifier.height(60.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFFF5F5F5)
+                ) {
+                    Box(modifier = Modifier.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = selectedCountry?.phoneCode ?: "+27", 
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                OutlinedTextField(
+                    value = identifier,
+                    onValueChange = { identifier = it },
+                    label = { Text("Phone Number") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    singleLine = true,
+                    placeholder = { Text("071 234 5678") }
+                )
+            }
             
             Spacer(modifier = Modifier.height(20.dp))
             
@@ -89,7 +118,14 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(32.dp))
             
             Button(
-                onClick = { viewModel.login(identifier, password) },
+                onClick = { 
+                    val fullIdentifier = if (identifier.all { it.isDigit() || it == ' ' }) {
+                        "${selectedCountry?.phoneCode ?: "+27"}${identifier.trim().removePrefix("0")}"
+                    } else {
+                        identifier.trim()
+                    }
+                    viewModel.login(fullIdentifier, password) 
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(58.dp),
