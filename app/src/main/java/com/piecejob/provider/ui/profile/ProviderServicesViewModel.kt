@@ -34,6 +34,9 @@ class ProviderServicesViewModel @Inject constructor(
     private val _saveSuccess = MutableStateFlow<Boolean?>(null)
     val saveSuccess: StateFlow<Boolean?> = _saveSuccess
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
+
     private val _pendingRequirements = MutableStateFlow<Map<String, ServiceRequirementDto>>(emptyMap())
     val pendingRequirements: StateFlow<Map<String, ServiceRequirementDto>> = _pendingRequirements
 
@@ -120,6 +123,7 @@ class ProviderServicesViewModel @Inject constructor(
                 }
                 _saveSuccess.value = true
             } else {
+                _error.value = res.message ?: "Update failed"
                 _saveSuccess.value = false
             }
             _isLoading.value = false
@@ -128,6 +132,7 @@ class ProviderServicesViewModel @Inject constructor(
 
     fun resetSaveState() {
         _saveSuccess.value = null
+        _error.value = null
         _pendingRequirements.value = emptyMap()
     }
 }

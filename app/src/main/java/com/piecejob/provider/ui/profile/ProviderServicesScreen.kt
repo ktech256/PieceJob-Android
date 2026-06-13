@@ -34,10 +34,19 @@ fun ProviderServicesScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val saveSuccess by viewModel.saveSuccess.collectAsState()
     val requirements by viewModel.pendingRequirements.collectAsState()
+    val error by viewModel.error.collectAsState()
     val canSave by viewModel.canSave.collectAsState()
 
+    val snackbarHostState = remember { SnackbarHostState() }
     var showUnsavedDialog by remember { mutableStateOf(false) }
     var showRequirementsDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(saveSuccess, error) {
+        if (saveSuccess == false && error != null) {
+            snackbarHostState.showSnackbar(error!!)
+            viewModel.resetSaveState()
+        }
+    }
 
     LaunchedEffect(requirements) {
         if (requirements.isNotEmpty()) {
