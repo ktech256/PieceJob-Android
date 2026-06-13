@@ -23,6 +23,7 @@ fun ProviderVerificationScreen(
     onUploadClick: (String) -> Unit
 ) {
     val status by viewModel.status.collectAsState()
+    val requirements by viewModel.requirements.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -100,11 +101,11 @@ fun ProviderVerificationScreen(
         
         Spacer(modifier = Modifier.height(16.dp))
 
-        // List of items based on level
-        val requirements = listOf("GOVERNMENT_ID", "SELFIE", "CRIMINAL_CHECK")
+        // List of items based on dynamic requirements
+        val activeRequirements = requirements?.requiredDocs ?: listOf("GOVERNMENT_ID", "SELFIE")
         
         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(requirements) { req ->
+            items(activeRequirements) { req ->
                 val doc = status?.latestRequest?.documents?.find { it.type == req }
                 RequirementRow(
                     label = req.replace('_', ' '),

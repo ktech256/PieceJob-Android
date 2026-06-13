@@ -78,7 +78,9 @@ sealed class Screen(val route: String) {
     object Support : Screen("support")
     object TermsPolicies : Screen("terms_policies")
     object ProviderAnalytics : Screen("provider_analytics")
-    object DocumentUpload : Screen("document_upload")
+    object DocumentUpload : Screen("document_upload/{docType}") {
+        fun passDocType(docType: String) = "document_upload/$docType"
+    }
     
     // Provider Legacy/Other
     object ProviderDashboard : Screen("provider_dashboard")

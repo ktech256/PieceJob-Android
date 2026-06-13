@@ -1,5 +1,6 @@
 package com.piecejob.provider.ui.profile
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -51,6 +52,7 @@ fun ProviderPersonalDetailsScreen(
                            (address != (profile?.userId?.address ?: ""))
 
     LaunchedEffect(profile) {
+        Log.d("PersonalDetails", "UI Received Profile: $profile")
         profile?.let {
             firstName = it.userId.firstName
             lastName = it.userId.lastName
@@ -58,7 +60,7 @@ fun ProviderPersonalDetailsScreen(
             phone = it.userId.phoneNumber
             idNumber = it.idOrPassportNumber
             gender = it.gender
-            dob = it.dob
+            dob = it.dob.take(10) // Format YYYY-MM-DD from ISO string
             country = it.countryCode
             province = it.userId.province ?: ""
             city = it.userId.city ?: ""

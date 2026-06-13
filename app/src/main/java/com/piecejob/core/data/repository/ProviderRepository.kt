@@ -1,13 +1,7 @@
 package com.piecejob.core.data.repository
 
-import com.piecejob.core.data.remote.PieceJobApi
-import com.piecejob.core.data.remote.ApiResponse
-import com.piecejob.core.data.remote.ServiceDto
+import com.piecejob.core.data.remote.*
 import com.piecejob.core.data.remote.dto.*
-import com.piecejob.core.data.remote.HeartbeatRequest
-import com.piecejob.core.data.remote.ProviderStatusRequest
-import com.piecejob.core.data.remote.VerificationStatusDto
-import com.piecejob.core.data.remote.SubmitVerificationRequest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -43,7 +37,7 @@ class ProviderRepository @Inject constructor(
         }
     }
 
-    suspend fun getMyServices(): ApiResponse<List<ServiceDto>> {
+    suspend fun getMyServices(): ApiResponse<MyServicesResponse> {
         return try {
             api.getMyServices()
         } catch (e: Exception) {
@@ -141,7 +135,7 @@ class ProviderRepository @Inject constructor(
 
     suspend fun updateStatus(isOnline: Boolean): ApiResponse<Unit> {
         return try {
-            api.updateProviderStatus(ProviderStatusRequest(isOnline))
+            api.updateProviderStatus(com.piecejob.core.data.remote.dto.ProviderStatusRequest(isOnline))
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, null)
         }
@@ -158,6 +152,14 @@ class ProviderRepository @Inject constructor(
     suspend fun getVerificationStatus(): ApiResponse<VerificationStatusDto> {
         return try {
             api.getVerificationStatus()
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, null)
+        }
+    }
+
+    suspend fun getVerificationRequirements(): ApiResponse<VerificationRequirementsDto> {
+        return try {
+            api.getVerificationRequirements()
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, null)
         }

@@ -18,6 +18,14 @@ class VerificationRepository @Inject constructor(
         }
     }
 
+    suspend fun getVerificationRequirements(): ApiResponse<com.piecejob.core.data.remote.dto.VerificationRequirementsDto> {
+        return try {
+            api.getVerificationRequirements()
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
     suspend fun submitVerification(request: SubmitVerificationRequest): ApiResponse<Unit> {
         return try {
             api.submitVerification(request)

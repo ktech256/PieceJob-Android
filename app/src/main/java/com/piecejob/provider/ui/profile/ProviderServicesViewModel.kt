@@ -45,8 +45,8 @@ class ProviderServicesViewModel @Inject constructor(
             _isLoading.value = true
             launch {
                 val res = providerRepository.getMyServices()
-                if (res.success) {
-                    _myServices.value = res.data ?: emptyList()
+                if (res.success && res.data != null) {
+                    _myServices.value = res.data.approved + res.data.pending
                     _tempServiceCodes.value = _myServices.value.map { it.code }.toSet()
                 }
             }
@@ -83,9 +83,12 @@ class ProviderServicesViewModel @Inject constructor(
             val res = providerRepository.updateMyServices(_tempServiceCodes.value.toList())
             if (res.success && res.data != null) {
                 _pendingRequirements.value = res.data.requirements ?: emptyMap()
+                
+                // Fetch fresh services lists from backend
                 val resMy = providerRepository.getMyServices()
-                if (resMy.success) {
-                    _myServices.value = resMy.data ?: emptyList()
+                if (resMy.success && resMy.data != null) {
+                    // Combine approved and pending for the 'active' list in UI
+                    _myServices.value = resMy.data.approved + resMy.data.pending
                     _tempServiceCodes.value = _myServices.value.map { it.code }.toSet()
                 }
                 _saveSuccess.value = true

@@ -184,7 +184,9 @@ fun NavGraph(
             ProviderServicesScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.VerificationDocs.route) {
-            ProviderVerificationScreen(onUploadClick = { navController.navigate(Screen.DocumentUpload.route) })
+            ProviderVerificationScreen(onUploadClick = { docType -> 
+                navController.navigate(Screen.DocumentUpload.passDocType(docType)) 
+            })
         }
         composable(route = Screen.EquipmentTools.route) {
             ProviderEquipmentScreen(onBack = { navController.popBackStack() })
@@ -257,10 +259,17 @@ fun NavGraph(
             ProviderAnalyticsScreen()
         }
         
-        composable(route = Screen.DocumentUpload.route) { 
-            DocumentUploadScreen(onUploadComplete = {
-                navController.popBackStack()
-            })
+        composable(
+            route = Screen.DocumentUpload.route,
+            arguments = listOf(navArgument("docType") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val docType = backStackEntry.arguments?.getString("docType") ?: ""
+            DocumentUploadScreen(
+                docType = docType,
+                onUploadComplete = {
+                    navController.popBackStack()
+                }
+            )
         }
 
         composable(

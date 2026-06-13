@@ -1,5 +1,6 @@
 package com.piecejob.provider.ui.profile
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.repository.ProviderRepository
@@ -34,10 +35,13 @@ class ProviderPersonalDetailsViewModel @Inject constructor(
     fun loadProfile() {
         viewModelScope.launch {
             _isLoading.value = true
+            Log.d("PersonalDetails", "Fetching full profile...")
             val response = repository.getProviderFullProfile()
-            if (response.success) {
+            if (response.success && response.data != null) {
+                Log.d("PersonalDetails", "Profile data: ${response.data}")
                 _profile.value = response.data
             } else {
+                Log.e("PersonalDetails", "Failed to load profile: ${response.message}")
                 _error.value = response.message ?: "Failed to load profile"
             }
             _isLoading.value = false

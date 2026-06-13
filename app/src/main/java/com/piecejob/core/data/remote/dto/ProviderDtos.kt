@@ -1,5 +1,7 @@
 package com.piecejob.core.data.remote.dto
 
+import com.piecejob.core.data.remote.ServiceDto
+
 data class ProviderStatsDto(
     val earningsToday: Double,
     val earningsWeekly: Double,
@@ -78,6 +80,11 @@ data class UpdateServicesResponse(
     val requirements: Map<String, ServiceRequirementDto>? = null
 )
 
+data class MyServicesResponse(
+    val approved: List<ServiceDto>,
+    val pending: List<ServiceDto>
+)
+
 data class ServiceRequirementDto(val level: String, val docs: List<String>)
 
 data class UpdateBankDetailsRequest(
@@ -87,4 +94,12 @@ data class UpdateBankDetailsRequest(
     val branchCode: String,
     val accountType: String,
     val bankConfirmationUrl: String?
+)
+
+data class ProviderStatusRequest(val isOnline: Boolean)
+
+data class VerificationRequirementsDto(
+    val currentLevel: String,
+    val nextLevel: String,
+    val requiredDocs: List<String>
 )

@@ -43,7 +43,3 @@ data class RaiseDisputeRequest(
     val description: String,
     val evidenceUrls: List<String> = emptyList()
 )
-
-data class ProviderStatusRequest(
-    val isOnline: Boolean
-)

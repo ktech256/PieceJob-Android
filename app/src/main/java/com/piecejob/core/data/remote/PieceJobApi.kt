@@ -82,7 +82,7 @@ interface PieceJobApi {
     suspend fun updateProviderProfile(@Body request: UpdateProfileRequest): ApiResponse<ProviderFullDto>
 
     @GET("providers/services")
-    suspend fun getMyServices(): ApiResponse<List<ServiceDto>>
+    suspend fun getMyServices(): ApiResponse<MyServicesResponse>
 
     @POST("providers/services")
     suspend fun updateMyServices(@Body request: UpdateServicesRequest): ApiResponse<UpdateServicesResponse>
@@ -157,13 +157,16 @@ interface PieceJobApi {
     suspend fun uploadSosPhoto(@Path("id") id: String, @Body request: PhotoUploadRequest): ApiResponse<Unit>
 
     @PATCH("providers/me/status")
-    suspend fun updateProviderStatus(@Body request: ProviderStatusRequest): ApiResponse<Unit>
+    suspend fun updateProviderStatus(@Body request: com.piecejob.core.data.remote.dto.ProviderStatusRequest): ApiResponse<Unit>
 
     @POST("providers/heartbeat")
     suspend fun sendHeartbeat(@Body request: HeartbeatRequest): ApiResponse<Unit>
 
     @GET("providers/verification/status")
     suspend fun getVerificationStatus(): ApiResponse<VerificationStatusDto>
+
+    @GET("providers/verification/requirements")
+    suspend fun getVerificationRequirements(): ApiResponse<com.piecejob.core.data.remote.dto.VerificationRequirementsDto>
 
     @POST("providers/verification/submit")
     suspend fun submitVerification(@Body request: SubmitVerificationRequest): ApiResponse<Unit>
@@ -350,10 +353,6 @@ data class HeartbeatRequest(
     val coordinates: List<Double>,
     val hardwareId: String? = null,
     val isMockLocation: Boolean = false
-)
-
-data class ProviderStatusRequest(
-    val isOnline: Boolean
 )
 
 data class AudioUploadRequest(

@@ -3,6 +3,7 @@ package com.piecejob.provider.ui.profile
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -11,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -143,7 +145,15 @@ fun ServiceItemRow(service: ServiceDto, isActive: Boolean, onClick: () -> Unit) 
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = service.name, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = service.name, fontWeight = FontWeight.Bold)
+                    if (isActive && service.verificationLevel != "STANDARD") {
+                         Spacer(modifier = Modifier.width(8.dp))
+                         Surface(color = Color(0xFFFFF3E0), shape = RoundedCornerShape(4.dp)) {
+                             Text("Vetting Required", modifier = Modifier.padding(horizontal = 4.dp), fontSize = 8.sp, color = Color(0xFFE65100), fontWeight = FontWeight.Bold)
+                         }
+                    }
+                }
                 Text(text = service.category, fontSize = 12.sp, color = androidx.compose.ui.graphics.Color.Gray)
             }
             IconButton(onClick = onClick) {

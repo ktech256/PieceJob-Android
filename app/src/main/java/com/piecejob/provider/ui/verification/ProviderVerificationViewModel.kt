@@ -19,6 +19,9 @@ class ProviderVerificationViewModel @Inject constructor(
     private val _status = MutableStateFlow<VerificationStatusDto?>(null)
     val status: StateFlow<VerificationStatusDto?> = _status
 
+    private val _requirements = MutableStateFlow<VerificationRequirementsDto?>(null)
+    val requirements: StateFlow<VerificationRequirementsDto?> = _requirements
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -26,17 +29,19 @@ class ProviderVerificationViewModel @Inject constructor(
     val error: StateFlow<String?> = _error
 
     init {
-        loadVerificationStatus()
+        loadData()
     }
 
-    fun loadVerificationStatus() {
+    fun loadData() {
         viewModelScope.launch {
             _isLoading.value = true
-            val response = repository.getVerificationStatus()
-            if (response.success) {
-                _status.value = response.data
-            } else {
-                _error.value = response.error?.message ?: "Failed to load status"
+            launch {
+                val response = repository.getVerificationStatus()
+                if (response.success) _status.value = response.data
+            }
+            launch {
+                val response = repository.getVerificationRequirements()
+                if (response.success) _requirements.value = response.data
             }
             _isLoading.value = false
         }
@@ -47,7 +52,7 @@ class ProviderVerificationViewModel @Inject constructor(
             _isLoading.value = true
             val response = repository.submitVerification(SubmitVerificationRequest(type, documents))
             if (response.success) {
-                loadVerificationStatus()
+                loadData()
             } else {
                 _error.value = response.error?.message ?: "Failed to submit"
             }
