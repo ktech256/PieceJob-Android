@@ -176,6 +176,9 @@ fun NavGraph(
         composable(route = Screen.BookingFlow.route) { CustomerPlaceholderScreen("Booking Flow") { navController.popBackStack() } }
 
         // Sub-screens for Provider
+        composable(route = Screen.ProviderPersonalDetails.route) {
+            ProviderPlaceholderScreen("Personal Details") { navController.popBackStack() }
+        }
         composable(route = Screen.MyServices.route) {
             ProviderPlaceholderScreen("My Services") { navController.popBackStack() }
         }
@@ -191,6 +194,9 @@ fun NavGraph(
         composable(route = Screen.Experience.route) {
             ProviderPlaceholderScreen("Experience") { navController.popBackStack() }
         }
+        composable(route = Screen.WalletSettings.route) {
+            ProviderPlaceholderScreen("Wallet Settings") { navController.popBackStack() }
+        }
         composable(route = Screen.BankDetails.route) {
             ProviderPlaceholderScreen("Bank Details") { navController.popBackStack() }
         }
@@ -202,6 +208,9 @@ fun NavGraph(
         }
         composable(route = Screen.DeviceManagement.route) {
             ProviderPlaceholderScreen("Device Management") { navController.popBackStack() }
+        }
+        composable(route = Screen.ProviderStatements.route) {
+            ProviderPlaceholderScreen("Statements") { navController.popBackStack() }
         }
         composable(route = Screen.Support.route) {
             ProviderPlaceholderScreen("Support") { navController.popBackStack() }

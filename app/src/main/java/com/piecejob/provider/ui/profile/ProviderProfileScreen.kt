@@ -44,19 +44,19 @@ fun ProviderProfileScreen(
         }
 
         val menuItems = listOf(
-            ProfileMenuItem("Personal Details", Icons.Default.Person, Screen.RegistrationDetails),
+            ProfileMenuItem("Personal Details", Icons.Default.Person, Screen.ProviderPersonalDetails),
             ProfileMenuItem("My Services", Icons.Default.Handyman, Screen.MyServices),
             ProfileMenuItem("Verification Documents", Icons.Default.VerifiedUser, Screen.VerificationDocs),
             ProfileMenuItem("Equipment & Tools", Icons.Default.Construction, Screen.EquipmentTools),
             ProfileMenuItem("Certifications", Icons.Default.HistoryEdu, Screen.Certifications),
             ProfileMenuItem("Experience", Icons.Default.Timeline, Screen.Experience),
-            ProfileMenuItem("Wallet Settings", Icons.Default.Wallet, Screen.ProviderWalletTab),
+            ProfileMenuItem("Wallet Settings", Icons.Default.Wallet, Screen.WalletSettings),
             ProfileMenuItem("Bank Details", Icons.Default.AccountBalance, Screen.BankDetails),
             ProfileMenuItem("Notifications", Icons.Default.Notifications, Screen.Notifications),
             ProfileMenuItem("Security", Icons.Default.Security, Screen.Security),
             ProfileMenuItem("Device Management", Icons.Default.Smartphone, Screen.DeviceManagement),
             ProfileMenuItem("Referral Program", Icons.Default.CardGiftcard, Screen.Referral),
-            ProfileMenuItem("Statements", Icons.Default.ReceiptLong, Screen.ProviderWalletTab),
+            ProfileMenuItem("Statements", Icons.Default.ReceiptLong, Screen.ProviderStatements),
             ProfileMenuItem("Disputes", Icons.Default.Gavel, Screen.Disputes),
             ProfileMenuItem("Support", Icons.Default.SupportAgent, Screen.Support),
             ProfileMenuItem("Terms & Policies", Icons.Default.Policy, Screen.TermsPolicies)
