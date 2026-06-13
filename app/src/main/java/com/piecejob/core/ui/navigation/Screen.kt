@@ -14,9 +14,36 @@ sealed class Screen(val route: String) {
     }
     object Dashboard : Screen("dashboard")
     
-    // Customer Screens
-    object CustomerWallet : Screen("customer_wallet")
-    object CustomerAnalytics : Screen("customer_analytics")
+    // Customer Tab Screens
+    object CustomerHome : Screen("customer_home")
+    object CustomerJobs : Screen("customer_jobs")
+    object CustomerWalletTab : Screen("customer_wallet_tab")
+    object CustomerMessages : Screen("customer_messages")
+    object CustomerAccountTab : Screen("customer_account_tab")
+
+    // Customer Account Sub-Screens
+    object CustomerPersonalDetails : Screen("customer_personal_details")
+    object CustomerAddresses : Screen("customer_addresses")
+    object CustomerSavedLocations : Screen("customer_saved_locations")
+    object CustomerPaymentMethods : Screen("customer_payment_methods")
+    object CustomerWalletHub : Screen("customer_wallet_hub")
+    object CustomerInvoices : Screen("customer_invoices")
+    object CustomerStatements : Screen("customer_statements")
+    object CustomerNotifications : Screen("customer_notifications")
+    object CustomerReferrals : Screen("customer_referrals")
+    object CustomerRewards : Screen("customer_rewards")
+    object CustomerPlus : Screen("customer_plus")
+    object CustomerSosSettings : Screen("customer_sos_settings")
+    object CustomerEmergencyContacts : Screen("customer_emergency_contacts")
+    object CustomerPrivacy : Screen("customer_privacy")
+    object CustomerSecurity : Screen("customer_security")
+    object CustomerLanguage : Screen("customer_language")
+    object CustomerCountry : Screen("customer_country")
+    object CustomerSupport : Screen("customer_support")
+    object CustomerAbout : Screen("customer_about")
+
+    // Booking Flow
+    object BookingFlow : Screen("booking_flow")
     object CustomerTracking : Screen("customer_tracking/{jobId}") {
         fun passJobId(jobId: String) = "customer_tracking/$jobId"
     }
