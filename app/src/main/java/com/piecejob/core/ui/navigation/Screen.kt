@@ -23,10 +23,26 @@ sealed class Screen(val route: String) {
     object CorporateProfile : Screen("corporate_profile")
     object ReportIssue : Screen("report_issue")
     
-    // Provider Screens
-    object ProviderDashboard : Screen("provider_dashboard")
-    object ProviderWallet : Screen("provider_wallet")
-    object ProviderVerification : Screen("provider_verification")
+    // Provider Tab Screens
+    object ProviderHome : Screen("provider_home")
+    object ProviderJobs : Screen("provider_jobs")
+    object ProviderWalletTab : Screen("provider_wallet_tab")
+    object ProviderMessages : Screen("provider_messages")
+    object ProviderProfileTab : Screen("provider_profile_tab")
+
+    // Provider Sub-Screens
+    object MyServices : Screen("my_services")
+    object VerificationDocs : Screen("verification_docs")
+    object EquipmentTools : Screen("equipment_tools")
+    object Certifications : Screen("certifications")
+    object Experience : Screen("experience")
+    object BankDetails : Screen("bank_details")
+    object Notifications : Screen("notifications")
+    object Security : Screen("security")
+    object DeviceManagement : Screen("device_management")
+    object Support : Screen("support")
+    object Disputes : Screen("disputes")
+    object TermsPolicies : Screen("terms_policies")
     object ProviderAnalytics : Screen("provider_analytics")
     object DocumentUpload : Screen("document_upload")
     

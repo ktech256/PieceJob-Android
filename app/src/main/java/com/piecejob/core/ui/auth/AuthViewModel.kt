@@ -227,6 +227,12 @@ class AuthViewModel @Inject constructor(
         Log.d(TAG, "Resetting AuthState to Idle")
         _authState.value = AuthState.Idle
     }
+
+    fun logout() {
+        Log.d(TAG, "Logging out user")
+        sessionManager.clearSession()
+        _authState.value = AuthState.Idle
+    }
     
     fun isLoggedIn(): Boolean {
         return sessionManager.getAuthToken() != null

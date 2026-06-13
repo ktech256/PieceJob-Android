@@ -14,16 +14,14 @@ import com.piecejob.customer.ui.wallet.CustomerWalletScreen
 import com.piecejob.customer.ui.tracking.CustomerTrackingScreen
 import com.piecejob.customer.ui.corporate.CorporateProfileScreen
 import com.piecejob.customer.ui.support.ReportIssueScreen
-import com.piecejob.provider.ui.dashboard.ProviderDashboardScreen
-import com.piecejob.provider.ui.wallet.ProviderWalletScreen
-import com.piecejob.provider.ui.verification.ProviderVerificationScreen
+import com.piecejob.provider.ui.main.ProviderMainScreen
+import com.piecejob.provider.ui.main.ProviderPlaceholderScreen
 import com.piecejob.provider.ui.onboarding.DocumentUploadScreen
 import com.piecejob.core.ui.referral.ReferralScreen
 import com.piecejob.customer.ui.dashboard.CustomerDashboardScreen
 import com.piecejob.core.ui.chat.ChatScreen
 import com.piecejob.core.ui.analytics.ProviderAnalyticsScreen
 import com.piecejob.core.ui.analytics.CustomerAnalyticsScreen
-import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun NavGraph(
@@ -117,7 +115,6 @@ fun NavGraph(
             ProviderTradeSelectionScreen(
                 authViewModel = authViewModel,
                 onSuccess = {
-                    Log.d(TAG, "Trade Selection Success. Navigating to Provider Dashboard.")
                     navController.navigate(Screen.Dashboard.route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
@@ -127,8 +124,17 @@ fun NavGraph(
 
         composable(route = Screen.Dashboard.route) {
             if (BuildConfig.FLAVOR == "provider") {
-                ProviderDashboardScreen(
-                    onSosTrigger = { navController.navigate(Screen.ReportIssue.route) }
+                ProviderMainScreen(
+                    onSosTrigger = { navController.navigate(Screen.ReportIssue.route) },
+                    onLogout = {
+                        authViewModel.logout()
+                        navController.navigate(Screen.Welcome.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToSubScreen = { screen ->
+                        navController.navigate(screen.route)
+                    }
                 )
             } else {
                 CustomerDashboardScreen(
@@ -139,6 +145,44 @@ fun NavGraph(
                     onNotificationsClick = { }
                 )
             }
+        }
+
+        // Sub-screens for Provider
+        composable(route = Screen.MyServices.route) {
+            ProviderPlaceholderScreen("My Services") { navController.popBackStack() }
+        }
+        composable(route = Screen.VerificationDocs.route) {
+            ProviderPlaceholderScreen("Verification Documents") { navController.popBackStack() }
+        }
+        composable(route = Screen.EquipmentTools.route) {
+            ProviderPlaceholderScreen("Equipment & Tools") { navController.popBackStack() }
+        }
+        composable(route = Screen.Certifications.route) {
+            ProviderPlaceholderScreen("Certifications") { navController.popBackStack() }
+        }
+        composable(route = Screen.Experience.route) {
+            ProviderPlaceholderScreen("Experience") { navController.popBackStack() }
+        }
+        composable(route = Screen.BankDetails.route) {
+            ProviderPlaceholderScreen("Bank Details") { navController.popBackStack() }
+        }
+        composable(route = Screen.Notifications.route) {
+            ProviderPlaceholderScreen("Notifications") { navController.popBackStack() }
+        }
+        composable(route = Screen.Security.route) {
+            ProviderPlaceholderScreen("Security") { navController.popBackStack() }
+        }
+        composable(route = Screen.DeviceManagement.route) {
+            ProviderPlaceholderScreen("Device Management") { navController.popBackStack() }
+        }
+        composable(route = Screen.Support.route) {
+            ProviderPlaceholderScreen("Support") { navController.popBackStack() }
+        }
+        composable(route = Screen.Disputes.route) {
+            ProviderPlaceholderScreen("Disputes") { navController.popBackStack() }
+        }
+        composable(route = Screen.TermsPolicies.route) {
+            ProviderPlaceholderScreen("Terms & Policies") { navController.popBackStack() }
         }
 
         composable(route = Screen.CustomerWallet.route) { CustomerWalletScreen() }
@@ -169,16 +213,6 @@ fun NavGraph(
         
         composable(route = Screen.ReportIssue.route) { 
             ReportIssueScreen(jobId = null, onSubmit = { _, _, _ -> }) 
-        }
-        
-        composable(route = Screen.ProviderWallet.route) { 
-            ProviderWalletScreen(onWithdrawClick = {}) 
-        }
-        
-        composable(route = Screen.ProviderVerification.route) { 
-            ProviderVerificationScreen(onUploadClick = {
-                navController.navigate(Screen.DocumentUpload.route)
-            }) 
         }
 
         composable(route = Screen.ProviderAnalytics.route) {
