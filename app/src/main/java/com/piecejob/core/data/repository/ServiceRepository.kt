@@ -5,14 +5,17 @@ import com.piecejob.core.data.remote.dto.*
 import com.piecejob.core.data.remote.ApiResponse
 import com.piecejob.core.data.remote.ApiError
 import com.piecejob.core.data.remote.ServiceDto
+import com.piecejob.core.data.local.SessionManager
 import javax.inject.Inject
 
 class ServiceRepository @Inject constructor(
-    private val api: PieceJobApi
+    private val api: PieceJobApi,
+    private val sessionManager: SessionManager
 ) {
     suspend fun getServices(): ApiResponse<List<ServiceDto>> {
         return try {
-            api.getServices()
+            val gender = sessionManager.getGender()
+            api.getServices(gender)
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }

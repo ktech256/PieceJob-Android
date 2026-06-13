@@ -110,7 +110,9 @@ interface PieceJobApi {
     suspend fun getWorkspaceConfig(): ApiResponse<WorkspaceConfigDto>
 
     @GET("config/services")
-    suspend fun getServices(): ApiResponse<List<ServiceDto>>
+    suspend fun getServices(
+        @Query("gender") gender: String? = null
+    ): ApiResponse<List<ServiceDto>>
 
     @GET("config/pricing/estimate")
     suspend fun getPriceEstimate(

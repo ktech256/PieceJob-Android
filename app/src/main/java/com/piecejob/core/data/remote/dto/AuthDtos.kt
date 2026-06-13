@@ -15,6 +15,7 @@ data class UserDto(
     val firstName: String,
     val lastName: String,
     val role: String,
+    val gender: String? = null,
     val countryCode: String,
     val tier: String? = null,
     val ratingAvg: Double? = null,

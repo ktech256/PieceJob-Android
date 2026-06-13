@@ -207,7 +207,8 @@ class AuthViewModel @Inject constructor(
                 sessionManager.saveUser(
                     userId = data.user.id,
                     role = data.user.role,
-                    firstName = data.user.firstName
+                    firstName = data.user.firstName,
+                    gender = data.user.gender
                 )
                 sessionManager.saveCountryCode(data.user.countryCode)
                 sessionManager.saveLastPhoneNumber(identifier)

@@ -55,11 +55,12 @@ class SessionManager @Inject constructor(
 
     fun getLastPhoneNumber(): String? = prefs.getString("last_phone", null)
 
-    fun saveUser(userId: String, role: String, firstName: String) {
+    fun saveUser(userId: String, role: String, firstName: String, gender: String? = null) {
         prefs.edit().apply {
             putString("user_id", userId)
             putString("role", role)
             putString("first_name", firstName)
+            putString("gender", gender)
             putBoolean("is_provider", role.equals("provider", ignoreCase = true))
         }.apply()
     }
@@ -67,6 +68,7 @@ class SessionManager @Inject constructor(
     fun getUserId(): String? = prefs.getString("user_id", null)
     fun getRole(): String? = prefs.getString("role", null)
     fun getFirstName(): String? = prefs.getString("first_name", null)
+    fun getGender(): String? = prefs.getString("gender", null)
     fun isProvider(): Boolean = prefs.getBoolean("is_provider", false)
 
     fun clearSession() {
