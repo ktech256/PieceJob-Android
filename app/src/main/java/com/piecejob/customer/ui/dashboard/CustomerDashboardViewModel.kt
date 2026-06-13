@@ -25,13 +25,17 @@ class CustomerDashboardViewModel @Inject constructor(
     val error: StateFlow<String?> = _error
 
     init {
-        loadServices()
+        // Only auto-load if we're likely already logged in (Customer App standard flow)
+        // For Provider onboarding, we will call loadServices(gender) explicitly.
+        if (serviceRepository.hasStoredGender()) {
+            loadServices()
+        }
     }
 
-    fun loadServices() {
+    fun loadServices(gender: String? = null) {
         viewModelScope.launch {
             _isLoading.value = true
-            val response = serviceRepository.getServices()
+            val response = serviceRepository.getServices(gender)
             if (response.success && response.data != null) {
                 _services.value = response.data
                 _error.value = null

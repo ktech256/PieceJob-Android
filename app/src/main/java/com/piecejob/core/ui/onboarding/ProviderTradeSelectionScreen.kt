@@ -33,8 +33,13 @@ fun ProviderTradeSelectionScreen(
     val services by serviceViewModel.services.collectAsState()
     val isLoadingServices by serviceViewModel.isLoading.collectAsState()
     val authState by authViewModel.authState.collectAsState()
+    val gender by authViewModel.gender.collectAsState()
     
     val selectedServices = remember { mutableStateListOf<String>() }
+
+    LaunchedEffect(Unit) {
+        serviceViewModel.loadServices(gender)
+    }
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {

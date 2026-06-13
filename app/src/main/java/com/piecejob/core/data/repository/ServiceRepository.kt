@@ -12,12 +12,16 @@ class ServiceRepository @Inject constructor(
     private val api: PieceJobApi,
     private val sessionManager: SessionManager
 ) {
-    suspend fun getServices(): ApiResponse<List<ServiceDto>> {
+    suspend fun getServices(explicitGender: String? = null): ApiResponse<List<ServiceDto>> {
         return try {
-            val gender = sessionManager.getGender()
+            val gender = explicitGender ?: sessionManager.getGender()
             api.getServices(gender)
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
+    }
+
+    fun hasStoredGender(): Boolean {
+        return sessionManager.getGender() != null
     }
 }
