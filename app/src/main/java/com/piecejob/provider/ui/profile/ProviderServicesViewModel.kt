@@ -27,6 +27,8 @@ class ProviderServicesViewModel @Inject constructor(
     private val _tempServiceCodes = MutableStateFlow<Set<String>>(emptySet())
     val tempServiceCodes: StateFlow<Set<String>> = _tempServiceCodes
 
+    private val _initialServiceCodes = MutableStateFlow<Set<String>>(emptySet())
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -36,25 +38,41 @@ class ProviderServicesViewModel @Inject constructor(
     private val _pendingRequirements = MutableStateFlow<Map<String, ServiceRequirementDto>>(emptyMap())
     val pendingRequirements: StateFlow<Map<String, ServiceRequirementDto>> = _pendingRequirements
 
+    private val _providerLevel = MutableStateFlow("STANDARD")
+    val providerLevel: StateFlow<String> = _providerLevel
+
     init {
         loadData()
     }
 
-    private fun loadData() {
+    fun loadData() {
         viewModelScope.launch {
             _isLoading.value = true
-            launch {
+            try {
+                // 1. Load Profile for Level
+                val profileRes = providerRepository.getProviderFullProfile()
+                if (profileRes.success && profileRes.data != null) {
+                    _providerLevel.value = profileRes.data.verificationLevel
+                }
+
+                // 2. Load Active Services
                 val res = providerRepository.getMyServices()
                 if (res.success && res.data != null) {
                     _myServices.value = res.data.approved + res.data.pending
-                    _tempServiceCodes.value = _myServices.value.map { it.code }.toSet()
+                    _initialServiceCodes.value = _myServices.value.map { it.code }.toSet()
+                    _tempServiceCodes.value = _initialServiceCodes.value
                 }
+
+                // 3. Load All Services
+                val resAll = serviceRepository.getServices()
+                if (resAll.success) {
+                    _allServices.value = resAll.data ?: emptyList()
+                }
+            } catch (e: Exception) {
+                // Handle error
+            } finally {
+                _isLoading.value = false
             }
-            launch {
-                val res = serviceRepository.getServices()
-                if (res.success) _allServices.value = res.data ?: emptyList()
-            }
-            _isLoading.value = false
         }
     }
 
@@ -69,12 +87,11 @@ class ProviderServicesViewModel @Inject constructor(
     }
 
     fun hasUnsavedChanges(): Boolean {
-        val original = _myServices.value.map { it.code }.toSet()
-        return original != _tempServiceCodes.value
+        return _initialServiceCodes.value != _tempServiceCodes.value
     }
 
     fun discardChanges() {
-        _tempServiceCodes.value = _myServices.value.map { it.code }.toSet()
+        _tempServiceCodes.value = _initialServiceCodes.value
     }
 
     fun saveChanges() {
@@ -84,12 +101,12 @@ class ProviderServicesViewModel @Inject constructor(
             if (res.success && res.data != null) {
                 _pendingRequirements.value = res.data.requirements ?: emptyMap()
                 
-                // Fetch fresh services lists from backend
+                // Refresh local data
                 val resMy = providerRepository.getMyServices()
                 if (resMy.success && resMy.data != null) {
-                    // Combine approved and pending for the 'active' list in UI
                     _myServices.value = resMy.data.approved + resMy.data.pending
-                    _tempServiceCodes.value = _myServices.value.map { it.code }.toSet()
+                    _initialServiceCodes.value = _myServices.value.map { it.code }.toSet()
+                    _tempServiceCodes.value = _initialServiceCodes.value
                 }
                 _saveSuccess.value = true
             } else {
@@ -101,5 +118,6 @@ class ProviderServicesViewModel @Inject constructor(
 
     fun resetSaveState() {
         _saveSuccess.value = null
+        _pendingRequirements.value = emptyMap()
     }
 }

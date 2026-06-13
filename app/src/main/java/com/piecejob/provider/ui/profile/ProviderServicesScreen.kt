@@ -1,13 +1,17 @@
 package com.piecejob.provider.ui.profile
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,12 +35,12 @@ fun ProviderServicesScreen(
     val saveSuccess by viewModel.saveSuccess.collectAsState()
     val requirements by viewModel.pendingRequirements.collectAsState()
 
-    val snackbarHostState = remember { SnackbarHostState() }
     var showUnsavedDialog by remember { mutableStateOf(false) }
+    var showRequirementsDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(saveSuccess) {
-        if (saveSuccess == true && requirements.isNotEmpty()) {
-            snackbarHostState.showSnackbar("Some services require additional documents for activation.")
+    LaunchedEffect(requirements) {
+        if (requirements.isNotEmpty()) {
+            showRequirementsDialog = true
         }
     }
 
@@ -48,17 +52,22 @@ fun ProviderServicesScreen(
         }
     }
 
+    BackHandler(onBack = handleBack)
+
     if (showUnsavedDialog) {
         AlertDialog(
             onDismissRequest = { showUnsavedDialog = false },
-            title = { Text("Unsaved Changes") },
-            text = { Text("You have unsaved service changes. Would you like to save before leaving?") },
+            title = { Text("Unsaved Changes", fontWeight = FontWeight.Bold) },
+            text = { Text("You have unsaved changes. Would you like to save them before leaving?") },
             confirmButton = {
-                Button(onClick = {
-                    viewModel.saveChanges()
-                    showUnsavedDialog = false
-                    onBack()
-                }) { Text("Save") }
+                Button(
+                    onClick = {
+                        viewModel.saveChanges()
+                        showUnsavedDialog = false
+                        onBack()
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) { Text("SAVE") }
             },
             dismissButton = {
                 Row {
@@ -66,17 +75,51 @@ fun ProviderServicesScreen(
                         viewModel.discardChanges()
                         showUnsavedDialog = false
                         onBack()
-                    }) { Text("Discard") }
-                    TextButton(onClick = {
-                        showUnsavedDialog = false
-                    }) { Text("Cancel") }
+                    }) { Text("DISCARD", color = MaterialTheme.colorScheme.error) }
+                    
+                    TextButton(onClick = { showUnsavedDialog = false }) {
+                        Text("CANCEL")
+                    }
                 }
             }
         )
     }
 
+    if (showRequirementsDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showRequirementsDialog = false
+                viewModel.resetSaveState()
+            },
+            icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFE65100)) },
+            title = { Text("Verification Required", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Some selected services require higher verification levels before they can be activated:")
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    val allDocs = requirements.values.flatMap { it.docs }.distinct()
+                    allDocs.forEach { doc ->
+                        Text("• ${doc.replace("_", " ")}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("Please upload these documents in the Verification module to activate these services.")
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { 
+                        showRequirementsDialog = false
+                        viewModel.resetSaveState()
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) { Text("UNDERSTOOD") }
+            }
+        )
+    }
+
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("My Services", fontWeight = FontWeight.Bold) },
@@ -85,14 +128,31 @@ fun ProviderServicesScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                actions = {
-                    if (viewModel.hasUnsavedChanges()) {
-                        TextButton(onClick = { viewModel.saveChanges() }) {
-                            Text("SAVE", fontWeight = FontWeight.Black)
-                        }
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            )
+        },
+        bottomBar = {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shadowElevation = 8.dp,
+                color = Color.White
+            ) {
+                Button(
+                    onClick = { viewModel.saveChanges() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    enabled = viewModel.hasUnsavedChanges() && !isLoading
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                    } else {
+                        Text("SAVE CHANGES", fontWeight = FontWeight.Black)
                     }
                 }
-            )
+            }
         }
     ) { padding ->
         if (isLoading && allServices.isEmpty()) {
@@ -103,30 +163,40 @@ fun ProviderServicesScreen(
             val categories = listOf("HDS", "CSS", "HMS", "OPS", "LLS", "TSS")
             val groupedServices = allServices.groupBy { it.category }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
                 contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 categories.forEach { cat ->
                     val services = groupedServices[cat] ?: emptyList()
                     if (services.isNotEmpty()) {
-                        item {
+                        item(span = { GridItemSpan(2) }) {
                             Text(
                                 text = cat,
                                 fontWeight = FontWeight.Black,
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
                             )
                         }
+                        
                         items(services) { service ->
-                            val isActive = tempCodes.contains(service.code)
-                            ServiceItemRow(service, isActive) {
-                                viewModel.toggleService(service.code)
-                            }
+                            TradeCard(
+                                service = service,
+                                isSelected = tempCodes.contains(service.code),
+                                onToggle = { viewModel.toggleService(service.code) }
+                            )
                         }
                     }
+                }
+                
+                item(span = { GridItemSpan(2) }) {
+                    Spacer(modifier = Modifier.height(100.dp))
                 }
             }
         }
@@ -134,33 +204,44 @@ fun ProviderServicesScreen(
 }
 
 @Composable
-fun ServiceItemRow(service: ServiceDto, isActive: Boolean, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surface)
+fun TradeCard(
+    service: ServiceDto,
+    isSelected: Boolean,
+    onToggle: () -> Unit
+) {
+    OutlinedCard(
+        onClick = onToggle,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else Color.White
+        ),
+        border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = service.name, fontWeight = FontWeight.Bold)
-                    if (isActive && service.verificationLevel != "STANDARD") {
-                         Spacer(modifier = Modifier.width(8.dp))
-                         Surface(color = Color(0xFFFFF3E0), shape = RoundedCornerShape(4.dp)) {
-                             Text("Vetting Required", modifier = Modifier.padding(horizontal = 4.dp), fontSize = 8.sp, color = Color(0xFFE65100), fontWeight = FontWeight.Bold)
-                         }
-                    }
-                }
-                Text(text = service.category, fontSize = 12.sp, color = androidx.compose.ui.graphics.Color.Gray)
+        Box(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+            Column(modifier = Modifier.align(Alignment.CenterStart)) {
+                Text(
+                    text = service.name,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                )
+                Text(
+                    text = service.category,
+                    fontSize = 10.sp,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Bold
+                )
             }
-            IconButton(onClick = onClick) {
+            
+            if (isSelected) {
                 Icon(
-                    imageVector = if (isActive) Icons.Default.Remove else Icons.Default.Add,
+                    Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = if (isActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.TopEnd).size(18.dp)
                 )
             }
         }

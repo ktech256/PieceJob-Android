@@ -26,6 +26,7 @@ data class ProviderFullDto(
     val idOrPassportNumber: String,
     val countryCode: String,
     val verificationStatus: String,
+    val verificationLevel: String,
     val tier: String,
     val equipment: List<EquipmentDto>,
     val certifications: List<CertificationDto>,
