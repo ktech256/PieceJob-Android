@@ -48,6 +48,30 @@ interface PieceJobApi {
     @GET("wallets/commission-rate")
     suspend fun getCommissionRate(): ApiResponse<CommissionRateDto>
 
+    @GET("providers/profile")
+    suspend fun getProviderProfile(): ApiResponse<ProviderFullDto>
+
+    @PATCH("providers/profile")
+    suspend fun updateProviderProfile(@Body request: UpdateProfileRequest): ApiResponse<ProviderFullDto>
+
+    @GET("providers/services")
+    suspend fun getMyServices(): ApiResponse<List<ServiceDto>>
+
+    @POST("providers/services")
+    suspend fun updateMyServices(@Body request: UpdateServicesRequest): ApiResponse<List<String>>
+
+    @GET("providers/equipment")
+    suspend fun getMyEquipment(): ApiResponse<List<EquipmentDto>>
+
+    @POST("providers/equipment")
+    suspend fun addEquipment(@Body request: EquipmentDto): ApiResponse<List<EquipmentDto>>
+
+    @GET("providers/bank")
+    suspend fun getBankDetails(): ApiResponse<BankDetailsDto>
+
+    @POST("providers/bank")
+    suspend fun updateBankDetails(@Body request: UpdateBankDetailsRequest): ApiResponse<BankDetailsDto>
+
     @GET("providers/dashboard-stats")
     suspend fun getProviderDashboardStats(): ApiResponse<ProviderStatsDto>
 

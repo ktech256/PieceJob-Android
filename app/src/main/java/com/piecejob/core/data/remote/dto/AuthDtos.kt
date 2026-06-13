@@ -14,12 +14,16 @@ data class UserDto(
     val id: String,
     val firstName: String,
     val lastName: String,
+    val email: String,
     val role: String,
     val gender: String? = null,
     val countryCode: String,
     val tier: String? = null,
     val ratingAvg: Double? = null,
-    val isShadowBanned: Boolean? = false
+    val isShadowBanned: Boolean? = false,
+    val profilePhoto: String? = null,
+    val city: String? = null,
+    val address: String? = null
 )
 
 data class WalletDto(

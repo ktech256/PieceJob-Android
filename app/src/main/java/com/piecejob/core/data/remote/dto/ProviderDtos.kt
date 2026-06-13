@@ -15,3 +15,46 @@ data class ProviderStatsDto(
     val verificationStatus: String,
     val isGhostMode: Boolean = false
 )
+
+data class ProviderFullDto(
+    val id: String,
+    val userId: UserDto,
+    val gender: String,
+    val dob: String,
+    val idOrPassportNumber: String,
+    val countryCode: String,
+    val verificationStatus: String,
+    val tier: String,
+    val equipment: List<EquipmentDto>,
+    val certifications: List<CertificationDto>,
+    val workExperience: List<ExperienceDto>,
+    val bankDetails: BankDetailsDto?,
+    val payoutPreferences: PayoutPreferencesDto
+)
+
+data class UpdateProfileRequest(
+    val firstName: String?,
+    val lastName: String?,
+    val gender: String?,
+    val dob: String?,
+    val profilePhoto: String?,
+    val city: String?,
+    val address: String?,
+    val emergencyContact: EmergencyContactDto?
+)
+
+data class EquipmentDto(val name: String, val category: String, val photoUrl: String?, val isVerified: Boolean)
+data class CertificationDto(val name: String, val institution: String, val certificateNumber: String, val expiryDate: String?, val status: String)
+data class ExperienceDto(val companyName: String, val role: String, val startDate: String, val endDate: String?, val description: String?)
+data class BankDetailsDto(val bankName: String, val accountHolder: String, val accountNumberEncrypted: String, val branchCode: String)
+data class PayoutPreferencesDto(val frequency: String, val method: String)
+data class EmergencyContactDto(val name: String, val phone: String, val relationship: String)
+
+data class UpdateServicesRequest(val serviceCodes: List<String>)
+
+data class UpdateBankDetailsRequest(
+    val bankName: String,
+    val accountHolder: String,
+    val accountNumber: String,
+    val branchCode: String
+)

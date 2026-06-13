@@ -16,6 +16,8 @@ import com.piecejob.customer.ui.corporate.CorporateProfileScreen
 import com.piecejob.customer.ui.support.ReportIssueScreen
 import com.piecejob.provider.ui.main.ProviderMainScreen
 import com.piecejob.provider.ui.main.ProviderPlaceholderScreen
+import com.piecejob.provider.ui.profile.*
+import com.piecejob.provider.ui.verification.*
 import com.piecejob.customer.ui.main.CustomerMainScreen
 import com.piecejob.customer.ui.main.CustomerPlaceholderScreen
 import com.piecejob.provider.ui.onboarding.DocumentUploadScreen
@@ -177,16 +179,16 @@ fun NavGraph(
 
         // Sub-screens for Provider
         composable(route = Screen.ProviderPersonalDetails.route) {
-            ProviderPlaceholderScreen("Personal Details") { navController.popBackStack() }
+            ProviderPersonalDetailsScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.MyServices.route) {
-            ProviderPlaceholderScreen("My Services") { navController.popBackStack() }
+            ProviderServicesScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.VerificationDocs.route) {
-            ProviderPlaceholderScreen("Verification Documents") { navController.popBackStack() }
+            ProviderVerificationScreen(onUploadClick = { navController.navigate(Screen.DocumentUpload.route) })
         }
         composable(route = Screen.EquipmentTools.route) {
-            ProviderPlaceholderScreen("Equipment & Tools") { navController.popBackStack() }
+            ProviderEquipmentScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.Certifications.route) {
             ProviderPlaceholderScreen("Certifications") { navController.popBackStack() }
@@ -198,7 +200,7 @@ fun NavGraph(
             ProviderPlaceholderScreen("Wallet Settings") { navController.popBackStack() }
         }
         composable(route = Screen.BankDetails.route) {
-            ProviderPlaceholderScreen("Bank Details") { navController.popBackStack() }
+            ProviderBankDetailsScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.Notifications.route) {
             ProviderPlaceholderScreen("Notifications") { navController.popBackStack() }
@@ -210,7 +212,7 @@ fun NavGraph(
             ProviderPlaceholderScreen("Device Management") { navController.popBackStack() }
         }
         composable(route = Screen.ProviderStatements.route) {
-            ProviderPlaceholderScreen("Statements") { navController.popBackStack() }
+            ProviderStatementsScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.Support.route) {
             ProviderPlaceholderScreen("Support") { navController.popBackStack() }
@@ -219,7 +221,7 @@ fun NavGraph(
             ProviderPlaceholderScreen("Disputes") { navController.popBackStack() }
         }
         composable(route = Screen.TermsPolicies.route) {
-            ProviderPlaceholderScreen("Terms & Policies") { navController.popBackStack() }
+            ProviderTermsScreen(onBack = { navController.popBackStack() })
         }
 
         composable(route = Screen.CustomerWallet.route) { CustomerWalletScreen() }
