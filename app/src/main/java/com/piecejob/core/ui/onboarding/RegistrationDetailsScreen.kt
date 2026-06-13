@@ -36,6 +36,9 @@ fun RegistrationDetailsScreen(
     onSuccess: () -> Unit,
     onBack: () -> Unit
 ) {
+    val TAG = "OnboardingButtonTrace"
+    Log.d(TAG, "Entering RegistrationDetailsScreen Composable")
+
     val firstName by viewModel.firstName.collectAsState()
     val lastName by viewModel.lastName.collectAsState()
     val email by viewModel.email.collectAsState()
@@ -52,8 +55,6 @@ fun RegistrationDetailsScreen(
     val authState by viewModel.authState.collectAsState()
     val isProvider = BuildConfig.FLAVOR == "provider"
 
-    val TAG = "RegistrationAction"
-
     // Date Picker State
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
@@ -65,43 +66,46 @@ fun RegistrationDetailsScreen(
     )
 
     // Form Validation Logic (CHAIN AUDIT FIX)
-    val isFormValid by remember {
-        derivedStateOf {
-            val isFirstNameValid = firstName.trim().isNotBlank()
-            val isLastNameValid = lastName.trim().isNotBlank()
-            val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
-            val isDobValid = dob.isNotBlank()
-            val isGenderValid = gender.isNotBlank()
-            val isIdNumberValid = idNumber.trim().isNotBlank()
-            val isPasswordStrong = password.length >= 6
-            val isPasswordMatch = password == confirmPassword && password.isNotEmpty()
+    val isFirstNameValid = firstName.trim().isNotBlank()
+    val isLastNameValid = lastName.trim().isNotBlank()
+    val isEmailValid = email.trim().contains("@") && email.trim().contains(".") // Robust fallback
+    val isDobValid = dob.isNotBlank()
+    val isGenderValid = gender.isNotBlank()
+    val isIdNumberValid = idNumber.trim().isNotBlank()
+    val isPasswordStrong = password.length >= 6
+    val isPasswordMatch = password == confirmPassword && password.isNotEmpty()
+    
+    val isFormValid = isFirstNameValid && 
+                     isLastNameValid && 
+                     isEmailValid && 
+                     isDobValid && 
+                     isGenderValid &&
+                     isIdNumberValid && 
+                     isPasswordStrong && 
+                     isPasswordMatch &&
+                     authState !is AuthState.Loading
 
-            isFirstNameValid && isLastNameValid && isEmailValid && isDobValid && 
-            isGenderValid && isIdNumberValid && isPasswordStrong && isPasswordMatch &&
-            authState !is AuthState.Loading
-        }
-    }
-
-    // DEBUG OUTPUT (As requested in Investigation)
+    // DEBUG OUTPUT
     LaunchedEffect(firstName, lastName, email, dob, gender, idNumber, password, confirmPassword, authState) {
-        Log.d("RegistrationAudit", """
-            VALIDATION CHAIN:
-            First Name: ${firstName.trim().isNotBlank()}
-            Last Name: ${lastName.trim().isNotBlank()}
-            Email: ${android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()}
-            DOB: ${dob.isNotBlank()}
-            Gender: ${gender.isNotBlank()}
-            ID Number: ${idNumber.trim().isNotBlank()}
-            Password Strong: ${password.length >= 6}
-            Password Match: ${password == confirmPassword}
-            Loading: ${authState is AuthState.Loading}
-            Form Valid: $isFormValid
+        Log.d("ValidationAudit", """
+            [FLAVOR: ${BuildConfig.FLAVOR}]
+            1. First Name: $isFirstNameValid
+            2. Last Name: $isLastNameValid
+            3. Email: $isEmailValid (${email.trim()})
+            4. DOB: $isDobValid ($dob)
+            5. Gender: $isGenderValid ($gender)
+            6. ID Number: $isIdNumberValid
+            7. Password Strong: $isPasswordStrong
+            8. Password Match: $isPasswordMatch
+            9. authState: ${authState.javaClass.simpleName}
+            ---
+            OVERALL FORM VALID: $isFormValid
         """.trimIndent())
     }
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {
-            Log.d(TAG, "Authenticated state detected. Triggering onSuccess for Customer.")
+            Log.d(TAG, "SUCCESS: Authenticated reached. Navigating via onSuccess.")
             onSuccess()
         }
     }
@@ -215,8 +219,8 @@ fun RegistrationDetailsScreen(
                                 .weight(1f)
                                 .height(56.dp)
                                 .clickable { 
-                                    viewModel.gender.value = option.take(1)
-                                    Log.d(TAG, "Gender selected: ${option.take(1)}")
+                                    Log.d(TAG, "Gender selection clicked: $option")
+                                    viewModel.gender.value = option.take(1) 
                                 },
                             shape = RoundedCornerShape(16.dp),
                             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
@@ -257,7 +261,7 @@ fun RegistrationDetailsScreen(
                     modifier = Modifier
                         .matchParentSize()
                         .clickable { 
-                            Log.d(TAG, "DOB box clicked")
+                            Log.d(TAG, "DOB Picker Box Clicked")
                             showDatePicker = true 
                         }
                 )
@@ -309,14 +313,15 @@ fun RegistrationDetailsScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
+            // THE CRITICAL BUTTON
             Button(
                 onClick = { 
-                    Log.d(TAG, "PRIMARY BUTTON CLICKED. isProvider: $isProvider")
+                    Log.d(TAG, "ACTION: Primary button CLICKED. isProvider: $isProvider")
                     if (isProvider) {
-                        Log.d(TAG, "Provider flow: navigating to Trades.")
+                        Log.d(TAG, "PROVIDER: Executing onSuccess navigation.")
                         onSuccess() 
                     } else {
-                        Log.d(TAG, "Customer flow: calling register().")
+                        Log.d(TAG, "CUSTOMER: Calling viewModel.register().")
                         viewModel.register() 
                     }
                 },
