@@ -13,6 +13,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import androidx.activity.result.contract.ActivityResultContracts
 import android.Manifest
 import android.os.Build
+import androidx.compose.runtime.LaunchedEffect
+import androidx.navigation.NavGraph.Companion.findStartDestination
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -43,6 +45,21 @@ class MainActivity : ComponentActivity() {
         setContent {
             PieceJobTheme(isProvider = isProvider) {
                 val navController = rememberNavController()
+
+                // Handle Notification Deep Links
+                LaunchedEffect(intent) {
+                    val type = intent.getStringExtra("type")
+                    if (type == "VERIFICATION_UPDATE") {
+                        navController.navigate("verification_docs") {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
+
                 NavGraph(
                     navController = navController,
                     authViewModel = authViewModel

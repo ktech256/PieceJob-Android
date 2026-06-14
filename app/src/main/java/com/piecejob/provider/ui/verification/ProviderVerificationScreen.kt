@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
 import android.net.Uri
 import android.widget.Toast
+import java.io.File
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -51,23 +52,29 @@ fun ProviderVerificationScreen(
 
     var currentPickingType by remember { mutableStateOf<String?>(null) }
     var showSourcePicker by remember { mutableStateOf(false) }
+    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview(),
-        onResult = { bitmap ->
-            if (bitmap != null && currentPickingType != null) {
-                if (currentPickingType == "SELFIE") {
-                    val valError = validateSelfie(bitmap)
-                    if (valError != null) {
-                        Toast.makeText(context, valError, Toast.LENGTH_LONG).show()
-                        return@rememberLauncherForActivityResult
-                    }
-                }
-                viewModel.stageDocument(currentPickingType!!, null, bitmap)
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success && currentPickingType != null && tempCameraUri != null) {
+                viewModel.stageDocument(currentPickingType!!, tempCameraUri, null)
                 currentPickingType = null
+                tempCameraUri = null
             }
         }
     )
+
+    fun startCamera() {
+        val file = File(context.cacheDir, "temp_camera_${System.currentTimeMillis()}.jpg")
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+        tempCameraUri = uri
+        cameraLauncher.launch(uri)
+    }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -126,7 +133,7 @@ fun ProviderVerificationScreen(
                 Text("Select source for $label", fontWeight = FontWeight.Black, modifier = Modifier.padding(bottom = 16.dp))
                 
                 PickerOption(Icons.Default.CameraAlt, "Take Photo") {
-                    cameraLauncher.launch(null)
+                    startCamera()
                     showSourcePicker = false
                 }
                 PickerOption(Icons.Default.PhotoLibrary, "Choose From Gallery") {
@@ -414,14 +421,32 @@ fun DocumentStagingCard(
                     else -> Color.Gray.copy(alpha = 0.8f)
                 }
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = status, color = Color.White, fontWeight = FontWeight.Black, fontSize = 9.sp)
-                    if (status == "REJECTED") {
-                         Icon(Icons.Default.Refresh, null, tint = Color.White, modifier = Modifier.size(12.dp).clickable { onAction() })
+                if (status == "REJECTED") {
+                    Column(modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "REJECTED", color = Color.White, fontWeight = FontWeight.Black, fontSize = 11.sp)
+                            Button(
+                                onClick = onAction,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                                modifier = Modifier.height(28.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("RESUBMIT", color = Color.Red, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                            }
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = status, color = Color.White, fontWeight = FontWeight.Black, fontSize = 9.sp)
                     }
                 }
             }

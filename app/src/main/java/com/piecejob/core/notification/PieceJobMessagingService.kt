@@ -39,25 +39,24 @@ class PieceJobMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        Log.d("FCM", "Message received from: ${message.from}")
+        Log.d("FCM", "Message received from: ${message.from}. Data: ${message.data}")
 
-        message.notification?.let {
-            showNotification(it.title ?: "PieceJob", it.body ?: "")
-        } ?: run {
-            // Handle data-only messages
-            val title = message.data["title"] ?: "PieceJob"
-            val body = message.data["body"] ?: ""
-            showNotification(title, body)
-        }
+        val title = message.notification?.title ?: message.data["title"] ?: "PieceJob"
+        val body = message.notification?.body ?: message.data["body"] ?: ""
+        
+        showNotification(title, body, message.data)
     }
 
-    private fun showNotification(title: String, body: String) {
+    private fun showNotification(title: String, body: String, data: Map<String, String>) {
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            data.forEach { (key, value) ->
+                putExtra(key, value)
+            }
         }
         val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent,
-            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+            this, System.currentTimeMillis().toInt(), intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val channelId = "piecejob_notifications"
