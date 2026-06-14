@@ -372,6 +372,26 @@ fun DocumentStagingCard(
                         .fillMaxSize()
                         .background(Color.Black.copy(alpha = 0.2f))
                 )
+
+                // Rejection Reason Overlay if applicable
+                if (rejectionReason != null && (status == "REJECTED" || status == "STAGED")) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 50.dp)
+                            .padding(horizontal = 8.dp)
+                            .background(Color.Red.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
+                    ) {
+                        Text(
+                            text = "Rejected: $rejectionReason",
+                            color = Color.White,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
                 
                 if (status == "STAGED") {
                     Row(
