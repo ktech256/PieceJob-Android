@@ -223,6 +223,7 @@ fun ProviderVerificationScreen(
                         containerColor = when(status?.currentStatus) {
                             "APPROVED" -> Color(0xFFE8F5E9)
                             "PENDING" -> Color(0xFFFFF3E0)
+                            "ACTION_REQUIRED" -> Color(0xFFFFF3E0)
                             "REJECTED" -> Color(0xFFFFEBEE)
                             else -> Color(0xFFF5F5F5)
                         }
@@ -241,13 +242,14 @@ fun ProviderVerificationScreen(
                             color = when(status?.currentStatus) {
                                 "APPROVED" -> Color(0xFF2E7D32)
                                 "PENDING" -> Color(0xFFEF6C00)
+                                "ACTION_REQUIRED" -> Color(0xFFEF6C00)
                                 "REJECTED" -> Color(0xFFC62828)
                                 else -> Color.Gray
                             },
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
-                                text = status?.currentStatus ?: "NOT STARTED",
+                                text = status?.currentStatus?.replace("_", " ") ?: "NOT STARTED",
                                 fontWeight = FontWeight.Black,
                                 fontSize = 10.sp,
                                 color = Color.White,
