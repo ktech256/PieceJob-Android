@@ -267,14 +267,13 @@ fun ProviderVerificationScreen(
                         }
 
                         items(docs) { docReq ->
-                            val existingDoc = status?.latestRequest?.documents?.find { it.type == docReq.type }
-                            val stagedPath = stagedDocs[docReq.type]
-                            
+                            // Use status and rejectionReason from backend requirements DTO
                             DocumentStagingCard(
                                 label = docReq.label,
-                                status = existingDoc?.status ?: if (stagedPath != null) "STAGED" else "MISSING",
-                                imagePath = stagedPath ?: existingDoc?.url,
+                                status = if (stagedDocs.containsKey(docReq.type)) "STAGED" else docReq.status,
+                                imagePath = stagedDocs[docReq.type] ?: status?.latestRequest?.documents?.find { it.type == docReq.type }?.url,
                                 isRequired = docReq.isRequired,
+                                rejectionReason = docReq.rejectionReason,
                                 onAction = { 
                                     currentPickingType = docReq.type
                                     showSourcePicker = true
@@ -299,6 +298,7 @@ fun DocumentStagingCard(
     status: String,
     imagePath: String?,
     isRequired: Boolean,
+    rejectionReason: String? = null,
     onAction: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -307,7 +307,7 @@ fun DocumentStagingCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp),
+            .height(190.dp), // Slightly taller for reason
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -382,13 +382,24 @@ fun DocumentStagingCard(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = if (status == "APPROVED") Icons.Default.CheckCircle else Icons.Default.FileUpload,
+                        imageVector = if (status == "VERIFIED") Icons.Default.CheckCircle else Icons.Default.FileUpload,
                         contentDescription = null,
-                        tint = if (status == "APPROVED") Color(0xFF2E7D32) else Color.LightGray,
+                        tint = if (status == "VERIFIED") Color(0xFF2E7D32) else Color.LightGray,
                         modifier = Modifier.size(32.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(text = label, fontWeight = FontWeight.Bold, fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    
+                    if (status == "REJECTED" && rejectionReason != null) {
+                        Text(
+                            text = "Reason: $rejectionReason",
+                            color = Color.Red,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 4.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
                 }
             }
 
@@ -396,8 +407,8 @@ fun DocumentStagingCard(
             Surface(
                 modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
                 color = when(status) {
-                    "APPROVED" -> Color(0xFF2E7D32)
-                    "PENDING" -> Color(0xFFEF6C00)
+                    "VERIFIED" -> Color(0xFF2E7D32)
+                    "PENDING REVIEW" -> Color(0xFFEF6C00)
                     "STAGED" -> MaterialTheme.colorScheme.primary
                     "REJECTED" -> Color.Red
                     else -> Color.Gray.copy(alpha = 0.8f)
@@ -409,11 +420,14 @@ fun DocumentStagingCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(text = status, color = Color.White, fontWeight = FontWeight.Black, fontSize = 9.sp)
+                    if (status == "REJECTED") {
+                         Icon(Icons.Default.Refresh, null, tint = Color.White, modifier = Modifier.size(12.dp).clickable { onAction() })
+                    }
                 }
             }
             
-            // Full card clickable if not approved/pending/staged
-            if (imagePath == null && status != "APPROVED" && status != "PENDING") {
+            // Full card clickable if not verified/pending review/staged
+            if (imagePath == null && status != "VERIFIED" && status != "PENDING REVIEW") {
                  Box(modifier = Modifier.fillMaxSize().clickable { onAction() })
             }
         }
