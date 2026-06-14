@@ -137,23 +137,29 @@ class ProviderVerificationViewModel @Inject constructor(
     fun submitDocuments() {
         viewModelScope.launch {
             _isLoading.value = true
+            _error.value = null
             try {
-                Log.d("VerificationVM", "Starting submission of ${_stagedDocs.value.size} documents")
+                Log.d("UPLOAD_TRACE", "1. submitDocuments() triggered. Staged items: ${_stagedDocs.value.size}")
                 val uploadedDocs = mutableListOf<VerificationDocDto>()
                 
                 for ((type, path) in _stagedDocs.value) {
-                    Log.d("VerificationVM", "Processing $type from path: $path")
+                    Log.d("UPLOAD_TRACE", "2. Processing $type. Path: $path")
                     val file = File(path)
                     if (file.exists()) {
-                        Log.d("VerificationVM", "Reading file bytes: ${file.length()} bytes")
                         val bytes = file.readBytes()
+                        Log.d("UPLOAD_TRACE", "3. File size: ${bytes.size} bytes")
+                        
                         val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                        Log.d("UPLOAD_TRACE", "4. Base64 encoded. Length: ${base64.length}")
+                        
                         val mimeType = if (path.endsWith(".pdf", true)) "application/pdf" else "image/jpeg"
                         
-                        Log.d("VerificationVM", "Uploading Base64 to server...")
+                        Log.d("UPLOAD_TRACE", "5. Starting API call to providers/upload-file")
                         val uploadRes = repository.uploadFile(base64, mimeType, "verifications")
+                        
+                        Log.d("UPLOAD_TRACE", "6. API response code: ${uploadRes.success}")
                         if (uploadRes.success && uploadRes.data != null) {
-                            Log.d("VerificationVM", "Upload Success for $type. Server path: ${uploadRes.data.url}")
+                            Log.d("UPLOAD_TRACE", "7. PASS: Uploaded $type. Bucket Path: ${uploadRes.data.url}")
                             uploadedDocs.add(VerificationDocDto(
                                 type = type,
                                 url = uploadRes.data.url, 
@@ -161,25 +167,25 @@ class ProviderVerificationViewModel @Inject constructor(
                                 rejectionReason = null
                             ))
                         } else {
-                            Log.e("VerificationVM", "Upload Failed for $type: ${uploadRes.message}")
+                            Log.e("UPLOAD_TRACE", "7. FAIL: Upload $type failed. Message: ${uploadRes.message}")
                             throw Exception("Failed to upload $type: ${uploadRes.message}")
                         }
                     } else {
-                        Log.w("VerificationVM", "File not found at $path for $type")
+                        Log.e("UPLOAD_TRACE", "2. FAIL: File not found at $path")
                     }
                 }
 
                 if (uploadedDocs.isEmpty()) {
-                    Log.w("VerificationVM", "No documents were actually uploaded.")
+                    Log.e("UPLOAD_TRACE", "8. FAIL: uploadedDocs is empty")
                     throw Exception("No documents were uploaded. Please select files first.")
                 }
 
                 val targetLevel = _requirements.value?.targetLevel ?: "STANDARD"
-                Log.d("VerificationVM", "Submitting verification request for level: $targetLevel with ${uploadedDocs.size} docs")
+                Log.d("UPLOAD_TRACE", "9. Submitting verification transaction. Level: $targetLevel, Docs count: ${uploadedDocs.size}")
                 val response = repository.submitVerification(SubmitVerificationRequest(targetLevel, uploadedDocs))
                 
                 if (response.success) {
-                    Log.d("VerificationVM", "Verification request submitted successfully.")
+                    Log.d("UPLOAD_TRACE", "10. PASS: Verification submitted successfully.")
                     // Cleanup local files
                     _stagedDocs.value.values.forEach { path -> File(path).delete() }
                     sessionManager.clearStagedDocs()
@@ -187,11 +193,11 @@ class ProviderVerificationViewModel @Inject constructor(
                     _isSubmitSuccess.value = true
                     loadData()
                 } else {
-                    Log.e("VerificationVM", "Final Submission Failed: ${response.error?.message}")
+                    Log.e("UPLOAD_TRACE", "10. FAIL: Transaction failed. Error: ${response.error?.message}")
                     _error.value = response.error?.message ?: "Submission failed"
                 }
             } catch (e: Exception) {
-                Log.e("VerificationVM", "Exception in submitDocuments", e)
+                Log.e("UPLOAD_TRACE", "ERROR in pipeline: ${e.message}", e)
                 _error.value = e.message
             } finally {
                 _isLoading.value = false
