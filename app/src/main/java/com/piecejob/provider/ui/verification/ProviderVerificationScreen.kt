@@ -3,6 +3,7 @@ package com.piecejob.provider.ui.verification
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import java.io.File
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -66,14 +67,24 @@ fun ProviderVerificationScreen(
     )
 
     fun startCamera() {
-        val file = File(context.cacheDir, "temp_camera_${System.currentTimeMillis()}.jpg")
-        val uri = androidx.core.content.FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            file
-        )
-        tempCameraUri = uri
-        cameraLauncher.launch(uri)
+        try {
+            val file = File(context.cacheDir, "temp_camera_${System.currentTimeMillis()}.jpg")
+            if (!file.exists()) {
+                file.parentFile?.mkdirs()
+                file.createNewFile()
+            }
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+            tempCameraUri = uri
+            Log.d("VerificationScreen", "Launching camera with URI: $uri")
+            cameraLauncher.launch(uri)
+        } catch (e: Exception) {
+            Log.e("VerificationScreen", "Camera launch failed", e)
+            Toast.makeText(context, "Could not start camera: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     val galleryLauncher = rememberLauncherForActivityResult(
