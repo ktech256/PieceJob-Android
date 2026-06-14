@@ -151,9 +151,13 @@ fun ProviderServicesScreen(
                         if (listOf("HMS", "OPS", "TSS").contains(it.category)) {
                             if (level != "HIGH_VETTING") level = "TRADE"
                         }
-                        if (level == "HIGH_VETTING") {
-                            levels.add("PROFESSIONAL"); levels.add("TRADE"); levels.add("HIGH_VETTING")
-                        } else levels.add(level)
+                        
+                        // Fill additive levels for requirement summary
+                        val levelOrder = listOf("STANDARD", "PROFESSIONAL", "TRADE", "HIGH_VETTING")
+                        val currentIdx = levelOrder.indexOf(level)
+                        for (i in 0..currentIdx) {
+                            levels.add(levelOrder[i])
+                        }
                     }
                 }
                 val docs = mutableSetOf("ID", "Selfie")
@@ -180,6 +184,15 @@ fun ProviderServicesScreen(
                          )
                     }
 
+                    if (error != null) {
+                        Text(
+                            text = error!!,
+                            color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                    }
+
                     Button(
                         onClick = { viewModel.saveChanges() },
                         modifier = Modifier
@@ -197,7 +210,8 @@ fun ProviderServicesScreen(
                 }
             }
         }
-    ) { padding ->
+    )
+{ padding ->
         if (isLoadingServices) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()

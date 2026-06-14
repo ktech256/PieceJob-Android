@@ -140,7 +140,7 @@ fun ProviderTradeSelectionScreen(
                     )
                 }
 
-                // Dynamic Requirement Counter
+                // Dynamic Requirement Counter (Strictly Additive)
                 val activeRequirements = remember(selectedServices, groupedServices) {
                     val levels = mutableSetOf("STANDARD")
                     val allS = groupedServices.flatMap { it.services }
@@ -152,9 +152,12 @@ fun ProviderTradeSelectionScreen(
                             if (listOf("HMS", "OPS", "TSS").contains(it.category)) {
                                 if (level != "HIGH_VETTING") level = "TRADE"
                             }
-                            if (level == "HIGH_VETTING") {
-                                levels.add("PROFESSIONAL"); levels.add("TRADE"); levels.add("HIGH_VETTING")
-                            } else levels.add(level)
+                            
+                            val levelOrder = listOf("STANDARD", "PROFESSIONAL", "TRADE", "HIGH_VETTING")
+                            val currentIdx = levelOrder.indexOf(level)
+                            for (i in 0..currentIdx) {
+                                levels.add(levelOrder[i])
+                            }
                         }
                     }
                     val docs = mutableSetOf("ID", "Selfie")

@@ -77,11 +77,12 @@ class ProviderServicesViewModel @Inject constructor(
                 // 3. Load All Services
                 val resAll = serviceRepository.getServices()
                 if (resAll.success && resAll.data != null) {
-                    Log.d("ServicesVM", "All services loaded: ${resAll.data.data.size}")
-                    _allServices.value = resAll.data.data
+                    Log.d("ServicesVM", "All services loaded: ${resAll.data.services.size}")
+                    _allServices.value = resAll.data.services
                 }
             } catch (e: Exception) {
                 Log.e("ServicesVM", "Error loading data", e)
+                _error.value = "Failed to sync services: ${e.message}"
             } finally {
                 _isLoading.value = false
             }

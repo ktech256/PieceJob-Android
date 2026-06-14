@@ -41,7 +41,7 @@ class CustomerDashboardViewModel @Inject constructor(
             _isLoading.value = true
             val response = serviceRepository.getServices(gender)
             if (response.success && response.data != null) {
-                _services.value = response.data.data
+                _services.value = response.data.services
                 _groupedServices.value = response.data.grouped
                 _error.value = null
             } else {

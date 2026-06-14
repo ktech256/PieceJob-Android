@@ -337,8 +337,7 @@ data class GroupedServicesDto(
 )
 
 data class ServicesResponseDto(
-    val success: Boolean,
-    val data: List<ServiceDto>,
+    val services: List<ServiceDto>,
     val grouped: List<GroupedServicesDto>
 )
 
