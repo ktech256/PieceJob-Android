@@ -1,5 +1,6 @@
 package com.piecejob.provider.ui.profile
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.repository.ProviderRepository
@@ -55,16 +56,19 @@ class ProviderServicesViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                Log.d("ServicesVM", "Loading services data...")
                 // 1. Load Profile for Level
                 val profileRes = providerRepository.getProviderFullProfile()
                 if (profileRes.success && profileRes.data != null) {
                     _providerLevel.value = profileRes.data.verificationLevel
+                    Log.d("ServicesVM", "Provider level: ${_providerLevel.value}")
                 }
 
                 // 2. Load Active Services
                 val res = providerRepository.getMyServices()
                 if (res.success && res.data != null) {
                     val combinedCodes = (res.data.approved.map { it.code } + res.data.pending.map { it.code }).toSet()
+                    Log.d("ServicesVM", "My services: $combinedCodes")
                     _initialServiceCodes.value = combinedCodes
                     _tempServiceCodes.value = combinedCodes
                     _myServices.value = res.data.approved + res.data.pending
@@ -72,11 +76,12 @@ class ProviderServicesViewModel @Inject constructor(
 
                 // 3. Load All Services
                 val resAll = serviceRepository.getServices()
-                if (resAll.success) {
-                    _allServices.value = resAll.data ?: emptyList()
+                if (resAll.success && resAll.data != null) {
+                    Log.d("ServicesVM", "All services loaded: ${resAll.data.data.size}")
+                    _allServices.value = resAll.data.data
                 }
             } catch (e: Exception) {
-                // Handle error
+                Log.e("ServicesVM", "Error loading data", e)
             } finally {
                 _isLoading.value = false
             }
@@ -88,8 +93,6 @@ class ProviderServicesViewModel @Inject constructor(
         if (current.contains(code)) {
             current.remove(code)
         } else {
-            // Remove hardcoded limit of 3 for testing, but let's stick to 3 if that was requested in logic replication
-            // Registration HAD a limit of 3. If the user selects 3, it should save 3.
             if (current.size < 3) {
                 current.add(code)
             }

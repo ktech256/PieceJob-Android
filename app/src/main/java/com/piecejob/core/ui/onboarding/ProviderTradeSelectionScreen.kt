@@ -3,9 +3,8 @@ package com.piecejob.core.ui.onboarding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -30,7 +29,7 @@ fun ProviderTradeSelectionScreen(
     serviceViewModel: CustomerDashboardViewModel = hiltViewModel(),
     onSuccess: () -> Unit
 ) {
-    val services by serviceViewModel.services.collectAsState()
+    val groupedServices by serviceViewModel.groupedServices.collectAsState()
     val isLoadingServices by serviceViewModel.isLoading.collectAsState()
     val authState by authViewModel.authState.collectAsState()
     val gender by authViewModel.gender.collectAsState()
@@ -59,7 +58,7 @@ fun ProviderTradeSelectionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
+                .padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -67,35 +66,65 @@ fun ProviderTradeSelectionScreen(
                     text = "Which services would you like to offer to customers?",
                     fontSize = 16.sp,
                     color = Color.Gray,
-                    lineHeight = 24.sp
+                    lineHeight = 24.sp,
+                    modifier = Modifier.padding(top = 16.dp)
                 )
                 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 if (isLoadingServices) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                        contentPadding = PaddingValues(bottom = 24.dp)
                     ) {
-                        items(services) { service ->
-                            TradeCard(
-                                service = service,
-                                isSelected = selectedServices.contains(service.code),
-                                onToggle = {
-                                    if (selectedServices.contains(service.code)) {
-                                        selectedServices.remove(service.code)
-                                    } else {
-                                        if (selectedServices.size < 3) {
-                                            selectedServices.add(service.code)
+                        items(groupedServices) { group ->
+                            Column {
+                                Text(
+                                    text = group.label,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = group.requirements,
+                                    fontSize = 10.sp,
+                                    color = Color.Gray,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                
+                                val rows = group.services.chunked(2)
+                                rows.forEach { rowItems ->
+                                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        rowItems.forEach { service ->
+                                            Box(modifier = Modifier.weight(1f)) {
+                                                TradeCard(
+                                                    service = service,
+                                                    isSelected = selectedServices.contains(service.code),
+                                                    onToggle = {
+                                                        if (selectedServices.contains(service.code)) {
+                                                            selectedServices.remove(service.code)
+                                                        } else {
+                                                            if (selectedServices.size < 3) {
+                                                                selectedServices.add(service.code)
+                                                            }
+                                                        }
+                                                    }
+                                                )
+                                            }
+                                        }
+                                        if (rowItems.size == 1) {
+                                            Spacer(modifier = Modifier.weight(1f))
                                         }
                                     }
+                                    Spacer(modifier = Modifier.height(12.dp))
                                 }
-                            )
+                            }
                         }
                     }
                 }
@@ -109,6 +138,48 @@ fun ProviderTradeSelectionScreen(
                         fontSize = 12.sp,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
+                }
+
+                // Dynamic Requirement Counter
+                val activeRequirements = remember(selectedServices, groupedServices) {
+                    val levels = mutableSetOf("STANDARD")
+                    val allS = groupedServices.flatMap { it.services }
+                    selectedServices.forEach { code ->
+                        val service = allS.find { it.code == code }
+                        service?.let {
+                            var level = it.verificationLevel
+                            if (it.category == "CSS") level = "HIGH_VETTING"
+                            if (listOf("HMS", "OPS", "TSS").contains(it.category)) {
+                                if (level != "HIGH_VETTING") level = "TRADE"
+                            }
+                            if (level == "HIGH_VETTING") {
+                                levels.add("PROFESSIONAL"); levels.add("TRADE"); levels.add("HIGH_VETTING")
+                            } else levels.add(level)
+                        }
+                    }
+                    val docs = mutableSetOf("ID", "Selfie")
+                    if (levels.contains("PROFESSIONAL")) { docs.add("Certification"); docs.add("Experience") }
+                    if (levels.contains("TRADE")) { docs.add("Trade Licence"); docs.add("Tools") }
+                    if (levels.contains("HIGH_VETTING")) { docs.add("Interview"); docs.add("References") }
+                    docs.toList().sorted()
+                }
+
+                if (selectedServices.isNotEmpty()) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text("REQUIREMENTS", fontWeight = FontWeight.Black, fontSize = 9.sp, letterSpacing = 1.sp)
+                            Text(
+                                text = activeRequirements.joinToString(", "),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
 
                 Text(

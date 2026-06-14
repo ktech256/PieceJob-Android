@@ -71,7 +71,28 @@ class SessionManager @Inject constructor(
     fun getGender(): String? = prefs.getString("gender", null)
     fun isProvider(): Boolean = prefs.getBoolean("is_provider", false)
 
+    fun saveStagedDoc(type: String, path: String) {
+        prefs.edit().putString("staged_doc_$type", path).apply()
+    }
+
+    fun getStagedDoc(type: String): String? {
+        return prefs.getString("staged_doc_$type", null)
+    }
+
+    fun removeStagedDoc(type: String) {
+        prefs.edit().remove("staged_doc_$type").apply()
+    }
+
+    fun clearStagedDocs() {
+        val editor = prefs.edit()
+        prefs.all.keys.filter { it.startsWith("staged_doc_") }.forEach {
+            editor.remove(it)
+        }
+        editor.apply()
+    }
+
     fun clearSession() {
         prefs.edit().remove("auth_token").apply()
+        clearStagedDocs()
     }
 }

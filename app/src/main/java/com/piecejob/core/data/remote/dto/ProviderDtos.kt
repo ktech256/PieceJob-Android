@@ -109,5 +109,6 @@ data class DocRequirementDto(
     val type: String,
     val isRequired: Boolean,
     val allowedTypes: List<String>,
-    val label: String
+    val label: String,
+    val group: String
 )

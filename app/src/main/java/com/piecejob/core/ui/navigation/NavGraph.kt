@@ -184,9 +184,12 @@ fun NavGraph(
             ProviderServicesScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.VerificationDocs.route) {
-            ProviderVerificationScreen(onUploadClick = { docType -> 
-                navController.navigate(Screen.DocumentUpload.passDocType(docType)) 
-            })
+            ProviderVerificationScreen(
+                onUploadClick = { docType -> 
+                    navController.navigate(Screen.DocumentUpload.passDocType(docType)) 
+                },
+                onBack = { navController.popBackStack() }
+            )
         }
         composable(route = Screen.EquipmentTools.route) {
             ProviderEquipmentScreen(onBack = { navController.popBackStack() })

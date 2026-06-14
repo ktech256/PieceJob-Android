@@ -90,6 +90,9 @@ dependencies {
     // Socket.io
     implementation(libs.socket.io)
 
+    // Image Loading
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)

@@ -184,7 +184,7 @@ interface PieceJobApi {
     @GET("config/services")
     suspend fun getServices(
         @Query("gender") gender: String? = null
-    ): ApiResponse<List<ServiceDto>>
+    ): ApiResponse<ServicesResponseDto>
 
     @GET("config/pricing/estimate")
     suspend fun getPriceEstimate(
@@ -328,6 +328,18 @@ data class ServiceDto(
     val verificationLevel: String,
     val equipmentRequired: List<String>,
     val isActive: Boolean
+)
+
+data class GroupedServicesDto(
+    val label: String,
+    val requirements: String,
+    val services: List<ServiceDto>
+)
+
+data class ServicesResponseDto(
+    val success: Boolean,
+    val data: List<ServiceDto>,
+    val grouped: List<GroupedServicesDto>
 )
 
 data class ZoneDto(

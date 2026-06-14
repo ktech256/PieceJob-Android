@@ -12,10 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.FileUpload
-import androidx.compose.material.icons.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,7 +37,6 @@ fun DocumentUploadScreen(
 ) {
     val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -48,17 +44,17 @@ fun DocumentUploadScreen(
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview(),
-        onResult = { b -> if (b != null) bitmap = b; imageUri = null }
+        onResult = { b -> if (b != null) { bitmap = b; imageUri = null } }
     )
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
-        onResult = { uri -> imageUri = uri; bitmap = null }
+        onResult = { uri -> if (uri != null) { imageUri = uri; bitmap = null } }
     )
 
     val fileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri -> imageUri = uri; bitmap = null }
+        onResult = { uri -> if (uri != null) { imageUri = uri; bitmap = null } }
     )
 
     val isSelfie = docType == "SELFIE"
@@ -130,7 +126,11 @@ fun DocumentUploadScreen(
                 if (bitmap != null) {
                     Image(bitmap!!.asImageBitmap(), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 } else if (imageUri != null) {
-                    Text("File Selected: ${imageUri?.path?.takeLast(20)}")
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                         Icon(Icons.Default.FilePresent, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
+                         Spacer(modifier = Modifier.height(8.dp))
+                         Text("File Selected", fontWeight = FontWeight.Bold)
+                    }
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color.Gray)
@@ -152,7 +152,7 @@ fun DocumentUploadScreen(
                         return@Button
                     }
                 }
-                // viewModel.uploadDocument(docType, uri or bitmap)
+                viewModel.stageDocument(docType, imageUri, bitmap)
                 onUploadComplete() 
             },
             modifier = Modifier
@@ -162,7 +162,7 @@ fun DocumentUploadScreen(
             shape = RoundedCornerShape(16.dp),
             enabled = !isLoading && (bitmap != null || imageUri != null)
         ) {
-            Text("UPLOAD DOCUMENT", fontWeight = FontWeight.Black)
+            Text("SAVE & STAGE", fontWeight = FontWeight.Black)
         }
     }
 }
