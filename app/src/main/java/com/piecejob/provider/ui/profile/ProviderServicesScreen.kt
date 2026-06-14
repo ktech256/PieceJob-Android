@@ -146,17 +146,15 @@ fun ProviderServicesScreen(
                 tempCodes.forEach { code ->
                     val service = allS.find { it.code == code }
                     service?.let {
-                        var level = it.verificationLevel
-                        if (it.category == "CSS") level = "HIGH_VETTING"
-                        if (listOf("HMS", "OPS", "TSS").contains(it.category)) {
-                            if (level != "HIGH_VETTING") level = "TRADE"
-                        }
+                        val level = it.verificationLevel
                         
                         // Fill additive levels for requirement summary
                         val levelOrder = listOf("STANDARD", "PROFESSIONAL", "TRADE", "HIGH_VETTING")
                         val currentIdx = levelOrder.indexOf(level)
-                        for (i in 0..currentIdx) {
-                            levels.add(levelOrder[i])
+                        if (currentIdx != -1) {
+                            for (i in 0..currentIdx) {
+                                levels.add(levelOrder[i])
+                            }
                         }
                     }
                 }
