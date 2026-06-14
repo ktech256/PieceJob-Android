@@ -101,6 +101,13 @@ data class ProviderStatusRequest(val isOnline: Boolean)
 
 data class VerificationRequirementsDto(
     val currentLevel: String,
-    val nextLevel: String,
-    val requiredDocs: List<String>
+    val targetLevel: String,
+    val requirements: List<DocRequirementDto>
+)
+
+data class DocRequirementDto(
+    val type: String,
+    val isRequired: Boolean,
+    val allowedTypes: List<String>,
+    val label: String
 )

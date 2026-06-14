@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -97,20 +99,35 @@ fun ProviderVerificationScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        if (requirements?.requirements?.any { it.type == "CRIMINAL_CHECK" && it.isRequired } == true) {
+            Surface(
+                color = Color(0xFFFFEBEE),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+            ) {
+                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = Color.Red, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Criminal Check Required", fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color.Red)
+                }
+            }
+        }
+
         Text(text = "Verification Requirements", fontWeight = FontWeight.Bold, fontSize = 16.sp)
         
         Spacer(modifier = Modifier.height(16.dp))
 
-        // List of items based on dynamic requirements
-        val activeRequirements = requirements?.requiredDocs ?: listOf("GOVERNMENT_ID", "SELFIE")
+        // List of items based on dynamic requirements from backend
+        val activeRequirements = requirements?.requirements ?: emptyList()
         
         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(activeRequirements) { req ->
-                val doc = status?.latestRequest?.documents?.find { it.type == req }
+                val doc = status?.latestRequest?.documents?.find { it.type == req.type }
                 RequirementRow(
-                    label = req.replace('_', ' '),
+                    label = req.label,
                     status = doc?.status ?: "MISSING",
-                    onUpload = { onUploadClick(req) }
+                    isRequired = req.isRequired,
+                    onUpload = { onUploadClick(req.type) }
                 )
             }
         }
@@ -118,19 +135,22 @@ fun ProviderVerificationScreen(
         Spacer(modifier = Modifier.weight(1f))
 
         Button(
-            onClick = { viewModel.submitVerification("STANDARD", emptyList()) }, // In real app, pass collected docs
+            onClick = { 
+                val targetLevel = requirements?.targetLevel ?: "STANDARD"
+                viewModel.submitVerification(targetLevel, emptyList()) 
+            },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400)),
             shape = RoundedCornerShape(12.dp),
             enabled = status?.currentStatus != "PENDING" && !isLoading
         ) {
-            Text("Submit for Standard Review", fontWeight = FontWeight.Bold)
+            Text("Submit for ${requirements?.targetLevel ?: "Standard"} Review", fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
-fun RequirementRow(label: String, status: String, onUpload: () -> Unit) {
+fun RequirementRow(label: String, status: String, isRequired: Boolean, onUpload: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -139,8 +159,16 @@ fun RequirementRow(label: String, status: String, onUpload: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text(text = label, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = label, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                if (!isRequired) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(color = Color.LightGray.copy(alpha = 0.3f), shape = RoundedCornerShape(4.dp)) {
+                        Text("OPTIONAL", modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
             Text(text = status, fontSize = 10.sp, color = when(status) {
                 "APPROVED" -> Color(0xFF2E7D32)
                 "REJECTED" -> Color.Red
