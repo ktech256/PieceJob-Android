@@ -185,9 +185,6 @@ fun NavGraph(
         }
         composable(route = Screen.VerificationDocs.route) {
             ProviderVerificationScreen(
-                onUploadClick = { docType -> 
-                    navController.navigate(Screen.DocumentUpload.passDocType(docType)) 
-                },
                 onBack = { navController.popBackStack() }
             )
         }

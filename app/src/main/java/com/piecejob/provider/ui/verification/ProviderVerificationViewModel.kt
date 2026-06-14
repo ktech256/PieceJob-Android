@@ -86,7 +86,10 @@ class ProviderVerificationViewModel @Inject constructor(
     fun stageDocument(type: String, uri: Uri?, bitmap: Bitmap?) {
         viewModelScope.launch {
             try {
-                val file = File(context.filesDir, "staged_${type}_${System.currentTimeMillis()}.jpg")
+                val extension = if (bitmap != null) "jpg" else {
+                    uri?.let { context.contentResolver.getType(it)?.split("/")?.last() } ?: "file"
+                }
+                val file = File(context.filesDir, "staged_${type}_${System.currentTimeMillis()}.$extension")
                 val out = FileOutputStream(file)
                 
                 if (bitmap != null) {
