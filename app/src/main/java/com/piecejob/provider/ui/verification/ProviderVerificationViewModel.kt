@@ -3,6 +3,7 @@ package com.piecejob.provider.ui.verification
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.remote.*
@@ -51,15 +52,20 @@ class ProviderVerificationViewModel @Inject constructor(
     fun loadData() {
         viewModelScope.launch {
             _isLoading.value = true
-            launch {
-                val response = repository.getVerificationStatus()
-                if (response.success) _status.value = response.data
+            try {
+                launch {
+                    val response = repository.getVerificationStatus()
+                    if (response.success) _status.value = response.data
+                }
+                launch {
+                    val response = repository.getVerificationRequirements()
+                    if (response.success) _requirements.value = response.data
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to load: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
-            launch {
-                val response = repository.getVerificationRequirements()
-                if (response.success) _requirements.value = response.data
-            }
-            _isLoading.value = false
         }
     }
 
@@ -68,7 +74,7 @@ class ProviderVerificationViewModel @Inject constructor(
         val allDocTypes = listOf(
             "GOVERNMENT_ID", "SELFIE", "CRIMINAL_CHECK",
             "CERTIFICATION", "EXPERIENCE_VERIFICATION",
-            "TRADE_LICENSE", "TOOL_VERIFICATION"
+            "TRADE_LICENSE", "TOOL_VERIFICATION", "REFERENCES", "INTERVIEW"
         )
         allDocTypes.forEach { type ->
             sessionManager.getStagedDoc(type)?.let { path ->
@@ -87,7 +93,10 @@ class ProviderVerificationViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val extension = if (bitmap != null) "jpg" else {
-                    uri?.let { context.contentResolver.getType(it)?.split("/")?.last() } ?: "file"
+                    uri?.let { 
+                        val typeStr = context.contentResolver.getType(it)
+                        if (typeStr?.contains("pdf") == true) "pdf" else "jpg"
+                    } ?: "jpg"
                 }
                 val file = File(context.filesDir, "staged_${type}_${System.currentTimeMillis()}.$extension")
                 val out = FileOutputStream(file)
@@ -128,14 +137,31 @@ class ProviderVerificationViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // In full implementation, we'd upload these files to server first
-                // For now, we simulate submission with local paths as URLs
-                val docsToSubmit = _stagedDocs.value.map { (type, path) ->
-                    VerificationDocDto(type = type, url = "file://$path", status = "PENDING", rejectionReason = null)
+                val uploadedDocs = mutableListOf<VerificationDocDto>()
+                
+                for ((type, path) in _stagedDocs.value) {
+                    val file = File(path)
+                    if (file.exists()) {
+                        val bytes = file.readBytes()
+                        val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                        val mimeType = if (path.endsWith(".pdf", true)) "application/pdf" else "image/jpeg"
+                        
+                        val uploadRes = repository.uploadFile(base64, mimeType, "verifications")
+                        if (uploadRes.success && uploadRes.data != null) {
+                            uploadedDocs.add(VerificationDocDto(
+                                type = type,
+                                url = uploadRes.data.url, // This is the bucket path returned by server
+                                status = "PENDING",
+                                rejectionReason = null
+                            ))
+                        } else {
+                            throw Exception("Failed to upload $type: ${uploadRes.message}")
+                        }
+                    }
                 }
 
                 val targetLevel = _requirements.value?.targetLevel ?: "STANDARD"
-                val response = repository.submitVerification(SubmitVerificationRequest(targetLevel, docsToSubmit))
+                val response = repository.submitVerification(SubmitVerificationRequest(targetLevel, uploadedDocs))
                 
                 if (response.success) {
                     // Cleanup local files

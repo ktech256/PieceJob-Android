@@ -1,5 +1,7 @@
 package com.piecejob.provider.ui.profile
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +27,7 @@ fun ProviderBankDetailsScreen(
     val bankDetails by viewModel.bankDetails.collectAsState()
     val profile by viewModel.profile.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val uploadUrl by viewModel.uploadUrl.collectAsState()
     
     var bankName by remember { mutableStateOf("") }
     var accountHolder by remember { mutableStateOf("") }
@@ -32,6 +35,16 @@ fun ProviderBankDetailsScreen(
     var branchCode by remember { mutableStateOf("") }
     var accountType by remember { mutableStateOf("Savings") }
     var confirmationUrl by remember { mutableStateOf<String?>(null) }
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val fileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            uri?.let {
+                viewModel.uploadBankConfirmation(it, context)
+            }
+        }
+    )
 
     LaunchedEffect(bankDetails) {
         bankDetails?.let {
@@ -125,13 +138,17 @@ fun ProviderBankDetailsScreen(
             Text(text = "Bank Confirmation Letter", fontWeight = FontWeight.Bold, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(
-                onClick = { /* File Picker */ },
+                onClick = { fileLauncher.launch(arrayOf("application/pdf", "image/*")) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(Icons.Default.UploadFile, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(if (confirmationUrl != null) "Replace Document" else "Upload Confirmation Letter")
+                Text(if (confirmationUrl != null || uploadUrl != null) "Replace Document" else "Upload Confirmation Letter")
+            }
+
+            if (uploadUrl != null || confirmationUrl != null) {
+                Text("File: ${(uploadUrl ?: confirmationUrl)?.split("/")?.last()}", fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
             }
 
             if (bankDetails?.isVerified == true) {

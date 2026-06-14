@@ -35,6 +35,14 @@ class VerificationRepository @Inject constructor(
         }
     }
 
+    suspend fun uploadFile(base64: String, mimeType: String, folder: String): ApiResponse<FileUploadResponse> {
+        return try {
+            api.uploadFile(FileUploadRequest(base64, mimeType, folder))
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
     suspend fun uploadDocuments(idDocument: MultipartBody.Part?, license: MultipartBody.Part?): ApiResponse<Unit> {
         return try {
             api.uploadDocuments(idDocument, license)

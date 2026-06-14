@@ -171,6 +171,9 @@ interface PieceJobApi {
     @POST("providers/verification/submit")
     suspend fun submitVerification(@Body request: SubmitVerificationRequest): ApiResponse<Unit>
 
+    @POST("providers/upload-file")
+    suspend fun uploadFile(@Body request: FileUploadRequest): ApiResponse<FileUploadResponse>
+
     @Multipart
     @PATCH("providers/me/documents")
     suspend fun uploadDocuments(
@@ -412,4 +415,14 @@ data class SubmitVerificationRequest(
     val type: String,
     val documents: List<VerificationDocDto>,
     val extraData: Map<String, Any>? = null
+)
+
+data class FileUploadRequest(
+    val base64: String,
+    val mimeType: String,
+    val folder: String
+)
+
+data class FileUploadResponse(
+    val url: String
 )
