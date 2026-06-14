@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Base64
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.remote.*
@@ -137,33 +138,48 @@ class ProviderVerificationViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                Log.d("VerificationVM", "Starting submission of ${_stagedDocs.value.size} documents")
                 val uploadedDocs = mutableListOf<VerificationDocDto>()
                 
                 for ((type, path) in _stagedDocs.value) {
+                    Log.d("VerificationVM", "Processing $type from path: $path")
                     val file = File(path)
                     if (file.exists()) {
+                        Log.d("VerificationVM", "Reading file bytes: ${file.length()} bytes")
                         val bytes = file.readBytes()
                         val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
                         val mimeType = if (path.endsWith(".pdf", true)) "application/pdf" else "image/jpeg"
                         
+                        Log.d("VerificationVM", "Uploading Base64 to server...")
                         val uploadRes = repository.uploadFile(base64, mimeType, "verifications")
                         if (uploadRes.success && uploadRes.data != null) {
+                            Log.d("VerificationVM", "Upload Success for $type. Server path: ${uploadRes.data.url}")
                             uploadedDocs.add(VerificationDocDto(
                                 type = type,
-                                url = uploadRes.data.url, // This is the bucket path returned by server
+                                url = uploadRes.data.url, 
                                 status = "PENDING",
                                 rejectionReason = null
                             ))
                         } else {
+                            Log.e("VerificationVM", "Upload Failed for $type: ${uploadRes.message}")
                             throw Exception("Failed to upload $type: ${uploadRes.message}")
                         }
+                    } else {
+                        Log.w("VerificationVM", "File not found at $path for $type")
                     }
                 }
 
+                if (uploadedDocs.isEmpty()) {
+                    Log.w("VerificationVM", "No documents were actually uploaded.")
+                    throw Exception("No documents were uploaded. Please select files first.")
+                }
+
                 val targetLevel = _requirements.value?.targetLevel ?: "STANDARD"
+                Log.d("VerificationVM", "Submitting verification request for level: $targetLevel with ${uploadedDocs.size} docs")
                 val response = repository.submitVerification(SubmitVerificationRequest(targetLevel, uploadedDocs))
                 
                 if (response.success) {
+                    Log.d("VerificationVM", "Verification request submitted successfully.")
                     // Cleanup local files
                     _stagedDocs.value.values.forEach { path -> File(path).delete() }
                     sessionManager.clearStagedDocs()
@@ -171,9 +187,11 @@ class ProviderVerificationViewModel @Inject constructor(
                     _isSubmitSuccess.value = true
                     loadData()
                 } else {
+                    Log.e("VerificationVM", "Final Submission Failed: ${response.error?.message}")
                     _error.value = response.error?.message ?: "Submission failed"
                 }
             } catch (e: Exception) {
+                Log.e("VerificationVM", "Exception in submitDocuments", e)
                 _error.value = e.message
             } finally {
                 _isLoading.value = false
