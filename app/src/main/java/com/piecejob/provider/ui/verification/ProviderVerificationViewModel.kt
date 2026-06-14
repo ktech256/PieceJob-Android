@@ -157,7 +157,7 @@ class ProviderVerificationViewModel @Inject constructor(
                         Log.d("UPLOAD_TRACE", "5. Starting API call to providers/upload-file")
                         val uploadRes = repository.uploadFile(base64, mimeType, "verifications")
                         
-                        Log.d("UPLOAD_TRACE", "6. API response code: ${uploadRes.success}")
+                        Log.d("UPLOAD_TRACE", "6. API response: success=${uploadRes.success}, hasData=${uploadRes.data != null}")
                         if (uploadRes.success && uploadRes.data != null) {
                             Log.d("UPLOAD_TRACE", "7. PASS: Uploaded $type. Bucket Path: ${uploadRes.data.url}")
                             uploadedDocs.add(VerificationDocDto(
@@ -167,8 +167,9 @@ class ProviderVerificationViewModel @Inject constructor(
                                 rejectionReason = null
                             ))
                         } else {
-                            Log.e("UPLOAD_TRACE", "7. FAIL: Upload $type failed. Message: ${uploadRes.message}")
-                            throw Exception("Failed to upload $type: ${uploadRes.message}")
+                            val msg = uploadRes.message ?: uploadRes.error?.message ?: "Unknown error"
+                            Log.e("UPLOAD_TRACE", "7. FAIL: Upload $type failed. Message: $msg")
+                            throw Exception("Failed to upload $type: $msg")
                         }
                     } else {
                         Log.e("UPLOAD_TRACE", "2. FAIL: File not found at $path")
