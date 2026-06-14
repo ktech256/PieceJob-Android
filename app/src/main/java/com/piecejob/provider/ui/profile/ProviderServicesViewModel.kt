@@ -111,16 +111,22 @@ class ProviderServicesViewModel @Inject constructor(
             val codesToSave = _tempServiceCodes.value.toList()
             val res = providerRepository.updateMyServices(codesToSave)
             if (res.success && res.data != null) {
+                // 1. Handle dynamic verification requirements
                 _pendingRequirements.value = res.data.requirements ?: emptyMap()
                 
-                // Refresh local data
-                val resMy = providerRepository.getMyServices()
-                if (resMy.success && resMy.data != null) {
-                    val combinedCodes = (resMy.data.approved.map { it.code } + resMy.data.pending.map { it.code }).toSet()
-                    _initialServiceCodes.value = combinedCodes
-                    _tempServiceCodes.value = combinedCodes
-                    _myServices.value = resMy.data.approved + resMy.data.pending
+                // 2. Update local state immediately from response to ensure persistence in UI
+                val combinedCodes = (res.data.approved + res.data.pending).toSet()
+                _initialServiceCodes.value = combinedCodes
+                _tempServiceCodes.value = combinedCodes
+                
+                // 3. Optional: Trigger a silent background refresh to sync full objects
+                launch {
+                    val resMy = providerRepository.getMyServices()
+                    if (resMy.success && resMy.data != null) {
+                        _myServices.value = resMy.data.approved + resMy.data.pending
+                    }
                 }
+
                 _saveSuccess.value = true
             } else {
                 _error.value = res.message ?: "Update failed"
