@@ -372,7 +372,8 @@ data class ServiceDto(
     val genderRule: String,
     val verificationLevel: String,
     val equipmentRequired: List<String>,
-    val isActive: Boolean
+    val isActive: Boolean,
+    val description: String? = null
 )
 
 data class GroupedServicesDto(

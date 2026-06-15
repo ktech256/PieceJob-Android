@@ -22,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.piecejob.core.data.remote.ServiceDto
 import com.piecejob.core.ui.onboarding.TradeCard
 import com.piecejob.customer.ui.dashboard.CustomerDashboardViewModel
+import com.piecejob.customer.ui.dashboard.ServiceDetailsDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +42,19 @@ fun ProviderServicesScreen(
 
     var showUnsavedDialog by remember { mutableStateOf(false) }
     var showRequirementsDialog by remember { mutableStateOf(false) }
+    var serviceForDetails by remember { mutableStateOf<ServiceDto?>(null) }
+
+    if (serviceForDetails != null) {
+        ServiceDetailsDialog(
+            service = serviceForDetails!!,
+            confirmColor = MaterialTheme.colorScheme.primary,
+            onConfirm = {
+                viewModel.toggleService(serviceForDetails!!.code)
+                serviceForDetails = null
+            },
+            onDismiss = { serviceForDetails = null }
+        )
+    }
 
     LaunchedEffect(Unit) {
         serviceViewModel.loadServices()
@@ -247,7 +261,13 @@ fun ProviderServicesScreen(
                                         TradeCard(
                                             service = service,
                                             isSelected = tempCodes.contains(service.code),
-                                            onToggle = { viewModel.toggleService(service.code) }
+                                            onToggle = {
+                                                if (tempCodes.contains(service.code)) {
+                                                    viewModel.toggleService(service.code)
+                                                } else {
+                                                    serviceForDetails = service
+                                                }
+                                            }
                                         )
                                     }
                                 }

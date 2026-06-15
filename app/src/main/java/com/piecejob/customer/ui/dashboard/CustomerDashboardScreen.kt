@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Notifications
@@ -37,6 +39,20 @@ fun CustomerDashboardScreen(
     val services by viewModel.services.collectAsState()
     val categoriesList by viewModel.categories.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    var selectedServiceForDetails by remember { mutableStateOf<ServiceDto?>(null) }
+
+    if (selectedServiceForDetails != null) {
+        ServiceDetailsDialog(
+            service = selectedServiceForDetails!!,
+            onConfirm = {
+                val service = selectedServiceForDetails!!
+                selectedServiceForDetails = null
+                onServiceClick(service)
+            },
+            onDismiss = { selectedServiceForDetails = null }
+        )
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -97,7 +113,7 @@ fun CustomerDashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(servicesInCategory) { service ->
-                            ServiceCardSmall(service, onServiceClick)
+                            ServiceCardSmall(service) { selectedServiceForDetails = it }
                         }
                     }
                 }
@@ -288,6 +304,55 @@ fun ServiceCardSmall(service: ServiceDto, onClick: (ServiceDto) -> Unit) {
             Text("Book now", color = Color.Gray, fontSize = 11.sp)
         }
     }
+}
+
+@Composable
+fun ServiceDetailsDialog(
+    service: ServiceDto,
+    confirmColor: Color = Color(0xFFD32F2F),
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = service.name,
+                fontWeight = FontWeight.Black,
+                fontSize = 20.sp
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = service.description ?: "No specific details provided for this service.",
+                    fontSize = 14.sp,
+                    color = Color.DarkGray,
+                    lineHeight = 20.sp
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = confirmColor),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("CONFIRM", fontWeight = FontWeight.Black)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("CANCEL", color = Color.Gray, fontWeight = FontWeight.Bold)
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(28.dp)
+    )
 }
 
 @Composable

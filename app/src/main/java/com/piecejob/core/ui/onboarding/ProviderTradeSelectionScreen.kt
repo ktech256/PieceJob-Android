@@ -21,6 +21,7 @@ import com.piecejob.customer.ui.dashboard.CustomerDashboardViewModel
 import com.piecejob.core.data.remote.ServiceDto
 import com.piecejob.core.ui.auth.AuthViewModel
 import com.piecejob.core.ui.auth.AuthState
+import com.piecejob.customer.ui.dashboard.ServiceDetailsDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +36,24 @@ fun ProviderTradeSelectionScreen(
     val gender by authViewModel.gender.collectAsState()
     
     val selectedServices = remember { mutableStateListOf<String>() }
+    var serviceForDetails by remember { mutableStateOf<ServiceDto?>(null) }
+
+    if (serviceForDetails != null) {
+        ServiceDetailsDialog(
+            service = serviceForDetails!!,
+            confirmColor = MaterialTheme.colorScheme.primary,
+            onConfirm = {
+                val code = serviceForDetails!!.code
+                if (!selectedServices.contains(code)) {
+                    if (selectedServices.size < 3) {
+                        selectedServices.add(code)
+                    }
+                }
+                serviceForDetails = null
+            },
+            onDismiss = { serviceForDetails = null }
+        )
+    }
 
     LaunchedEffect(Unit) {
         serviceViewModel.loadServices(gender)
@@ -110,9 +129,7 @@ fun ProviderTradeSelectionScreen(
                                                         if (selectedServices.contains(service.code)) {
                                                             selectedServices.remove(service.code)
                                                         } else {
-                                                            if (selectedServices.size < 3) {
-                                                                selectedServices.add(service.code)
-                                                            }
+                                                            serviceForDetails = service
                                                         }
                                                     }
                                                 )
