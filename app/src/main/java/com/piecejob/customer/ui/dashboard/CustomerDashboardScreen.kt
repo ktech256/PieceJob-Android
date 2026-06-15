@@ -242,9 +242,16 @@ fun PopularCategories(categories: List<com.piecejob.core.data.remote.ServiceCate
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         if (categories.isEmpty()) {
-            val cats = listOf("HDS", "CSS", "HMS", "OPS", "LLS", "TSS")
-            cats.forEach { cat ->
-                CategoryIcon(cat, cat)
+            val cats = listOf(
+                "HDS" to "Home & Domestic Services (HDS)",
+                "CSS" to "Care & Support Services (CSS)",
+                "HMS" to "Handyman & Repairs Services (HMS)",
+                "OPS" to "Outdoor & Property Services (OPS)",
+                "LLS" to "Convenience & Lifestyle Services (LLS)",
+                "TSS" to "Technology & Home Setup Services (TSS)"
+            )
+            cats.forEach { (code, label) ->
+                CategoryIcon(code, label.take(10))
             }
         } else {
             categories.take(6).forEach { cat ->

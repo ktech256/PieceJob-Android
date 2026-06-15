@@ -2,6 +2,7 @@ package com.piecejob.core.data.repository
 
 import com.piecejob.core.data.remote.PieceJobApi
 import com.piecejob.core.data.remote.ServicesResponseDto
+import com.piecejob.core.data.remote.ServiceCategoryDto
 import com.piecejob.core.data.remote.dto.*
 import com.piecejob.core.data.remote.ApiResponse
 import com.piecejob.core.data.remote.ApiError
