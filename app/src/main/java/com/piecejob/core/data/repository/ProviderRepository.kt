@@ -162,6 +162,22 @@ class ProviderRepository @Inject constructor(
         }
     }
 
+    suspend fun getAvailableJobs(): ApiResponse<List<JobDto>> {
+        return try {
+            api.getAvailableJobs()
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
+    suspend fun getOnlineProviders(): ApiResponse<List<ProviderDto>> {
+        return try {
+            api.getOnlineProviders()
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
     suspend fun updateStatus(isOnline: Boolean): ApiResponse<Unit> {
         return try {
             api.updateProviderStatus(com.piecejob.core.data.remote.dto.ProviderStatusRequest(isOnline))

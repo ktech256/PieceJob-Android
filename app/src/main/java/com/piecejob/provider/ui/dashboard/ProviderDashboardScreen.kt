@@ -381,6 +381,17 @@ fun ActiveJobCard(job: JobDto, onArrive: (String) -> Unit, onStart: (String) -> 
             Text(text = job.serviceCode, fontSize = 20.sp, fontWeight = FontWeight.Black)
             Text(text = "Status: ${job.status}", fontSize = 14.sp, color = Color.Gray)
             
+            if (job.isForSomeoneElse) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Surface(color = Color(0xFFF5F5F5), shape = RoundedCornerShape(8.dp)) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("RECIPIENT INFO", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                        Text(text = job.recipientName ?: "Unknown", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        job.recipientPhone?.let { Text(text = it, fontSize = 12.sp, color = Color.Gray) }
+                    }
+                }
+            }
+            
             Spacer(modifier = Modifier.height(20.dp))
             
             when (job.status) {

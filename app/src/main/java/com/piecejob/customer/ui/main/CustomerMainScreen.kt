@@ -88,7 +88,8 @@ fun CustomerMainScreen(
         ) {
             composable(CustomerBottomBarScreen.Home.route) {
                 CustomerDashboardScreen(
-                    onServiceClick = { onNavigateToSubScreen(Screen.BookingFlow) },
+                    onServiceClick = { service -> onNavigateToSubScreen(Screen.BookingFlow) },
+                    onRequestServiceClick = { onNavigateToSubScreen(Screen.BookingFlow) },
                     onProfileClick = { navController.navigate(CustomerBottomBarScreen.Account.route) },
                     onNotificationsClick = { onNavigateToSubScreen(Screen.CustomerNotifications) },
                     onSosClick = { onNavigateToSubScreen(Screen.ReportIssue) }

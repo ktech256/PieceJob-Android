@@ -130,3 +130,14 @@ data class TimeSlotDto(
     val start: String,
     val end: String
 )
+
+data class ProviderDto(
+    val id: String,
+    val userId: String,
+    val firstName: String?,
+    val lastName: String?,
+    val ratingAvg: Double,
+    val jobsCompleted: Int,
+    val location: LocationDto,
+    val isOnline: Boolean
+)

@@ -141,11 +141,17 @@ interface PieceJobApi {
     @GET("jobs/{jobId}")
     suspend fun getJobById(@Path("jobId") jobId: String): ApiResponse<JobDto>
 
+    @POST("jobs/{jobId}/pay-booking-fee")
+    suspend fun payBookingFee(@Path("jobId") jobId: String): ApiResponse<JobDto>
+
     @PATCH("jobs/{jobId}/cancel")
     suspend fun cancelJob(@Path("jobId") jobId: String): ApiResponse<Unit>
 
     @GET("providers/jobs/broadcasted")
     suspend fun getAvailableJobs(): ApiResponse<List<JobDto>>
+
+    @GET("providers/online")
+    suspend fun getOnlineProviders(): ApiResponse<List<ProviderDto>>
 
     @PATCH("providers/jobs/{jobId}/accept")
     suspend fun acceptJob(@Path("jobId") jobId: String): ApiResponse<JobDto>
@@ -373,7 +379,8 @@ data class ServiceDto(
     val verificationLevel: String,
     val equipmentRequired: List<String>,
     val isActive: Boolean,
-    val description: String? = null
+    val description: String? = null,
+    val onlineCountLabel: String? = null
 )
 
 data class GroupedServicesDto(

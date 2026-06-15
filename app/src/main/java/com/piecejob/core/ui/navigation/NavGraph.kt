@@ -174,7 +174,17 @@ fun NavGraph(
         composable(route = Screen.CustomerCountry.route) { CustomerPlaceholderScreen("Country") { navController.popBackStack() } }
         composable(route = Screen.CustomerSupport.route) { CustomerPlaceholderScreen("Support") { navController.popBackStack() } }
         composable(route = Screen.CustomerAbout.route) { CustomerPlaceholderScreen("About") { navController.popBackStack() } }
-        composable(route = Screen.BookingFlow.route) { CustomerPlaceholderScreen("Booking Flow") { navController.popBackStack() } }
+        
+        composable(route = Screen.BookingFlow.route) {
+            com.piecejob.customer.ui.booking.BookingFlowScreen(
+                onTrackingStart = { jobId ->
+                    navController.navigate(Screen.CustomerTracking.passJobId(jobId)) {
+                        popUpTo(Screen.Dashboard.route)
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
 
         // Sub-screens for Provider
         composable(route = Screen.ProviderPersonalDetails.route) {

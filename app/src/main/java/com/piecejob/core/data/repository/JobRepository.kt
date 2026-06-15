@@ -31,6 +31,14 @@ class JobRepository @Inject constructor(
         }
     }
 
+    suspend fun payBookingFee(jobId: String): ApiResponse<JobDto> {
+        return try {
+            api.payBookingFee(jobId)
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
     suspend fun getAvailableJobs(): ApiResponse<List<JobDto>> {
         return try {
             api.getAvailableJobs()

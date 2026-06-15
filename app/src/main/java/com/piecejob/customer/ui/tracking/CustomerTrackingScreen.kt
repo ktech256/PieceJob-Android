@@ -88,8 +88,16 @@ fun CustomerTrackingScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "Provider assigned", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-                        Text(text = "⭐ 4.8 • Top Rated", color = Color.Gray, fontSize = 14.sp)
+                        Text(
+                            text = job?.providerInfo?.let { "${it.firstName} ${it.lastName}" } ?: "Provider assigned",
+                            fontWeight = FontWeight.ExtraBold, 
+                            fontSize = 18.sp
+                        )
+                        Text(
+                            text = "⭐ ${job?.providerInfo?.ratingAvg ?: "4.8"} • ${job?.providerInfo?.jobsCompleted ?: "0"} Jobs", 
+                            color = Color.Gray, 
+                            fontSize = 14.sp
+                        )
                     }
                     
                     IconButton(

@@ -4,7 +4,12 @@ data class CreateJobRequest(
     val serviceCode: String,
     val coordinates: List<Double>,
     val address: String,
-    val description: String? = null
+    val description: String? = null,
+    val zoneId: String? = null,
+    val isEmergency: Boolean = false,
+    val isForSomeoneElse: Boolean = false,
+    val recipientName: String? = null,
+    val recipientPhone: String? = null
 )
 
 data class JobDto(
@@ -13,11 +18,22 @@ data class JobDto(
     val status: String,
     val customerId: String,
     val providerId: String?,
+    val providerInfo: ProviderInfoDto?,
     val bookingFee: Double,
     val serviceFee: Double?,
     val currency: String,
     val location: LocationDto?,
+    val isForSomeoneElse: Boolean,
+    val recipientName: String?,
+    val recipientPhone: String?,
     val createdAt: String
+)
+
+data class ProviderInfoDto(
+    val firstName: String,
+    val lastName: String,
+    val ratingAvg: Double,
+    val jobsCompleted: Int
 )
 
 data class LocationDto(

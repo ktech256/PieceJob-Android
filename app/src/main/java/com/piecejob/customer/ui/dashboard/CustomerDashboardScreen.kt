@@ -32,6 +32,7 @@ import com.piecejob.core.data.remote.ServiceDto
 fun CustomerDashboardScreen(
     viewModel: CustomerDashboardViewModel = hiltViewModel(),
     onServiceClick: (ServiceDto) -> Unit,
+    onRequestServiceClick: () -> Unit,
     onProfileClick: () -> Unit,
     onNotificationsClick: () -> Unit,
     onSosClick: () -> Unit
@@ -152,7 +153,27 @@ fun CustomerDashboardScreen(
         // SECTION 14: CUSTOMER TIPS
         item { CustomerTipsSection() }
         
-        item { Spacer(modifier = Modifier.height(32.dp)) }
+        item { Spacer(modifier = Modifier.height(100.dp)) }
+    }
+
+    // FLOATING ACTION BUTTON: REQUEST SERVICE
+    Box(modifier = Modifier.fillMaxSize()) {
+        ExtendedFloatingActionButton(
+            onClick = onRequestServiceClick,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 24.dp)
+                .fillMaxWidth(0.85f)
+                .height(64.dp),
+            containerColor = Color(0xFFD32F2F),
+            contentColor = Color.White,
+            shape = RoundedCornerShape(20.dp),
+            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 8.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Spacer(modifier = Modifier.width(12.dp))
+            Text("REQUEST A PIECEJOB", fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+        }
     }
 }
 
