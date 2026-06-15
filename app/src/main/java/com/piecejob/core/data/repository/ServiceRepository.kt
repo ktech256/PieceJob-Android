@@ -22,6 +22,14 @@ class ServiceRepository @Inject constructor(
         }
     }
 
+    suspend fun getCategories(): ApiResponse<List<ServiceCategoryDto>> {
+        return try {
+            api.getPublicCategories()
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
     fun hasStoredGender(): Boolean {
         return sessionManager.getGender() != null
     }

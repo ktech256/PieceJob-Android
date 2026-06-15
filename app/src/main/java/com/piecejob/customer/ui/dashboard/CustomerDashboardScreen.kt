@@ -35,6 +35,7 @@ fun CustomerDashboardScreen(
     onSosClick: () -> Unit
 ) {
     val services by viewModel.services.collectAsState()
+    val categoriesList by viewModel.categories.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     LazyColumn(
@@ -55,7 +56,7 @@ fun CustomerDashboardScreen(
         item { PromotionCarousel() }
 
         // SECTION 5: POPULAR CATEGORIES
-        item { PopularCategories() }
+        item { PopularCategories(categoriesList) }
 
         // SECTION 11: CURRENT ACTIVE JOB CARD (Conditional)
         item { ActiveJobMiniCard() }
@@ -78,11 +79,13 @@ fun CustomerDashboardScreen(
         if (isLoading && services.isEmpty()) {
             item { SkeletonGrid() }
         } else {
-            val categories = services.groupBy { it.category }
-            categories.forEach { (category, servicesInCategory) ->
+            val servicesGrouped = services.groupBy { it.category }
+            
+            servicesGrouped.forEach { (categoryCode, servicesInCategory) ->
+                val categoryName = categoriesList.find { it.code == categoryCode }?.name ?: categoryCode
                 item {
                     Text(
-                        text = category,
+                        text = categoryName,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Black,
                         modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 12.dp)
@@ -231,23 +234,34 @@ fun PromotionCarousel() {
 }
 
 @Composable
-fun PopularCategories() {
-    val cats = listOf("HDS", "CSS", "HMS", "OPS", "LLS", "TSS")
+fun PopularCategories(categories: List<com.piecejob.core.data.remote.ServiceCategoryDto>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(24.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        cats.forEach { cat ->
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Surface(modifier = Modifier.size(52.dp), shape = RoundedCornerShape(16.dp), color = Color.White, shadowElevation = 2.dp) {
-                    Box(contentAlignment = Alignment.Center) { Text(cat, fontWeight = FontWeight.Black, fontSize = 12.sp) }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(cat, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+        if (categories.isEmpty()) {
+            val cats = listOf("HDS", "CSS", "HMS", "OPS", "LLS", "TSS")
+            cats.forEach { cat ->
+                CategoryIcon(cat, cat)
+            }
+        } else {
+            categories.take(6).forEach { cat ->
+                CategoryIcon(cat.code, cat.name.split("&").first().trim().take(10))
             }
         }
+    }
+}
+
+@Composable
+fun CategoryIcon(code: String, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Surface(modifier = Modifier.size(52.dp), shape = RoundedCornerShape(16.dp), color = Color.White, shadowElevation = 2.dp) {
+            Box(contentAlignment = Alignment.Center) { Text(code, fontWeight = FontWeight.Black, fontSize = 12.sp) }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
     }
 }
 

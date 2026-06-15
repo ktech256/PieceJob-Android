@@ -22,6 +22,9 @@ class CustomerDashboardViewModel @Inject constructor(
     private val _groupedServices = MutableStateFlow<List<GroupedServicesDto>>(emptyList())
     val groupedServices: StateFlow<List<GroupedServicesDto>> = _groupedServices
 
+    private val _categories = MutableStateFlow<List<com.piecejob.core.data.remote.ServiceCategoryDto>>(emptyList())
+    val categories: StateFlow<List<com.piecejob.core.data.remote.ServiceCategoryDto>> = _categories
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -39,6 +42,13 @@ class CustomerDashboardViewModel @Inject constructor(
     fun loadServices(gender: String? = null) {
         viewModelScope.launch {
             _isLoading.value = true
+            
+            // Parallel loading
+            launch {
+                val catRes = serviceRepository.getCategories()
+                if (catRes.success) _categories.value = catRes.data ?: emptyList()
+            }
+
             val response = serviceRepository.getServices(gender)
             if (response.success && response.data != null) {
                 _services.value = response.data.services

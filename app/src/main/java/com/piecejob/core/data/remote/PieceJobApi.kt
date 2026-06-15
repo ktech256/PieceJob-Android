@@ -196,6 +196,9 @@ interface PieceJobApi {
     @GET("config/workspace")
     suspend fun getWorkspaceConfig(): ApiResponse<WorkspaceConfigDto>
 
+    @GET("config/categories")
+    suspend fun getPublicCategories(): ApiResponse<List<ServiceCategoryDto>>
+
     @GET("config/services")
     suspend fun getServices(
         @Query("gender") gender: String? = null
@@ -381,6 +384,15 @@ data class GroupedServicesDto(
 data class ServicesResponseDto(
     val services: List<ServiceDto>,
     val grouped: List<GroupedServicesDto>
+)
+
+data class ServiceCategoryDto(
+    val code: String,
+    val name: String,
+    val description: String?,
+    val verificationLevel: String,
+    val isActive: Boolean,
+    val sortOrder: Int
 )
 
 data class ZoneDto(
