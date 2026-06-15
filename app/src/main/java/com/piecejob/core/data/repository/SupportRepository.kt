@@ -4,46 +4,43 @@ import com.piecejob.core.data.remote.PieceJobApi
 import com.piecejob.core.data.remote.dto.*
 import com.piecejob.core.data.remote.ApiResponse
 import com.piecejob.core.data.remote.ApiError
+import com.piecejob.core.data.remote.SubmitTicketRequest
+import com.piecejob.core.data.remote.TicketDto
+import com.piecejob.core.data.remote.SendTicketMessageRequest
 import javax.inject.Inject
+import javax.inject.Singleton
 
-class WalletRepository @Inject constructor(
+@Singleton
+class SupportRepository @Inject constructor(
     private val api: PieceJobApi
 ) {
-    suspend fun getWalletBalance(): ApiResponse<WalletDto> {
+    suspend fun submitTicket(request: SubmitTicketRequest): ApiResponse<Unit> {
         return try {
-            api.getWalletBalance()
+            api.submitTicket(request)
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
     }
 
-    suspend fun getWalletHistory(): ApiResponse<List<WalletTransactionDto>> {
+    suspend fun getMyTickets(): ApiResponse<List<TicketDto>> {
         return try {
-            api.getWalletHistory()
+            api.getMyTickets()
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
     }
 
-    suspend fun getInvoices(): ApiResponse<List<InvoiceDto>> {
+    suspend fun getTicketDetails(ticketId: String): ApiResponse<TicketDto> {
         return try {
-            api.getInvoices()
+            api.getTicketDetails(ticketId)
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
     }
 
-    suspend fun getStatements(): ApiResponse<List<StatementDto>> {
+    suspend fun sendTicketMessage(ticketId: String, text: String, attachments: List<String>): ApiResponse<TicketDto> {
         return try {
-            api.getStatements()
-        } catch (e: Exception) {
-            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
-        }
-    }
-
-    suspend fun requestWithdrawal(amount: Double): ApiResponse<Unit> {
-        return try {
-            api.requestWithdrawal(WithdrawRequest(amount))
+            api.sendTicketMessage(ticketId, SendTicketMessageRequest(text, attachments))
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }

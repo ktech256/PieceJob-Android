@@ -137,3 +137,17 @@ data class CorporateScheduleDto(
     val nextRunDate: String,
     val isActive: Boolean
 )
+
+data class WithdrawRequest(
+    val amount: Double
+)
+
+data class NotificationDto(
+    val id: String,
+    val title: String,
+    val body: String,
+    val type: String,
+    val status: String,
+    val createdAt: String,
+    val payload: Map<String, String>? = null
+)

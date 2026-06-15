@@ -1,5 +1,6 @@
 package com.piecejob.provider.ui.profile
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,7 +24,8 @@ import com.piecejob.core.data.remote.TicketDto
 @Composable
 fun ProviderSupportScreen(
     viewModel: ProviderSupportViewModel = hiltViewModel(),
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToTicket: (String) -> Unit
 ) {
     val tickets by viewModel.tickets.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -83,7 +85,7 @@ fun ProviderSupportScreen(
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 items(tickets) { ticket ->
-                    TicketRow(ticket)
+                    TicketRow(ticket) { onNavigateToTicket(ticket.id) }
                 }
             }
         }
@@ -91,8 +93,10 @@ fun ProviderSupportScreen(
 }
 
 @Composable
-fun TicketRow(ticket: TicketDto) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+fun TicketRow(ticket: TicketDto, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
+    ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(modifier = Modifier.size(40.dp), shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.primaryContainer) {
                 Box(contentAlignment = Alignment.Center) {
@@ -104,7 +108,33 @@ fun TicketRow(ticket: TicketDto) {
                 Text(text = ticket.subject, fontWeight = FontWeight.Bold)
                 Text(text = "Ref: ${ticket.id.takeLast(6)} • ${ticket.createdAt.take(10)}", fontSize = 11.sp, color = Color.Gray)
             }
-            StatusBadge(ticket.status)
+            TicketStatusBadge(ticket.status)
         }
+    }
+}
+
+@Composable
+fun TicketStatusBadge(status: String) {
+    Surface(
+        color = when(status) {
+            "OPEN" -> Color(0xFFE3F2FD)
+            "RESOLVED" -> Color(0xFFE8F5E9)
+            "CLOSED" -> Color(0xFFF5F5F5)
+            else -> Color(0xFFFFF3E0)
+        },
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(
+            text = status,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = when(status) {
+                "OPEN" -> Color(0xFF1976D2)
+                "RESOLVED" -> Color(0xFF2E7D32)
+                "CLOSED" -> Color(0xFF616161)
+                else -> Color(0xFFE65100)
+            }
+        )
     }
 }

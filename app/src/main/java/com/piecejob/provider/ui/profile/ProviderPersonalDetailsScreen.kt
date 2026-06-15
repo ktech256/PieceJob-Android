@@ -20,6 +20,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
 import com.piecejob.core.data.remote.dto.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,6 +50,26 @@ fun ProviderPersonalDetailsScreen(
     var city by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var proofOfResidenceUrl by remember { mutableStateOf<String?>(null) }
+    var profilePhotoUrl by remember { mutableStateOf<String?>(null) }
+
+    var emergencyName by remember { mutableStateOf("") }
+    var emergencyPhone by remember { mutableStateOf("") }
+    var emergencyRelation by remember { mutableStateOf("") }
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val imageLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            uri?.let { viewModel.uploadProfilePhoto(it, context) }
+        }
+    )
+
+    val docLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            uri?.let { viewModel.uploadProofOfResidence(it, context) }
+        }
+    )
 
     val hasAddressChanged = (province != (profile?.userId?.province ?: "")) ||
                            (city != (profile?.userId?.city ?: "")) ||
@@ -65,6 +89,14 @@ fun ProviderPersonalDetailsScreen(
             province = it.userId.province ?: ""
             city = it.userId.city ?: ""
             address = it.userId.address ?: ""
+            profilePhotoUrl = it.userId.profilePhoto
+            proofOfResidenceUrl = it.userId.pendingAddress?.proofOfResidenceUrl
+            
+            it.userId.emergencyContact?.let { ec ->
+                emergencyName = ec.name
+                emergencyPhone = ec.phone
+                emergencyRelation = ec.relationship
+            }
         }
     }
 
@@ -106,10 +138,22 @@ fun ProviderPersonalDetailsScreen(
                         shape = CircleShape,
                         color = Color.LightGray
                     ) {
-                        Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.padding(24.dp), tint = Color.White)
+                        if (profilePhotoUrl != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(profilePhotoUrl)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Profile Photo",
+                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.padding(24.dp), tint = Color.White)
+                        }
                     }
                     IconButton(
-                        onClick = { /* Pick Image */ },
+                        onClick = { imageLauncher.launch("image/*") },
                         modifier = Modifier.size(32.dp).background(MaterialTheme.colorScheme.primary, CircleShape)
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
@@ -129,6 +173,12 @@ fun ProviderPersonalDetailsScreen(
                 ProfileField("Province / State", province) { province = it }
                 ProfileField("City", city) { city = it }
                 ProfileField("Address", address) { address = it }
+
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(text = "Emergency Contact", fontWeight = FontWeight.Black, fontSize = 14.sp, modifier = Modifier.align(Alignment.Start))
+                ProfileField("Full Name", emergencyName) { emergencyName = it }
+                ProfileField("Phone Number", emergencyPhone) { emergencyPhone = it }
+                ProfileField("Relationship", emergencyRelation) { emergencyRelation = it }
 
                 if (isVerified && hasAddressChanged) {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -151,7 +201,7 @@ fun ProviderPersonalDetailsScreen(
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Button(
-                                onClick = { /* File Picker */ },
+                                onClick = { docLauncher.launch("application/pdf") },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {
@@ -186,11 +236,11 @@ fun ProviderPersonalDetailsScreen(
                                 lastName = lastName,
                                 gender = gender,
                                 dob = dob,
-                                profilePhoto = null,
+                                profilePhoto = profilePhotoUrl,
                                 city = city,
                                 province = province,
                                 address = address,
-                                emergencyContact = null,
+                                emergencyContact = EmergencyContactDto(emergencyName, emergencyPhone, emergencyRelation),
                                 proofOfResidenceUrl = proofOfResidenceUrl
                             )
                         )

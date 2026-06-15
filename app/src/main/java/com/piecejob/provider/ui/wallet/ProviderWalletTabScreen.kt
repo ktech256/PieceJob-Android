@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,15 +16,77 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.piecejob.core.ui.navigation.Screen
 import com.piecejob.core.data.remote.dto.*
 
 @Composable
 fun ProviderWalletTabScreen(
-    viewModel: ProviderWalletViewModel = hiltViewModel()
+    viewModel: ProviderWalletViewModel = hiltViewModel(),
+    onNavigate: (com.piecejob.core.ui.navigation.Screen) -> Unit = {}
 ) {
     val wallet by viewModel.wallet.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val withdrawSuccess by viewModel.withdrawSuccess.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val navEvent by viewModel.navigationEvent.collectAsState()
+
+    LaunchedEffect(navEvent) {
+        navEvent?.let {
+            onNavigate(it)
+            viewModel.resetNavigationEvent()
+        }
+    }
+
+    var showWithdrawDialog by remember { mutableStateOf(false) }
+    var withdrawAmount by remember { mutableStateOf("") }
+
+    if (showWithdrawDialog) {
+        AlertDialog(
+            onDismissRequest = { showWithdrawDialog = false },
+            title = { Text("Cash Out", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Available: R${wallet?.balanceMain ?: 0.0}", fontSize = 12.sp, color = Color.Gray)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = withdrawAmount,
+                        onValueChange = { if(it.all { c -> c.isDigit() || c == '.' }) withdrawAmount = it },
+                        label = { Text("Amount to Withdraw") },
+                        prefix = { Text("R ") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    if (error != null) {
+                        Text(text = error!!, color = Color.Red, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val amt = withdrawAmount.toDoubleOrNull()
+                        if (amt != null) viewModel.requestWithdrawal(amt)
+                    },
+                    enabled = !isLoading && withdrawAmount.isNotEmpty()
+                ) {
+                    if (isLoading) CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                    else Text("SUBMIT")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWithdrawDialog = false; viewModel.resetWithdrawState() }) { Text("CANCEL") }
+            }
+        )
+    }
+
+    if (withdrawSuccess) {
+        LaunchedEffect(Unit) {
+            showWithdrawDialog = false
+            viewModel.resetWithdrawState()
+            withdrawAmount = ""
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(Color(0xFFF4F5F7)),
@@ -31,7 +94,22 @@ fun ProviderWalletTabScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text(text = "Wallet Dashboard", fontSize = 24.sp, fontWeight = FontWeight.Black)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "Wallet Dashboard", fontSize = 24.sp, fontWeight = FontWeight.Black)
+                Button(
+                    onClick = { showWithdrawDialog = true },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                ) {
+                    Icon(Icons.Default.AccountBalance, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("CASH OUT", fontSize = 12.sp, fontWeight = FontWeight.Black)
+                }
+            }
         }
 
         if (isLoading && wallet == null) {
@@ -69,20 +147,23 @@ fun ProviderWalletTabScreen(
         }
 
         val menuItems = listOf(
-            "Payout History", "Tax Documents", "Invoices", "Statements"
+            "Payout History" to Screen.ProviderStatements, // We'll reuse statements for history
+            "Tax Documents" to Screen.ProviderStatements,  // Logic needed
+            "Invoices" to Screen.ProviderStatements,        // Logic needed
+            "Statements" to Screen.ProviderStatements
         )
 
-        items(menuItems) { item ->
+        items(menuItems) { (label, screen) ->
             OutlinedCard(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = { /* Placeholder */ }
+                onClick = { viewModel.onMenuClick(screen) }
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = item, fontWeight = FontWeight.Medium)
+                    Text(text = label, fontWeight = FontWeight.Medium)
                     Icon(Icons.Default.ChevronRight, contentDescription = null)
                 }
             }

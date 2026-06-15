@@ -45,8 +45,11 @@ fun ProviderProfileScreen(
 
         val menuItems = listOf(
             ProfileMenuItem("Personal Details", Icons.Default.Person, Screen.ProviderPersonalDetails),
+            ProfileMenuItem("Inbox", Icons.Default.Inbox, Screen.Inbox),
             ProfileMenuItem("My Services", Icons.Default.Handyman, Screen.MyServices),
+            ProfileMenuItem("Availability", Icons.Default.Schedule, Screen.Availability),
             ProfileMenuItem("Verification Documents", Icons.Default.VerifiedUser, Screen.VerificationDocs),
+            ProfileMenuItem("Reviews & Feedback", Icons.Default.Star, Screen.Reviews),
             ProfileMenuItem("Equipment & Tools", Icons.Default.Construction, Screen.EquipmentTools),
             ProfileMenuItem("Certifications", Icons.Default.HistoryEdu, Screen.Certifications),
             ProfileMenuItem("Experience", Icons.Default.Timeline, Screen.Experience),

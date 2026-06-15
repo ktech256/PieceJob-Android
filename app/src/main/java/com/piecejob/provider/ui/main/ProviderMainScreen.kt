@@ -83,7 +83,7 @@ fun ProviderMainScreen(
                 ProviderJobsScreen()
             }
             composable(BottomBarScreen.Wallet.route) {
-                ProviderWalletTabScreen()
+                ProviderWalletTabScreen(onNavigate = onNavigateToSubScreen)
             }
             composable(BottomBarScreen.Messages.route) {
                 ProviderMessagesScreen()

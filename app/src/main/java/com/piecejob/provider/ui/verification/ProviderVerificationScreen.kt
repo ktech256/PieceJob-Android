@@ -186,20 +186,30 @@ fun ProviderVerificationScreen(
                     shadowElevation = 8.dp,
                     color = Color.White
                 ) {
-                    Button(
-                        onClick = { viewModel.submitDocuments() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp)
-                            .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400)),
-                        enabled = !isLoading
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                        } else {
-                            Text("SUBMIT DOCUMENTS", fontWeight = FontWeight.Black)
+                    Column(modifier = Modifier.padding(24.dp)) {
+                        if (error != null) {
+                            Text(
+                                text = error!!,
+                                color = Color.Red,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
+                        Button(
+                            onClick = { viewModel.submitDocuments() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006400)),
+                            enabled = !isLoading
+                        ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                            } else {
+                                Text("SUBMIT DOCUMENTS", fontWeight = FontWeight.Black)
+                            }
                         }
                     }
                 }

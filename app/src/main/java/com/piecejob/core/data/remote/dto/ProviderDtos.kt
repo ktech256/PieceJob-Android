@@ -114,3 +114,19 @@ data class DocRequirementDto(
     val status: String,
     val rejectionReason: String? = null
 )
+
+data class AvailabilityDto(
+    val vacationMode: Boolean,
+    val workingHours: List<WorkingDayDto>
+)
+
+data class WorkingDayDto(
+    val day: Int,
+    val enabled: Boolean,
+    val slots: List<TimeSlotDto>
+)
+
+data class TimeSlotDto(
+    val start: String,
+    val end: String
+)

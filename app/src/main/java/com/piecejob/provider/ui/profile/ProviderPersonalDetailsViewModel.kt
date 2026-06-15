@@ -28,6 +28,9 @@ class ProviderPersonalDetailsViewModel @Inject constructor(
     private val _isUpdateSuccess = MutableStateFlow(false)
     val isUpdateSuccess: StateFlow<Boolean> = _isUpdateSuccess
 
+    private val _uploadingPhoto = MutableStateFlow(false)
+    val uploadingPhoto: StateFlow<Boolean> = _uploadingPhoto
+
     init {
         loadProfile()
     }
@@ -64,5 +67,45 @@ class ProviderPersonalDetailsViewModel @Inject constructor(
     
     fun resetSuccessState() {
         _isUpdateSuccess.value = false
+    }
+
+    fun uploadProfilePhoto(uri: android.net.Uri, context: android.content.Context) {
+        viewModelScope.launch {
+            _uploadingPhoto.value = true
+            try {
+                val base64 = com.piecejob.core.utils.FileUtils.uriToBase64(uri, context)
+                val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+                val response = repository.uploadFile(base64, mimeType, "profiles")
+                if (response.success && response.data != null) {
+                    _profile.value = _profile.value?.let {
+                        it.copy(userId = it.userId.copy(profilePhoto = response.data.url))
+                    }
+                }
+            } catch (e: Exception) {
+                _error.value = "Photo upload failed: ${e.message}"
+            } finally {
+                _uploadingPhoto.value = false
+            }
+        }
+    }
+
+    fun uploadProofOfResidence(uri: android.net.Uri, context: android.content.Context) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val base64 = com.piecejob.core.utils.FileUtils.uriToBase64(uri, context)
+                val mimeType = context.contentResolver.getType(uri) ?: "application/pdf"
+                val response = repository.uploadFile(base64, mimeType, "documents")
+                if (response.success && response.data != null) {
+                    _profile.value = _profile.value?.let {
+                        it.copy(userId = it.userId.copy(pendingAddress = it.userId.pendingAddress?.copy(proofOfResidenceUrl = response.data.url) ?: PendingAddressDto("", "", "", response.data.url, "", "PENDING")))
+                    }
+                }
+            } catch (e: Exception) {
+                _error.value = "Document upload failed: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 }

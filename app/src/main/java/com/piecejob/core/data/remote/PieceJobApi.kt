@@ -75,6 +75,9 @@ interface PieceJobApi {
     @GET("wallets/commission-rate")
     suspend fun getCommissionRate(): ApiResponse<CommissionRateDto>
 
+    @POST("wallets/withdraw")
+    suspend fun requestWithdrawal(@Body request: WithdrawRequest): ApiResponse<Unit>
+
     @GET("providers/profile")
     suspend fun getProviderProfile(): ApiResponse<ProviderFullDto>
 
@@ -116,6 +119,15 @@ interface PieceJobApi {
 
     @PATCH("providers/notifications")
     suspend fun updateNotificationSettings(@Body request: NotificationSettingsDto): ApiResponse<NotificationSettingsDto>
+
+    @GET("providers/availability")
+    suspend fun getAvailability(): ApiResponse<AvailabilityDto>
+
+    @PATCH("providers/availability")
+    suspend fun updateAvailability(@Body request: AvailabilityDto): ApiResponse<AvailabilityDto>
+
+    @GET("providers/reviews")
+    suspend fun getMyReviews(): ApiResponse<List<ReviewDto>>
 
     @GET("providers/dashboard-stats")
     suspend fun getProviderDashboardStats(): ApiResponse<ProviderStatsDto>
@@ -229,11 +241,23 @@ interface PieceJobApi {
     @GET("support/tickets")
     suspend fun getMyTickets(): ApiResponse<List<TicketDto>>
 
+    @GET("support/tickets/{ticketId}")
+    suspend fun getTicketDetails(@Path("ticketId") ticketId: String): ApiResponse<TicketDto>
+
+    @POST("support/tickets/{ticketId}/messages")
+    suspend fun sendTicketMessage(@Path("ticketId") ticketId: String, @Body request: SendTicketMessageRequest): ApiResponse<TicketDto>
+
     @GET("disputes/me")
     suspend fun getMyDisputes(): ApiResponse<List<DisputeDto>>
 
     @POST("disputes")
     suspend fun raiseDispute(@Body request: RaiseDisputeRequest): ApiResponse<Unit>
+
+    @GET("notifications")
+    suspend fun getMyNotifications(): ApiResponse<List<NotificationDto>>
+
+    @PATCH("notifications/{id}/read")
+    suspend fun markNotificationAsRead(@Path("id") id: String): ApiResponse<Unit>
 
     // =========================
     // ✅ CHAT ROUTES
@@ -267,7 +291,22 @@ data class TicketDto(
     val type: String,
     val subject: String,
     val status: String,
-    val createdAt: String
+    val createdAt: String,
+    val description: String? = null,
+    val messages: List<TicketMessageDto> = emptyList()
+)
+
+data class TicketMessageDto(
+    val senderId: String,
+    val senderRole: String,
+    val text: String,
+    val timestamp: String,
+    val attachments: List<String> = emptyList()
+)
+
+data class SendTicketMessageRequest(
+    val text: String,
+    val attachments: List<String> = emptyList()
 )
 
 data class PriceEstimateDto(

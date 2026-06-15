@@ -30,6 +30,15 @@ class ProviderWalletViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _withdrawSuccess = MutableStateFlow(false)
+    val withdrawSuccess: StateFlow<Boolean> = _withdrawSuccess
+
+    private val _navigationEvent = MutableStateFlow<com.piecejob.core.ui.navigation.Screen?>(null)
+    val navigationEvent: StateFlow<com.piecejob.core.ui.navigation.Screen?> = _navigationEvent
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
+
     init {
         loadWalletData()
     }
@@ -56,6 +65,33 @@ class ProviderWalletViewModel @Inject constructor(
                 _isLoading.value = false
             }
         }
+    }
+
+    fun requestWithdrawal(amount: Double) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val response = walletRepository.requestWithdrawal(amount)
+            if (response.success) {
+                _withdrawSuccess.value = true
+                loadWalletData() // Refresh balance
+            } else {
+                _error.value = response.message ?: "Withdrawal failed"
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun resetWithdrawState() {
+        _withdrawSuccess.value = false
+        _error.value = null
+    }
+
+    fun onMenuClick(screen: com.piecejob.core.ui.navigation.Screen) {
+        _navigationEvent.value = screen
+    }
+
+    fun resetNavigationEvent() {
+        _navigationEvent.value = null
     }
 
     // Support legacy UI access

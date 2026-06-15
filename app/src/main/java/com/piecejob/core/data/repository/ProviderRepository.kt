@@ -138,6 +138,30 @@ class ProviderRepository @Inject constructor(
         }
     }
 
+    suspend fun getAvailability(): ApiResponse<AvailabilityDto> {
+        return try {
+            api.getAvailability()
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
+    suspend fun updateAvailability(availability: AvailabilityDto): ApiResponse<AvailabilityDto> {
+        return try {
+            api.updateAvailability(availability)
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
+    suspend fun getMyReviews(): ApiResponse<List<ReviewDto>> {
+        return try {
+            api.getMyReviews()
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
     suspend fun updateStatus(isOnline: Boolean): ApiResponse<Unit> {
         return try {
             api.updateProviderStatus(com.piecejob.core.data.remote.dto.ProviderStatusRequest(isOnline))
@@ -173,6 +197,30 @@ class ProviderRepository @Inject constructor(
     suspend fun submitVerification(request: SubmitVerificationRequest): ApiResponse<Unit> {
         return try {
             api.submitVerification(request)
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
+    suspend fun uploadFile(base64: String, mimeType: String, folder: String): ApiResponse<FileUploadResponse> {
+        return try {
+            api.uploadFile(FileUploadRequest(base64, mimeType, folder))
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
+    suspend fun getMyDisputes(): ApiResponse<List<DisputeDto>> {
+        return try {
+            api.getMyDisputes()
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
+    suspend fun raiseDispute(request: RaiseDisputeRequest): ApiResponse<Unit> {
+        return try {
+            api.raiseDispute(request)
         } catch (e: Exception) {
             handleError(e)
         }

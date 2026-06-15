@@ -71,11 +71,17 @@ sealed class Screen(val route: String) {
     object WalletSettings : Screen("wallet_settings")
     object BankDetails : Screen("bank_details")
     object Notifications : Screen("notifications")
+    object Availability : Screen("availability")
     object Security : Screen("security")
     object DeviceManagement : Screen("device_management")
     object ProviderStatements : Screen("provider_statements")
     object Disputes : Screen("disputes")
     object Support : Screen("support")
+    object Reviews : Screen("reviews")
+    object TicketDetail : Screen("ticket_detail/{ticketId}") {
+        fun passTicketId(ticketId: String) = "ticket_detail/$ticketId"
+    }
+    object Inbox : Screen("inbox")
     object TermsPolicies : Screen("terms_policies")
     object ProviderAnalytics : Screen("provider_analytics")
     object DocumentUpload : Screen("document_upload/{docType}") {

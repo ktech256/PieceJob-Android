@@ -206,6 +206,9 @@ fun NavGraph(
         composable(route = Screen.Notifications.route) {
             ProviderNotificationsScreen(onBack = { navController.popBackStack() })
         }
+        composable(route = Screen.Availability.route) {
+            ProviderAvailabilityScreen(onBack = { navController.popBackStack() })
+        }
         composable(route = Screen.Security.route) {
             ProviderSecurityScreen(onBack = { navController.popBackStack() })
         }
@@ -216,7 +219,28 @@ fun NavGraph(
             ProviderStatementsScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.Support.route) {
-            ProviderSupportScreen(onBack = { navController.popBackStack() })
+            ProviderSupportScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToTicket = { ticketId ->
+                    navController.navigate(Screen.TicketDetail.passTicketId(ticketId))
+                }
+            )
+        }
+        composable(route = Screen.Reviews.route) {
+            ProviderReviewsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(
+            route = Screen.TicketDetail.route,
+            arguments = listOf(navArgument("ticketId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val ticketId = backStackEntry.arguments?.getString("ticketId") ?: ""
+            ProviderTicketDetailScreen(
+                ticketId = ticketId,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(route = Screen.Inbox.route) {
+            ProviderInboxScreen(onBack = { navController.popBackStack() })
         }
         composable(route = Screen.Disputes.route) {
             ProviderDisputeScreen(onBack = { navController.popBackStack() })

@@ -43,3 +43,13 @@ data class RaiseDisputeRequest(
     val description: String,
     val evidenceUrls: List<String> = emptyList()
 )
+
+data class ReviewDto(
+    val id: String,
+    val jobId: String,
+    val rating: Int,
+    val comment: String?,
+    val reviewerName: String,
+    val reviewerPhoto: String?,
+    val createdAt: String
+)
