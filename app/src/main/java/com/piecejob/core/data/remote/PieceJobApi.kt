@@ -229,6 +229,12 @@ interface PieceJobApi {
     @GET("config/languages")
     suspend fun getLanguages(): ApiResponse<List<LanguageDto>>
 
+    @GET("config/integrations")
+    suspend fun getIntegrations(): ApiResponse<IntegrationsConfigDto>
+
+    @GET("config/payment-methods")
+    suspend fun getPaymentMethods(): ApiResponse<List<PaymentMethodDto>>
+
     // =========================
     // ✅ CORPORATE B2B ROUTES
     // =========================
@@ -401,6 +407,22 @@ data class ServiceCategoryDto(
     val verificationLevel: String,
     val isActive: Boolean,
     val sortOrder: Int
+)
+
+data class PaymentMethodDto(
+    val code: String,
+    val name: String,
+    val publicKey: String?,
+    val environment: String
+)
+
+data class IntegrationsConfigDto(
+    val googleMaps: GoogleMapsConfigDto?
+)
+
+data class GoogleMapsConfigDto(
+    val apiKey: String?,
+    val placesKey: String?
 )
 
 data class ZoneDto(

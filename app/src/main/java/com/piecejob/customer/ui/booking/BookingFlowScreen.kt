@@ -356,14 +356,50 @@ fun DetailRow(label: String, value: String, highlight: Boolean = false) {
 
 @Composable
 fun PaymentGatewayStep(viewModel: BookingViewModel) {
-    // Mocking Payment Gateway
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Secure Payment Gateway", fontWeight = FontWeight.Black)
-        Spacer(modifier = Modifier.height(24.dp))
-        CircularProgressIndicator(color = Color(0xFFD32F2F))
-        Spacer(modifier = Modifier.height(48.dp))
-        Button(onClick = { viewModel.payBookingFee() }) {
-            Text("SIMULATE SUCCESSFUL PAYMENT")
+    val methods by viewModel.availablePaymentMethods.collectAsState()
+    val selectedMethod by viewModel.selectedPaymentMethod.collectAsState()
+
+    Column(modifier = Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Select Payment Method", fontWeight = FontWeight.Black, fontSize = 20.sp)
+        Spacer(modifier = Modifier.height(32.dp))
+
+        methods.forEach { method ->
+            Card(
+                onClick = { viewModel.selectedPaymentMethod.value = method },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (selectedMethod?.code == method.code) Color(0xFFFDECEA) else Color.White
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    width = if (selectedMethod?.code == method.code) 2.dp else 1.dp,
+                    color = if (selectedMethod?.code == method.code) Color(0xFFD32F2F) else Color(0xFFEEEEEE)
+                )
+            ) {
+                Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(40.dp).background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                        Text(method.name.take(1), fontWeight = FontWeight.Black)
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(method.name, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.weight(1f))
+                    if (selectedMethod?.code == method.code) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFFD32F2F))
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Button(
+            onClick = { viewModel.payBookingFee() },
+            modifier = Modifier.fillMaxWidth().height(64.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF121212)),
+            enabled = selectedMethod != null
+        ) {
+            Text("PROCEED TO SECURE PAYMENT", fontWeight = FontWeight.Black)
         }
     }
 }

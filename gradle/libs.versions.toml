@@ -56,6 +56,7 @@ okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor",
 maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+play-services-places = { group = "com.google.android.libraries.places", name = "places", version = "4.1.0" }
 
 # Socket.io
 socket-io = { group = "io.socket", name = "socket.io-client", version.ref = "socketIo" }

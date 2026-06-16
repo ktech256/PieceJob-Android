@@ -10,7 +10,9 @@ import com.piecejob.core.data.remote.dto.CreateJobRequest
 import com.piecejob.core.data.repository.JobRepository
 import com.piecejob.core.data.repository.ServiceRepository
 import com.piecejob.core.data.repository.ProviderRepository
+import com.piecejob.core.data.repository.SettingsRepository
 import com.piecejob.core.data.remote.dto.ProviderDto
+import com.piecejob.core.data.remote.PaymentMethodDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +34,8 @@ enum class BookingStep {
 class BookingViewModel @Inject constructor(
     private val jobRepository: JobRepository,
     private val serviceRepository: ServiceRepository,
-    private val providerRepository: ProviderRepository
+    private val providerRepository: ProviderRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _currentStep = MutableStateFlow(BookingStep.ADDRESS_SELECTION)
@@ -62,6 +65,8 @@ class BookingViewModel @Inject constructor(
 
     // Step 5: Pricing
     val priceEstimate = MutableStateFlow<PriceEstimateDto?>(null)
+    val availablePaymentMethods = MutableStateFlow<List<PaymentMethodDto>>(emptyList())
+    val selectedPaymentMethod = MutableStateFlow<PaymentMethodDto?>(null)
 
     // Step 6: Created Job
     val createdJob = MutableStateFlow<JobDto?>(null)
@@ -178,11 +183,22 @@ class BookingViewModel @Inject constructor(
             val res = jobRepository.createJob(request)
             if (res.success && res.data != null) {
                 createdJob.value = res.data
+                loadPaymentMethods()
                 _currentStep.value = BookingStep.PAYMENT_GATEWAY
             } else {
                 _error.value = res.error?.message
             }
             _isLoading.value = false
+        }
+    }
+
+    private fun loadPaymentMethods() {
+        viewModelScope.launch {
+            val res = settingsRepository.getPaymentMethods()
+            if (res.success) {
+                availablePaymentMethods.value = res.data ?: emptyList()
+                selectedPaymentMethod.value = availablePaymentMethods.value.firstOrNull()
+            }
         }
     }
 

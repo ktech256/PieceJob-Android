@@ -34,7 +34,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCYa4u87kuaOIWVDga1M86XafV51uz3RG4" />
+            android:value="${GOOGLE_MAPS_API_KEY}" />
 
         <service
             android:name=".core.notification.PieceJobMessagingService"
