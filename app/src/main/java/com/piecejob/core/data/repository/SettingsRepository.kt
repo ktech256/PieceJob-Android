@@ -1,10 +1,7 @@
 package com.piecejob.core.data.repository
 
-import com.piecejob.core.data.remote.PieceJobApi
+import com.piecejob.core.data.remote.*
 import com.piecejob.core.data.remote.dto.*
-import com.piecejob.core.data.remote.ApiResponse
-import com.piecejob.core.data.remote.ApiError
-import com.piecejob.core.data.remote.WorkspaceConfigDto
 import javax.inject.Inject
 
 class SettingsRepository @Inject constructor(
