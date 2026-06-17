@@ -19,6 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -38,7 +43,6 @@ fun BookingFlowScreen(
 ) {
     val currentStep by viewModel.currentStep.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
 
     BackHandler {
         if (currentStep == BookingStep.ADDRESS_SELECTION) {
@@ -95,11 +99,45 @@ fun AddressSelectionStep(viewModel: BookingViewModel) {
     Column(modifier = Modifier.fillMaxSize()) {
         // MAP (75%)
         Box(modifier = Modifier.weight(0.75f)) {
+            val selectedCoords by viewModel.selectedCoordinates.collectAsState()
+            var isMapLoaded by remember { mutableStateOf(false) }
+            
+            LaunchedEffect(Unit) {
+                android.util.Log.d("MAP_INIT", "Starting GoogleMap initialization. API Key present: ${com.piecejob.BuildConfig.GOOGLE_MAPS_API_KEY.isNotBlank()}")
+                // Fallback: If map doesn't load in 10 seconds, stop the spinner so we can see what's wrong
+                kotlinx.coroutines.delay(10000)
+                if (!isMapLoaded) {
+                    android.util.Log.e("MAP_TIMEOUT", "Map load timed out after 10s. Forcing loaded state for diagnostics.")
+                    isMapLoaded = true
+                }
+            }
+
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
-                uiSettings = MapUiSettings(zoomControlsEnabled = false)
+                onMapLoaded = { 
+                    isMapLoaded = true 
+                    android.util.Log.d("MAPS_DEBUG", "Map SDK initialized")
+                    android.util.Log.d("MAP_LOADED", "onMapLoaded callback triggered.")
+                },
+                onMapClick = { latLng ->
+                    android.util.Log.d("MAP_CLICK", "User clicked coordinates: ${latLng.latitude}, ${latLng.longitude}")
+                    val formatted = "Selected: ${String.format(java.util.Locale.US, "%.4f, %.4f", latLng.latitude, latLng.longitude)}"
+                    viewModel.setAddress(formatted, listOf(latLng.longitude, latLng.latitude))
+                },
+                onPOIClick = { poi ->
+                    android.util.Log.d("MAP_POI", "User clicked POI: ${poi.name}")
+                    viewModel.setAddress(poi.name, listOf(poi.latLng.longitude, poi.latLng.latitude))
+                },
+                uiSettings = MapUiSettings(
+                    zoomControlsEnabled = false,
+                    myLocationButtonEnabled = true
+                ),
+                properties = MapProperties(
+                    isMyLocationEnabled = true
+                )
             ) {
+                // Nearby Providers
                 nearbyProviders.forEach { provider ->
                     provider.location.coordinates.let { coords ->
                         Marker(
@@ -108,6 +146,24 @@ fun AddressSelectionStep(viewModel: BookingViewModel) {
                             icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_GREEN)
                         )
                     }
+                }
+
+                // Selected Location Pin
+                selectedCoords?.let { coords ->
+                    Marker(
+                        state = MarkerState(position = LatLng(coords[1], coords[0])),
+                        title = "Service Location",
+                        icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_RED)
+                    )
+                }
+            }
+
+            if (!isMapLoaded) {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color(0xFFD32F2F))
                 }
             }
             
@@ -124,29 +180,83 @@ fun AddressSelectionStep(viewModel: BookingViewModel) {
 
         // SELECTION UI (25%)
         Card(
-            modifier = Modifier.weight(0.25f).fillMaxWidth(),
+            modifier = Modifier.weight(if (viewModel.addressPredictions.collectAsState().value.isNotEmpty()) 0.5f else 0.25f).fillMaxWidth(),
             shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
+                val focusManager = LocalFocusManager.current
+                val addressText by viewModel.selectedAddress.collectAsState()
+                val predictions by viewModel.addressPredictions.collectAsState()
+                
                 OutlinedTextField(
-                    value = viewModel.selectedAddress.collectAsState().value,
-                    onValueChange = { /* Search logic */ },
+                    value = addressText,
+                    onValueChange = { 
+                        viewModel.searchAddress(it)
+                    },
                     placeholder = { Text("Search for address...") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (addressText.isNotBlank()) {
+                            IconButton(onClick = { viewModel.searchAddress("") }) {
+                                Icon(Icons.Default.Close, contentDescription = "Clear")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Search
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            focusManager.clearFocus()
+                        }
+                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = Color(0xFFD32F2F)
+                    )
                 )
+
+                if (predictions.isNotEmpty()) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp).padding(top = 8.dp)
+                    ) {
+                        items(predictions) { prediction ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { 
+                                        viewModel.onPredictionSelected(prediction)
+                                        focusManager.clearFocus()
+                                    }
+                                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(prediction.primaryText, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text(prediction.secondaryText, color = Color.Gray, fontSize = 12.sp)
+                                }
+                            }
+                            HorizontalDivider(color = Color(0xFFEEEEEE), thickness = 0.5.dp)
+                        }
+                    }
+                }
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Button(
                     onClick = { 
-                        // Mocking address selection for now
-                        viewModel.setAddress("Sandton, Johannesburg", listOf(28.0473, -26.2041))
-                        viewModel.selectRecipient(false)
+                        viewModel.confirmRecipient() // Proceeding
                     },
+                    enabled = (viewModel.selectedAddress.collectAsState().value.isNotBlank() && viewModel.selectedCoordinates.collectAsState().value != null),
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))

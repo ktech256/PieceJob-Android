@@ -13,10 +13,15 @@ import com.piecejob.core.data.repository.ProviderRepository
 import com.piecejob.core.data.repository.SettingsRepository
 import com.piecejob.core.data.remote.dto.ProviderDto
 import com.piecejob.core.data.remote.PaymentMethodDto
+import com.google.android.libraries.places.api.net.PlacesClient
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.google.android.libraries.places.api.net.FetchPlaceRequest
+import com.google.android.libraries.places.api.model.Place
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 enum class BookingStep {
@@ -30,12 +35,20 @@ enum class BookingStep {
     TRACKING
 }
 
+data class AddressPrediction(
+    val placeId: String,
+    val primaryText: String,
+    val secondaryText: String,
+    val fullText: String
+)
+
 @HiltViewModel
 class BookingViewModel @Inject constructor(
     private val jobRepository: JobRepository,
     private val serviceRepository: ServiceRepository,
     private val providerRepository: ProviderRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val placesClient: PlacesClient
 ) : ViewModel() {
 
     private val _currentStep = MutableStateFlow(BookingStep.ADDRESS_SELECTION)
@@ -52,6 +65,7 @@ class BookingViewModel @Inject constructor(
     val selectedCoordinates = MutableStateFlow<List<Double>?>(null)
     val resolvedZone = MutableStateFlow<ZoneDto?>(null)
     val nearbyProviders = MutableStateFlow<List<ProviderDto>>(emptyList())
+    val addressPredictions = MutableStateFlow<List<AddressPrediction>>(emptyList())
 
     // Step 2: Recipient
     val isForSomeoneElse = MutableStateFlow(false)
@@ -72,14 +86,19 @@ class BookingViewModel @Inject constructor(
     val createdJob = MutableStateFlow<JobDto?>(null)
 
     init {
+        android.util.Log.d("BOOKING_VM", "BookingViewModel Initialized")
         loadCategories()
     }
 
     private fun loadCategories() {
         viewModelScope.launch {
+            android.util.Log.d("BOOKING_VM", "Loading Categories...")
             val res = serviceRepository.getCategories()
             if (res.success) {
                 categories.value = res.data ?: emptyList()
+                android.util.Log.d("BOOKING_VM", "Categories Loaded: ${categories.value.size}")
+            } else {
+                android.util.Log.e("BOOKING_VM", "Failed to load categories: ${res.error?.message}")
             }
         }
     }
@@ -87,7 +106,80 @@ class BookingViewModel @Inject constructor(
     fun setAddress(address: String, coordinates: List<Double>) {
         selectedAddress.value = address
         selectedCoordinates.value = coordinates
+        addressPredictions.value = emptyList()
         validateZone(coordinates)
+    }
+
+    fun searchAddress(query: String) {
+        selectedAddress.value = query
+        if (query.length < 3) {
+            addressPredictions.value = emptyList()
+            return
+        }
+
+        // Diagnostic log to verify the key being used by the system
+        android.util.Log.d("MAPS_DEBUG", "Executing search with BuildConfig Key: ${com.piecejob.BuildConfig.GOOGLE_MAPS_API_KEY.take(5)}...${com.piecejob.BuildConfig.GOOGLE_MAPS_API_KEY.takeLast(5)}")
+
+        viewModelScope.launch {
+            try {
+                val request = FindAutocompletePredictionsRequest.builder()
+                    .setQuery(query)
+                    .build()
+
+                placesClient.findAutocompletePredictions(request)
+                    .addOnSuccessListener { response ->
+                        addressPredictions.value = response.autocompletePredictions.map {
+                            AddressPrediction(
+                                placeId = it.placeId,
+                                primaryText = it.getPrimaryText(null).toString(),
+                                secondaryText = it.getSecondaryText(null).toString(),
+                                fullText = it.getFullText(null).toString()
+                            )
+                        }
+                    }
+                    .addOnFailureListener { exception ->
+                        val message = if (exception is com.google.android.gms.common.api.ApiException) {
+                            "Prediction fetch failed (${exception.statusCode}): ${exception.statusMessage ?: exception.message}. " +
+                            "Error 9011 usually means the 'Places API' is not enabled in Google Cloud Console or the API key is restricted."
+                        } else {
+                            "Prediction fetch failed: ${exception.message}"
+                        }
+                        android.util.Log.e("PLACES_SEARCH", message, exception)
+                        _error.value = "Unable to fetch address suggestions. Please check your internet connection or API configuration."
+                    }
+            } catch (e: Exception) {
+                android.util.Log.e("PLACES_SEARCH", "Error searching address", e)
+            }
+        }
+    }
+
+    fun onPredictionSelected(prediction: AddressPrediction) {
+        selectedAddress.value = prediction.fullText
+        addressPredictions.value = emptyList()
+        
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val placeFields = listOf(Place.Field.LAT_LNG)
+                val request = FetchPlaceRequest.newInstance(prediction.placeId, placeFields)
+                
+                placesClient.fetchPlace(request)
+                    .addOnSuccessListener { response ->
+                        val latLng = response.place.latLng
+                        if (latLng != null) {
+                            setAddress(prediction.fullText, listOf(latLng.longitude, latLng.latitude))
+                        }
+                        _isLoading.value = false
+                    }
+                    .addOnFailureListener { exception ->
+                        android.util.Log.e("PLACES_DETAILS", "Place fetch failed", exception)
+                        _isLoading.value = false
+                    }
+            } catch (e: Exception) {
+                android.util.Log.e("PLACES_DETAILS", "Error fetching place details", e)
+                _isLoading.value = false
+            }
+        }
     }
 
     private fun validateZone(coordinates: List<Double>) {
