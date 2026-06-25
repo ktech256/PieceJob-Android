@@ -28,6 +28,7 @@ data class ProviderFullDto(
     val verificationStatus: String,
     val verificationLevel: String,
     val tier: String,
+    val isOnline: Boolean,
     val equipment: List<EquipmentDto>,
     val certifications: List<CertificationDto>,
     val workExperience: List<ExperienceDto>,

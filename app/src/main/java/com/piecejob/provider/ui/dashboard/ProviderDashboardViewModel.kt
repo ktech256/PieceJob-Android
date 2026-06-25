@@ -105,7 +105,15 @@ class ProviderDashboardViewModel @Inject constructor(
             if (response.success) {
                 _isShadowBanned.value = response.data?.isShadowBanned ?: false
             }
-        } catch (e: Exception) {}
+            
+            // Also fetch provider-specific data like isOnline
+            val providerResponse = repository.getProviderFullProfile()
+            if (providerResponse.success) {
+                _isOnline.value = providerResponse.data?.isOnline ?: false
+            }
+        } catch (e: Exception) {
+            Log.e("ProviderDashboard", "Error loading profile info", e)
+        }
     }
 
     private suspend fun loadStats() {
@@ -134,11 +142,19 @@ class ProviderDashboardViewModel @Inject constructor(
                     }
 
                     val fusedLocationClient = com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context)
-                    // Simple one-shot location fetch
+                    // Try to get last location first, then current location if needed
                     val location = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                         try {
-                            val task = fusedLocationClient.lastLocation
-                            com.google.android.gms.tasks.Tasks.await(task)
+                            val lastTask = fusedLocationClient.lastLocation
+                            var loc = com.google.android.gms.tasks.Tasks.await(lastTask)
+                            if (loc == null) {
+                                val currentTask = fusedLocationClient.getCurrentLocation(
+                                    com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
+                                    null
+                                )
+                                loc = com.google.android.gms.tasks.Tasks.await(currentTask)
+                            }
+                            loc
                         } catch (e: Exception) {
                             null
                         }
