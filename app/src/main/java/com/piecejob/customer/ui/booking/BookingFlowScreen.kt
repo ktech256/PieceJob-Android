@@ -402,6 +402,7 @@ fun ServiceSelectionStep(viewModel: BookingViewModel) {
 @Composable
 fun BookingFeeStep(viewModel: BookingViewModel) {
     val estimate by viewModel.priceEstimate.collectAsState()
+    val error by viewModel.error.collectAsState()
     var showPaymentWarning by remember { mutableStateOf(false) }
 
     if (showPaymentWarning) {
@@ -411,6 +412,7 @@ fun BookingFeeStep(viewModel: BookingViewModel) {
             text = { Text("The booking fee you pay today will be credited toward the final amount agreed between you and the service provider. It is not an additional charge.") },
             confirmButton = {
                 Button(onClick = { 
+                    android.util.Log.d("TowMechSecurity", "PAYMENT_CONFIRM_CLICKED: Review & Pay Confirm Button")
                     showPaymentWarning = false
                     viewModel.createJob()
                 }) { Text("CONFIRM") }
@@ -422,6 +424,16 @@ fun BookingFeeStep(viewModel: BookingViewModel) {
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (error != null) {
+            Surface(
+                color = Color.Red,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Text(error!!, color = Color.White, modifier = Modifier.padding(12.dp), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+
         Spacer(modifier = Modifier.height(48.dp))
         Surface(modifier = Modifier.size(80.dp), shape = CircleShape, color = Color(0xFFFDECEA)) {
             Box(contentAlignment = Alignment.Center) {
@@ -535,9 +547,14 @@ fun PaymentWebViewStep(viewModel: BookingViewModel) {
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 webViewClient = object : WebViewClient() {
+                    override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                        super.onPageStarted(view, url, favicon)
+                        android.util.Log.d("TowMechSecurity", "WEBVIEW_LOADING_URL: $url")
+                    }
                     override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                         android.util.Log.d("PAYMENT_WEBVIEW", "Loading URL: $url")
                         if (url != null && url.startsWith("piecejob://payment-callback")) {
+                            android.util.Log.d("TowMechSecurity", "PAYMENT_CALLBACK_DETECTED: Starting verification")
                             viewModel.verifyPayment()
                             return true
                         }

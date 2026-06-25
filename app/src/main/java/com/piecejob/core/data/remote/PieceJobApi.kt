@@ -135,7 +135,7 @@ interface PieceJobApi {
     // =========================
     // ✅ JOB & MATCHING ROUTES
     // =========================
-    @POST("jobs")
+    @POST("jobs/request")
     suspend fun createJob(@Body request: CreateJobRequest): ApiResponse<JobDto>
 
     @GET("jobs/{jobId}")

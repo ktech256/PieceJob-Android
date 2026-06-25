@@ -258,8 +258,15 @@ class BookingViewModel @Inject constructor(
     }
 
     fun createJob() {
-        val service = selectedService.value ?: return
-        val coords = selectedCoordinates.value ?: return
+        android.util.Log.d("TowMechSecurity", "PAYMENT_INIT_STARTED: createJob triggered")
+        val service = selectedService.value ?: run {
+            android.util.Log.e("TowMechSecurity", "PAYMENT_INIT_FAILED: selectedService is null")
+            return
+        }
+        val coords = selectedCoordinates.value ?: run {
+            android.util.Log.e("TowMechSecurity", "PAYMENT_INIT_FAILED: selectedCoordinates is null")
+            return
+        }
         
         viewModelScope.launch {
             _isLoading.value = true
@@ -273,12 +280,15 @@ class BookingViewModel @Inject constructor(
                 recipientName = recipientName.value,
                 recipientPhone = recipientPhone.value
             )
+            android.util.Log.d("TowMechSecurity", "PAYMENT_API_CALLED: Calling createJob for ${service.code}")
             val res = jobRepository.createJob(request)
+            android.util.Log.d("TowMechSecurity", "PAYMENT_RESPONSE_RECEIVED: createJob success=${res.success}")
             if (res.success && res.data != null) {
                 createdJob.value = res.data
                 loadPaymentMethods()
                 _currentStep.value = BookingStep.PAYMENT_GATEWAY
             } else {
+                android.util.Log.e("TowMechSecurity", "PAYMENT_INIT_FAILED: ${res.error?.message}")
                 _error.value = res.error?.message
             }
             _isLoading.value = false
@@ -296,21 +306,31 @@ class BookingViewModel @Inject constructor(
     }
 
     fun payBookingFee() {
-        val jobId = createdJob.value?.id ?: return
+        val jobId = createdJob.value?.id ?: run {
+            android.util.Log.e("TowMechSecurity", "PAYMENT_STEP2_FAILED: createdJob.id is null")
+            return
+        }
+        android.util.Log.d("TowMechSecurity", "PAYMENT_STEP2_STARTED: payBookingFee triggered for jobId $jobId")
         viewModelScope.launch {
             _isLoading.value = true
+            android.util.Log.d("TowMechSecurity", "PAYMENT_API_CALLED: Calling payBookingFee")
             val res = jobRepository.payBookingFee(jobId)
+            android.util.Log.d("TowMechSecurity", "PAYMENT_RESPONSE_RECEIVED: payBookingFee success=${res.success}")
             if (res.success && res.data != null) {
                 if (res.data.paymentUrl != null) {
+                    android.util.Log.d("TowMechSecurity", "PAYMENT_URL_RECEIVED: ${res.data.paymentUrl}")
                     paymentUrl.value = res.data.paymentUrl
                     paymentReference.value = res.data.reference
+                    android.util.Log.d("TowMechSecurity", "PAYMENT_SCREEN_OPENING: Moving to WebView")
                     _currentStep.value = BookingStep.PAYMENT_WEBVIEW
                 } else {
+                    android.util.Log.w("TowMechSecurity", "PAYMENT_URL_MISSING: No URL in response, fallback to matching")
                     // Fallback for simulated success
                     _currentStep.value = BookingStep.MATCHING
                     startTracking()
                 }
             } else {
+                android.util.Log.e("TowMechSecurity", "PAYMENT_STEP2_FAILED: ${res.error?.message}")
                 _error.value = res.error?.message ?: "Failed to initialize payment"
             }
             _isLoading.value = false
