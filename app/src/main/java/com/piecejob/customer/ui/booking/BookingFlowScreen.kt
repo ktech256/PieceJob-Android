@@ -583,6 +583,7 @@ fun getStepTitle(step: BookingStep): String {
         BookingStep.SERVICE_SELECTION -> "Select Service"
         BookingStep.BOOKING_FEE -> "Review & Pay"
         BookingStep.PAYMENT_GATEWAY -> "Secure Payment"
+        BookingStep.PAYMENT_WEBVIEW -> "Secure Payment"
         BookingStep.MATCHING -> "Matching"
         BookingStep.TRACKING -> "Tracking"
     }
