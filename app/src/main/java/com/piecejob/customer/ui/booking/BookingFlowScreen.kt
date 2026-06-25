@@ -27,6 +27,9 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.viewinterop.AndroidView
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
@@ -73,6 +76,7 @@ fun BookingFlowScreen(
                 BookingStep.SERVICE_SELECTION -> ServiceSelectionStep(viewModel)
                 BookingStep.BOOKING_FEE -> BookingFeeStep(viewModel)
                 BookingStep.PAYMENT_GATEWAY -> PaymentGatewayStep(viewModel)
+                BookingStep.PAYMENT_WEBVIEW -> PaymentWebViewStep(viewModel)
                 BookingStep.MATCHING -> MatchingStep(viewModel, onTrackingStart)
                 BookingStep.TRACKING -> { /* Handled by onTrackingStart */ }
             }
@@ -512,6 +516,39 @@ fun PaymentGatewayStep(viewModel: BookingViewModel) {
             Text("PROCEED TO SECURE PAYMENT", fontWeight = FontWeight.Black)
         }
     }
+}
+
+@Composable
+fun PaymentWebViewStep(viewModel: BookingViewModel) {
+    val url by viewModel.paymentUrl.collectAsState()
+
+    if (url == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Initializing payment...")
+        }
+        return
+    }
+
+    AndroidView(
+        factory = { context ->
+            WebView(context).apply {
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                        android.util.Log.d("PAYMENT_WEBVIEW", "Loading URL: $url")
+                        if (url != null && url.startsWith("piecejob://payment-callback")) {
+                            viewModel.verifyPayment()
+                            return true
+                        }
+                        return false
+                    }
+                }
+                loadUrl(url!!)
+            }
+        },
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
 @Composable

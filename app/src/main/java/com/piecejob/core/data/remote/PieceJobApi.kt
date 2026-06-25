@@ -142,7 +142,7 @@ interface PieceJobApi {
     suspend fun getJobById(@Path("jobId") jobId: String): ApiResponse<JobDto>
 
     @POST("jobs/{jobId}/pay-booking-fee")
-    suspend fun payBookingFee(@Path("jobId") jobId: String): ApiResponse<JobDto>
+    suspend fun payBookingFee(@Path("jobId") jobId: String): ApiResponse<PayBookingFeeResponse>
 
     @PATCH("jobs/{jobId}/cancel")
     suspend fun cancelJob(@Path("jobId") jobId: String): ApiResponse<Unit>
@@ -167,6 +167,9 @@ interface PieceJobApi {
 
     @PATCH("providers/jobs/{jobId}/complete")
     suspend fun completeJob(@Path("jobId") jobId: String): ApiResponse<Unit>
+
+    @GET("payments/verify/{reference}")
+    suspend fun verifyPayment(@Path("reference") reference: String): ApiResponse<JobDto>
 
     @POST("sos/trigger")
     suspend fun triggerSos(@Body request: SosRequest): ApiResponse<SosResponse>

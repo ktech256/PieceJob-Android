@@ -26,7 +26,14 @@ data class JobDto(
     val isForSomeoneElse: Boolean,
     val recipientName: String?,
     val recipientPhone: String?,
-    val createdAt: String
+    val createdAt: String,
+    val paymentReference: String? = null
+)
+
+data class PayBookingFeeResponse(
+    val paymentUrl: String?,
+    val reference: String?,
+    val job: JobDto
 )
 
 data class ProviderInfoDto(

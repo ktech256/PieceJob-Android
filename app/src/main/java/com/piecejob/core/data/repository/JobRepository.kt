@@ -31,9 +31,17 @@ class JobRepository @Inject constructor(
         }
     }
 
-    suspend fun payBookingFee(jobId: String): ApiResponse<JobDto> {
+    suspend fun payBookingFee(jobId: String): ApiResponse<PayBookingFeeResponse> {
         return try {
             api.payBookingFee(jobId)
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
+    suspend fun verifyPayment(reference: String): ApiResponse<JobDto> {
+        return try {
+            api.verifyPayment(reference)
         } catch (e: Exception) {
             handleError(e)
         }

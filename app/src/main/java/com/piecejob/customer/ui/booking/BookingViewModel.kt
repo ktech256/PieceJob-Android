@@ -31,6 +31,7 @@ enum class BookingStep {
     SERVICE_SELECTION,
     BOOKING_FEE,
     PAYMENT_GATEWAY,
+    PAYMENT_WEBVIEW,
     MATCHING,
     TRACKING
 }
@@ -84,6 +85,8 @@ class BookingViewModel @Inject constructor(
 
     // Step 6: Created Job
     val createdJob = MutableStateFlow<JobDto?>(null)
+    val paymentUrl = MutableStateFlow<String?>(null)
+    val paymentReference = MutableStateFlow<String?>(null)
 
     init {
         android.util.Log.d("BOOKING_VM", "BookingViewModel Initialized")
@@ -297,11 +300,34 @@ class BookingViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             val res = jobRepository.payBookingFee(jobId)
-            if (res.success) {
+            if (res.success && res.data != null) {
+                if (res.data.paymentUrl != null) {
+                    paymentUrl.value = res.data.paymentUrl
+                    paymentReference.value = res.data.reference
+                    _currentStep.value = BookingStep.PAYMENT_WEBVIEW
+                } else {
+                    // Fallback for simulated success
+                    _currentStep.value = BookingStep.MATCHING
+                    startTracking()
+                }
+            } else {
+                _error.value = res.error?.message ?: "Failed to initialize payment"
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun verifyPayment() {
+        val reference = paymentReference.value ?: return
+        viewModelScope.launch {
+            _isLoading.value = true
+            val res = jobRepository.verifyPayment(reference)
+            if (res.success && res.data != null) {
+                createdJob.value = res.data
                 _currentStep.value = BookingStep.MATCHING
                 startTracking()
             } else {
-                _error.value = res.error?.message
+                _error.value = res.error?.message ?: "Verification failed"
             }
             _isLoading.value = false
         }
@@ -317,6 +343,7 @@ class BookingViewModel @Inject constructor(
             BookingStep.CATEGORY_SELECTION -> _currentStep.value = if (isForSomeoneElse.value) BookingStep.RECIPIENT_SELECTION else BookingStep.ADDRESS_SELECTION
             BookingStep.SERVICE_SELECTION -> _currentStep.value = BookingStep.CATEGORY_SELECTION
             BookingStep.BOOKING_FEE -> _currentStep.value = BookingStep.SERVICE_SELECTION
+            BookingStep.PAYMENT_WEBVIEW -> _currentStep.value = BookingStep.BOOKING_FEE
             else -> {}
         }
     }
