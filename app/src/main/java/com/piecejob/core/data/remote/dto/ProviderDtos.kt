@@ -97,7 +97,10 @@ data class UpdateBankDetailsRequest(
     val bankConfirmationUrl: String?
 )
 
-data class ProviderStatusRequest(val isOnline: Boolean)
+data class ProviderStatusRequest(
+    val isOnline: Boolean,
+    val coordinates: List<Double>? = null
+)
 
 data class VerificationRequirementsDto(
     val currentLevel: String,

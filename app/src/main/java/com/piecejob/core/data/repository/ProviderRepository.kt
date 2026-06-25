@@ -178,9 +178,10 @@ class ProviderRepository @Inject constructor(
         }
     }
 
-    suspend fun updateStatus(isOnline: Boolean): ApiResponse<Unit> {
+    suspend fun updateStatus(isOnline: Boolean, lat: Double? = null, lng: Double? = null): ApiResponse<Unit> {
         return try {
-            api.updateProviderStatus(com.piecejob.core.data.remote.dto.ProviderStatusRequest(isOnline))
+            val coords = if (lat != null && lng != null) listOf(lng, lat) else null
+            api.updateProviderStatus(com.piecejob.core.data.remote.dto.ProviderStatusRequest(isOnline, coords))
         } catch (e: Exception) {
             handleError(e)
         }

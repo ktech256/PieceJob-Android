@@ -41,6 +41,9 @@ class ProviderDashboardViewModel @Inject constructor(
     private val _activeJob = MutableStateFlow<JobDto?>(null)
     val activeJob: StateFlow<JobDto?> = _activeJob
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
+
     init {
         loadDashboard()
         observeSocket()
@@ -117,18 +120,56 @@ class ProviderDashboardViewModel @Inject constructor(
     fun toggleOnlineStatus(context: Context) {
         viewModelScope.launch {
             val newStatus = !_isOnline.value
-            val response = repository.updateStatus(newStatus)
-            if (response.success) {
-                _isOnline.value = newStatus
+            _error.value = null
+
+            try {
+                var lat: Double? = null
+                var lng: Double? = null
+
                 if (newStatus) {
-                    socketManager.connect("https://piecejob-backend.onrender.com")
-                    LocationService.startService(context)
-                    loadAvailableJobs()
-                } else {
-                    LocationService.stopService(context)
-                    socketManager.disconnect()
-                    _availableJobs.value = emptyList()
+                    // Check permissions
+                    if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        _error.value = "Location permission is required to go online."
+                        return@launch
+                    }
+
+                    val fusedLocationClient = com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context)
+                    // Simple one-shot location fetch
+                    val location = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        try {
+                            val task = fusedLocationClient.lastLocation
+                            com.google.android.gms.tasks.Tasks.await(task)
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                    lat = location?.latitude
+                    lng = location?.longitude
+
+                    if (lat == null || lng == null) {
+                        _error.value = "Unable to retrieve GPS location. Please ensure GPS is enabled."
+                        return@launch
+                    }
                 }
+
+                val response = repository.updateStatus(newStatus, lat, lng)
+                if (response.success) {
+                    _isOnline.value = newStatus
+                    if (newStatus) {
+                        socketManager.connect("https://piecejob-backend.onrender.com")
+                        LocationService.startService(context)
+                        loadAvailableJobs()
+                    } else {
+                        LocationService.stopService(context)
+                        socketManager.disconnect()
+                        _availableJobs.value = emptyList()
+                    }
+                } else {
+                    _error.value = response.message ?: "Failed to update status"
+                }
+            } catch (e: Exception) {
+                _error.value = "An unexpected error occurred"
+                Log.e("ProviderDashboard", "Toggle Online Error", e)
             }
         }
     }

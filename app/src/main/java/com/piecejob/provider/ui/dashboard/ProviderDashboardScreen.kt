@@ -33,6 +33,7 @@ fun ProviderDashboardScreen(
     val isShadowBanned by viewModel.isShadowBanned.collectAsState()
     val availableJobs by viewModel.availableJobs.collectAsState()
     val activeJob by viewModel.activeJob.collectAsState()
+    val error by viewModel.error.collectAsState()
     
     val context = LocalContext.current
 
@@ -84,6 +85,16 @@ fun ProviderDashboardScreen(
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
+
+                if (error != null) {
+                    Text(
+                        text = error!!,
+                        color = Color(0xFFEF5350),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
 
                 // STATUS TOGGLE BAR
                 Surface(
