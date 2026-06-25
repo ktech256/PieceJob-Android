@@ -151,7 +151,10 @@ interface PieceJobApi {
     suspend fun getAvailableJobs(): ApiResponse<List<JobDto>>
 
     @GET("providers/online")
-    suspend fun getOnlineProviders(): ApiResponse<List<ProviderDto>>
+    suspend fun getOnlineProviders(
+        @Query("lat") lat: Double? = null,
+        @Query("lng") lng: Double? = null
+    ): ApiResponse<List<ProviderDto>>
 
     @PATCH("providers/jobs/{jobId}/accept")
     suspend fun acceptJob(@Path("jobId") jobId: String): ApiResponse<JobDto>
@@ -207,7 +210,9 @@ interface PieceJobApi {
 
     @GET("config/services")
     suspend fun getServices(
-        @Query("gender") gender: String? = null
+        @Query("gender") gender: String? = null,
+        @Query("lat") lat: Double? = null,
+        @Query("lng") lng: Double? = null
     ): ApiResponse<ServicesResponseDto>
 
     @GET("config/pricing/estimate")
@@ -386,7 +391,8 @@ data class ServiceDto(
     val equipmentRequired: List<String>,
     val isActive: Boolean,
     val description: String? = null,
-    val onlineCountLabel: String? = null
+    val onlineCountLabel: String? = null,
+    val onlineCount: Int? = 0
 )
 
 data class GroupedServicesDto(

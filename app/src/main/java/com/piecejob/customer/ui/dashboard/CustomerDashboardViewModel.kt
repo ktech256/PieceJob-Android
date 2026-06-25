@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.remote.ServiceDto
 import com.piecejob.core.data.remote.GroupedServicesDto
 import com.piecejob.core.data.repository.ServiceRepository
+import com.piecejob.core.location.LocationService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -33,13 +35,20 @@ class CustomerDashboardViewModel @Inject constructor(
 
     init {
         // Only auto-load if we're likely already logged in (Customer App standard flow)
-        // For Provider onboarding, we will call loadServices(gender) explicitly.
         if (serviceRepository.hasStoredGender()) {
-            loadServices()
+            observeLocationAndLoad()
         }
     }
 
-    fun loadServices(gender: String? = null) {
+    private fun observeLocationAndLoad() {
+        viewModelScope.launch {
+            LocationService.currentLocation.collectLatest { location ->
+                loadServices(lat = location?.latitude, lng = location?.longitude)
+            }
+        }
+    }
+
+    fun loadServices(gender: String? = null, lat: Double? = null, lng: Double? = null) {
         viewModelScope.launch {
             _isLoading.value = true
             
@@ -49,7 +58,7 @@ class CustomerDashboardViewModel @Inject constructor(
                 if (catRes.success) _categories.value = catRes.data ?: emptyList()
             }
 
-            val response = serviceRepository.getServices(gender)
+            val response = serviceRepository.getServices(gender, lat, lng)
             if (response.success && response.data != null) {
                 _services.value = response.data.services
                 _groupedServices.value = response.data.grouped

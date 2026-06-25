@@ -200,11 +200,8 @@ class BookingViewModel @Inject constructor(
 
     private fun loadNearbyProviders(coordinates: List<Double>) {
         viewModelScope.launch {
-            // Fetch online providers for map markers
-            // We use a generic heartbeat or similar endpoint if available, 
-            // or we filter the providers list by coordinates.
-            // For now, let's assume we can fetch online providers by country.
-            val res = providerRepository.getOnlineProviders()
+            // Fetch online providers for map markers within radius
+            val res = providerRepository.getOnlineProviders(lat = coordinates[1], lng = coordinates[0])
             if (res.success) {
                 nearbyProviders.value = res.data ?: emptyList()
             }
@@ -227,7 +224,8 @@ class BookingViewModel @Inject constructor(
     fun selectCategory(categoryCode: String) {
         viewModelScope.launch {
             _isLoading.value = true
-            val res = serviceRepository.getServices()
+            val coords = selectedCoordinates.value
+            val res = serviceRepository.getServices(lat = coords?.get(1), lng = coords?.get(0))
             if (res.success && res.data != null) {
                 services.value = res.data.services.filter { it.category == categoryCode }
                 _currentStep.value = BookingStep.SERVICE_SELECTION

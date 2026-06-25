@@ -170,9 +170,9 @@ class ProviderRepository @Inject constructor(
         }
     }
 
-    suspend fun getOnlineProviders(): ApiResponse<List<ProviderDto>> {
+    suspend fun getOnlineProviders(lat: Double? = null, lng: Double? = null): ApiResponse<List<ProviderDto>> {
         return try {
-            api.getOnlineProviders()
+            api.getOnlineProviders(lat, lng)
         } catch (e: Exception) {
             handleError(e)
         }

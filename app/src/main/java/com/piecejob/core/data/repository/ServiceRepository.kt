@@ -14,10 +14,10 @@ class ServiceRepository @Inject constructor(
     private val api: PieceJobApi,
     private val sessionManager: SessionManager
 ) : BaseRepository() {
-    suspend fun getServices(explicitGender: String? = null): ApiResponse<ServicesResponseDto> {
+    suspend fun getServices(explicitGender: String? = null, lat: Double? = null, lng: Double? = null): ApiResponse<ServicesResponseDto> {
         return try {
             val gender = explicitGender ?: sessionManager.getGender()
-            api.getServices(gender)
+            api.getServices(gender, lat, lng)
         } catch (e: Exception) {
             handleError(e)
         }

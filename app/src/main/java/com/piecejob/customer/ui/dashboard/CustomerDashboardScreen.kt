@@ -317,12 +317,40 @@ fun ServiceCardSmall(service: ServiceDto, onClick: (ServiceDto) -> Unit) {
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Surface(modifier = Modifier.size(40.dp), shape = RoundedCornerShape(12.dp), color = Color(0xFFFDECEA)) {
-                Box(contentAlignment = Alignment.Center) { Text(service.name.take(1), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold) }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Surface(modifier = Modifier.size(40.dp), shape = RoundedCornerShape(12.dp), color = Color(0xFFFDECEA)) {
+                    Box(contentAlignment = Alignment.Center) { Text(service.name.take(1), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold) }
+                }
+                
+                if (!service.onlineCountLabel.isNullOrBlank() && service.onlineCountLabel != "0 Online") {
+                    Surface(
+                        color = Color(0xFFE8F5E9),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = "LIVE",
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF2E7D32)
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(20.dp))
             Text(service.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
-            Text("Book now", color = Color.Gray, fontSize = 11.sp)
+            
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val isOnline = !service.onlineCountLabel.isNullOrBlank() && service.onlineCountLabel != "0 Online"
+                Box(modifier = Modifier.size(6.dp).background(if(isOnline) Color(0xFF4CAF50) else Color.Gray, CircleShape))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = service.onlineCountLabel ?: "Offline",
+                    color = if(isOnline) Color(0xFF2E7D32) else Color.Gray,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
