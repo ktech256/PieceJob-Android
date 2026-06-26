@@ -43,10 +43,11 @@ fun JobRequestBanner(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(16.dp)
+            .statusBarsPadding(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 24.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -89,7 +90,7 @@ fun JobRequestBanner(
             Spacer(modifier = Modifier.height(20.dp))
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                InfoItem(Icons.Default.Map, job.distance ?: "2.4 km", "DISTANCE")
+                InfoItem(Icons.Default.Map, job.distance ?: "Nearby", "DISTANCE")
                 InfoItem(Icons.Default.Star, "4.9", "RATING")
                 InfoItem(Icons.Default.Build, job.earnings ?: "R 150.00", "EST. PAY")
             }

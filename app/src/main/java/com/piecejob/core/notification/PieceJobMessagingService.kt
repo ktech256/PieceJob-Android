@@ -47,18 +47,23 @@ class PieceJobMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        Log.d("FCM", "Message received from: ${message.from}. Data: ${message.data}")
+        Log.d("FCM_AUDIT", "Message received from: ${message.from}")
+        Log.d("FCM_AUDIT", "Data Payload: ${message.data}")
+        Log.d("FCM_AUDIT", "Notification Block: ${message.notification?.title} / ${message.notification?.body}")
 
         val type = message.data["type"]
         val jobId = message.data["jobId"]
         
         if (type == "NEW_JOB_BROADCAST" && jobId != null) {
+            Log.d("FCM_AUDIT", "Processing NEW_JOB_BROADCAST for $jobId")
             handleIncomingJob(message.data)
         } else if (type == "BROADCAST_CANCELLED" || type == "JOB_ASSIGNED_ELSEWHERE") {
+            Log.d("FCM_AUDIT", "Processing Termination Signal: $type")
             handleBroadcastTermination(jobId)
         } else {
             val title = message.notification?.title ?: message.data["title"] ?: "PieceJob"
             val body = message.notification?.body ?: message.data["body"] ?: ""
+            Log.d("FCM_AUDIT", "Showing standard notification: $title")
             showStandardNotification(title, body, message.data)
         }
     }
@@ -103,24 +108,26 @@ class PieceJobMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val channelId = "piecejob_broadcasts"
+        val channelId = "piecejob_broadcasts_v2"
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("New ${job.serviceCode} Request")
-            .setContentText("Incoming request from ${job.customerName ?: "Customer"}")
+            .setContentTitle(job.serviceCode)
+            .setContentText("Job from ${job.customerName ?: "Customer"}")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setAutoCancel(true)
             .setOngoing(true)
+            .setVibrate(longArrayOf(0, 500, 200, 500))
             .setContentIntent(pendingIntent)
             .setFullScreenIntent(pendingIntent, true) 
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Service Broadcasts", NotificationManager.IMPORTANCE_HIGH).apply {
+            val channel = NotificationChannel(channelId, "Service Requests", NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "Urgent service requests for providers"
                 enableLights(true)
                 enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 200, 500)
                 setSound(null, null) 
             }
             notificationManager.createNotificationChannel(channel)

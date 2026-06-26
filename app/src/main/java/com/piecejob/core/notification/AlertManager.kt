@@ -18,10 +18,14 @@ class AlertManager @Inject constructor(
     private val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
 
     fun start() {
+        android.util.Log.d("ALERT_AUDIT", "Starting Alert (Audio + Haptics)")
         stop() // Ensure clean start
         try {
             val notificationUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
             ringtone = RingtoneManager.getRingtone(context, notificationUri)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                ringtone?.isLooping = true
+            }
             ringtone?.play()
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -31,11 +35,12 @@ class AlertManager @Inject constructor(
                 vibrator.vibrate(longArrayOf(0, 500, 200, 500), 0)
             }
         } catch (e: Exception) {
-            // Log error
+            android.util.Log.e("ALERT_AUDIT", "Alert failed: ${e.message}", e)
         }
     }
 
     fun stop() {
+        android.util.Log.d("ALERT_AUDIT", "Stopping Alert")
         ringtone?.stop()
         vibrator.cancel()
     }

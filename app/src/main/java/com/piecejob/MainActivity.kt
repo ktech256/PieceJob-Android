@@ -31,7 +31,9 @@ class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        // Handle results
+        permissions.entries.forEach {
+            android.util.Log.d("PERMISSIONS_AUDIT", "${it.key} granted: ${it.value}")
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

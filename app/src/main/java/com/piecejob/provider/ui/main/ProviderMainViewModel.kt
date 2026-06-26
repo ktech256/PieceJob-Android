@@ -25,6 +25,7 @@ class ProviderMainViewModel @Inject constructor(
 
     private fun setupSocketListeners() {
         socketManager.onNewBroadcast { data ->
+            android.util.Log.d("SOCKET_AUDIT", "NEW_JOB_BROADCAST received via Socket: $data")
             val incomingJob = IncomingJob(
                 jobId = data.optString("jobId"),
                 serviceCode = data.optString("serviceCode", "Service Request"),

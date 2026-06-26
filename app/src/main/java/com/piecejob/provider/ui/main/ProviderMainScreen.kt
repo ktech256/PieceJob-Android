@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -11,6 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -111,7 +114,7 @@ fun ProviderMainScreen(
                 visible = activeJobRequest != null,
                 enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
                 exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
-                modifier = Modifier.align(Alignment.TopCenter)
+                modifier = Modifier.align(Alignment.TopCenter).zIndex(99f)
             ) {
                 activeJobRequest?.let { job ->
                     JobRequestBanner(
