@@ -30,6 +30,9 @@ class JobTrackingViewModel @Inject constructor(
     private val _providerLocation = MutableStateFlow<Pair<Double, Double>?>(null)
     val providerLocation: StateFlow<Pair<Double, Double>?> = _providerLocation
 
+    private val _providerHeading = MutableStateFlow(0f)
+    val providerHeading: StateFlow<Float> = _providerHeading
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -62,9 +65,10 @@ class JobTrackingViewModel @Inject constructor(
     }
 
     private fun setupSocketListeners(jobId: String) {
-        socketManager.onLocationUpdated { lat, lng ->
-            android.util.Log.d("JobTracking", "Provider location update: $lat, $lng")
+        socketManager.onLocationUpdated { lat, lng, heading ->
+            android.util.Log.d("JobTracking", "Provider location update: $lat, $lng, heading: $heading")
             _providerLocation.value = lat to lng
+            _providerHeading.value = heading
         }
 
         socketManager.onStatusUpdated { status ->

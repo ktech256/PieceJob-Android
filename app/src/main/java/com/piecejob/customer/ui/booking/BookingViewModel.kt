@@ -312,6 +312,8 @@ class BookingViewModel @Inject constructor(
             android.util.Log.d("TowMechSecurity", "PAYMENT_RESPONSE_RECEIVED: createJob success=${res.success} hasData=${res.data != null}")
             if (res.success && res.data != null) {
                 createdJob.value = res.data
+                // Join the job room for live updates during payment
+                socketManager.joinJob(res.data.id)
                 // Automatically proceed to payment initialization bypassing gateway selection
                 payBookingFee(res.data.id)
             } else {

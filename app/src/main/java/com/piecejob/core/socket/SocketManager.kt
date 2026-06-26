@@ -89,11 +89,12 @@ class SocketManager @Inject constructor(
         socket?.emit("sos_gps_ping", data)
     }
 
-    fun onLocationUpdated(callback: (Double, Double) -> Unit) {
+    fun onLocationUpdated(callback: (Double, Double, Float) -> Unit) {
         socket?.on("location_updated") { args ->
             val data = args[0] as JSONObject
             val coords = data.getJSONArray("coordinates")
-            callback(coords.getDouble(1), coords.getDouble(0))
+            val heading = data.optDouble("heading", 0.0).toFloat()
+            callback(coords.getDouble(1), coords.getDouble(0), heading)
         }
     }
 

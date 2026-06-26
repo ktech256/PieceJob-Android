@@ -35,6 +35,7 @@ fun CustomerTrackingScreen(
     val job by viewModel.job.collectAsState()
     val nearbyProviders by viewModel.nearbyProviders.collectAsState()
     val providerLocation by viewModel.providerLocation.collectAsState()
+    val providerHeading by viewModel.providerHeading.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -100,6 +101,7 @@ fun CustomerTrackingScreen(
                 Marker(
                     state = MarkerState(position = LatLng(loc.first, loc.second)),
                     title = "Your Professional",
+                    rotation = providerHeading,
                     icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_AZURE)
                 )
                 
