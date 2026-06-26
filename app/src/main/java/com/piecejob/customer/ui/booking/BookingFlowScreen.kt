@@ -77,7 +77,6 @@ fun BookingFlowScreen(
                 BookingStep.BOOKING_FEE -> BookingFeeStep(viewModel)
                 BookingStep.PAYMENT_GATEWAY -> { /* Skipped - handled automatically by backend routing */ }
                 BookingStep.PAYMENT_WEBVIEW -> PaymentWebViewStep(viewModel)
-                BookingStep.MATCHING -> MatchingStep(viewModel, onTrackingStart)
                 BookingStep.TRACKING -> {
                     val job by viewModel.createdJob.collectAsState()
                     LaunchedEffect(job) {
@@ -538,10 +537,19 @@ fun PaymentGatewayStep(viewModel: BookingViewModel) {
 @Composable
 fun PaymentWebViewStep(viewModel: BookingViewModel) {
     val url by viewModel.paymentUrl.collectAsState()
+    val isVerifying by viewModel.isLoading.collectAsState()
 
-    if (url == null) {
+    if (url == null || isVerifying) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Initializing payment...")
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressIndicator(color = Color(0xFFD32F2F))
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = if (isVerifying) "Verifying payment..." else "Initializing secure payment...",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
         }
         return
     }
@@ -555,9 +563,20 @@ fun PaymentWebViewStep(viewModel: BookingViewModel) {
                     override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                         super.onPageStarted(view, url, favicon)
                         android.util.Log.d("TowMechSecurity", "WEBVIEW_LOADING_URL: $url")
+                        
+                        // Broad check for success indicators in URL to trigger silent verification
+                        if (url != null && (
+                            url.startsWith("piecejob://payment-callback") || 
+                            url.contains("checkout.paystack.com/success") ||
+                            url.contains("/payments/verify/")
+                        )) {
+                            android.util.Log.d("TowMechSecurity", "SILENT_SUCCESS_DETECTED: Intercepting $url")
+                            viewModel.verifyPayment()
+                        }
                     }
+
                     override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                        android.util.Log.d("PAYMENT_WEBVIEW", "Loading URL: $url")
+                        android.util.Log.d("PAYMENT_WEBVIEW", "shouldOverrideUrlLoading: $url")
                         if (url != null && url.startsWith("piecejob://payment-callback")) {
                             android.util.Log.d("TowMechSecurity", "PAYMENT_CALLBACK_DETECTED: Starting verification")
                             viewModel.verifyPayment()
@@ -573,30 +592,6 @@ fun PaymentWebViewStep(viewModel: BookingViewModel) {
     )
 }
 
-@Composable
-fun MatchingStep(viewModel: BookingViewModel, onTrackingStart: (String) -> Unit) {
-    val job by viewModel.createdJob.collectAsState()
-    
-    LaunchedEffect(Unit) {
-        // Here we would start polling or waiting for socket event
-        // Simulate acceptance after 5 seconds
-        kotlinx.coroutines.delay(5000)
-        job?.id?.let { onTrackingStart(it) }
-    }
-
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Surface(modifier = Modifier.size(120.dp), shape = CircleShape, color = Color(0xFFFDECEA)) {
-             Box(contentAlignment = Alignment.Center) {
-                 CircularProgressIndicator(modifier = Modifier.size(100.dp), strokeWidth = 8.dp, color = Color(0xFFD32F2F))
-                 Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFFD32F2F), modifier = Modifier.size(40.dp))
-             }
-        }
-        Spacer(modifier = Modifier.height(32.dp))
-        Text("Connecting you to a provider...", fontWeight = FontWeight.Black, fontSize = 18.sp)
-        Text("Finding the best professional nearby", color = Color.Gray, fontSize = 14.sp)
-    }
-}
-
 fun getStepTitle(step: BookingStep): String {
     return when (step) {
         BookingStep.ADDRESS_SELECTION -> "Select Location"
@@ -606,7 +601,6 @@ fun getStepTitle(step: BookingStep): String {
         BookingStep.BOOKING_FEE -> "Review & Pay"
         BookingStep.PAYMENT_GATEWAY -> "Secure Payment"
         BookingStep.PAYMENT_WEBVIEW -> "Secure Payment"
-        BookingStep.MATCHING -> "Matching"
         BookingStep.TRACKING -> "Tracking"
     }
 }

@@ -34,7 +34,6 @@ enum class BookingStep {
     BOOKING_FEE,
     PAYMENT_GATEWAY,
     PAYMENT_WEBVIEW,
-    MATCHING,
     TRACKING
 }
 
@@ -349,8 +348,7 @@ class BookingViewModel @Inject constructor(
                     _currentStep.value = BookingStep.PAYMENT_WEBVIEW
                 } else {
                     android.util.Log.w("TowMechSecurity", "PAYMENT_URL_MISSING: No URL in response. JobID: $jobId")
-                    _currentStep.value = BookingStep.MATCHING
-                    startTracking()
+                    _currentStep.value = BookingStep.TRACKING
                 }
             } else {
                 val errorMsg = res.error?.message ?: "Payment data payload is null"
@@ -383,10 +381,6 @@ class BookingViewModel @Inject constructor(
             }
             _isLoading.value = false
         }
-    }
-
-    private fun startTracking() {
-        // Here we would navigate to the tracking screen or start polling job status
     }
 
     fun previousStep() {
