@@ -75,7 +75,7 @@ fun BookingFlowScreen(
                 BookingStep.CATEGORY_SELECTION -> CategorySelectionStep(viewModel)
                 BookingStep.SERVICE_SELECTION -> ServiceSelectionStep(viewModel)
                 BookingStep.BOOKING_FEE -> BookingFeeStep(viewModel)
-                BookingStep.PAYMENT_GATEWAY -> PaymentGatewayStep(viewModel)
+                BookingStep.PAYMENT_GATEWAY -> { /* Skipped - handled automatically by backend routing */ }
                 BookingStep.PAYMENT_WEBVIEW -> PaymentWebViewStep(viewModel)
                 BookingStep.MATCHING -> MatchingStep(viewModel, onTrackingStart)
                 BookingStep.TRACKING -> { /* Handled by onTrackingStart */ }

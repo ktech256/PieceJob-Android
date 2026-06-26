@@ -285,30 +285,24 @@ class BookingViewModel @Inject constructor(
             android.util.Log.d("TowMechSecurity", "PAYMENT_RESPONSE_RECEIVED: createJob success=${res.success} hasData=${res.data != null}")
             if (res.success && res.data != null) {
                 createdJob.value = res.data
-                loadPaymentMethods()
-                _currentStep.value = BookingStep.PAYMENT_GATEWAY
+                // Automatically proceed to payment initialization bypassing gateway selection
+                payBookingFee(res.data.id)
             } else {
                 val errorMsg = res.error?.message ?: "Data payload is null despite success=${res.success}"
                 android.util.Log.e("TowMechSecurity", "PAYMENT_INIT_FAILED: $errorMsg. Full Response: $res")
                 _error.value = errorMsg
+                _isLoading.value = false
             }
-            _isLoading.value = false
         }
     }
 
     private fun loadPaymentMethods() {
-        viewModelScope.launch {
-            val res = settingsRepository.getPaymentMethods()
-            if (res.success) {
-                availablePaymentMethods.value = res.data ?: emptyList()
-                selectedPaymentMethod.value = availablePaymentMethods.value.firstOrNull()
-            }
-        }
+        // Obsolete - selecting automatically on backend
     }
 
-    fun payBookingFee() {
-        val jobId = createdJob.value?.id ?: run {
-            android.util.Log.e("TowMechSecurity", "PAYMENT_STEP2_FAILED: createdJob.id is null")
+    fun payBookingFee(explicitJobId: String? = null) {
+        val jobId = explicitJobId ?: createdJob.value?.id ?: run {
+            android.util.Log.e("TowMechSecurity", "PAYMENT_STEP2_FAILED: jobId is null")
             return
         }
         android.util.Log.d("TowMechSecurity", "PAYMENT_STEP2_STARTED: payBookingFee triggered for jobId $jobId")
