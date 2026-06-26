@@ -9,6 +9,7 @@ import com.piecejob.core.data.repository.JobRepository
 import com.piecejob.core.data.remote.dto.*
 import com.piecejob.core.location.LocationService
 import com.piecejob.core.socket.SocketManager
+import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -86,11 +87,16 @@ class ProviderDashboardViewModel @Inject constructor(
             }
         }
         
-        socketManager.onNewBroadcast { job: JobDto ->
-            val current = _availableJobs.value.toMutableList()
-            if (current.none { it.id == job.id }) {
-                current.add(0, job)
-                _availableJobs.value = current
+        socketManager.onNewBroadcast { data ->
+            try {
+                val job = Gson().fromJson(data.toString(), JobDto::class.java)
+                val current = _availableJobs.value.toMutableList()
+                if (current.none { it.id == job.id }) {
+                    current.add(0, job)
+                    _availableJobs.value = current
+                }
+            } catch (e: Exception) {
+                Log.e("ProviderDashboard", "Error parsing broadcast job", e)
             }
         }
     }
