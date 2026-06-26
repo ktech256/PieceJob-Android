@@ -9,9 +9,11 @@ open class BaseRepository {
     protected val gson = Gson()
 
     protected fun <T> handleError(e: Exception): ApiResponse<T> {
+        android.util.Log.e("TowMechSecurity", "API_ERROR_CAUGHT: ${e.message}", e)
         return if (e is HttpException) {
             try {
                 val errorBody = e.response()?.errorBody()?.string()
+                android.util.Log.e("TowMechSecurity", "API_HTTP_ERROR: Code=${e.code()} Body=$errorBody")
                 val errorResponse = gson.fromJson(errorBody, ApiResponse::class.java)
                 ApiResponse(
                     success = false,

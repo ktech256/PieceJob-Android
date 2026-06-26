@@ -282,14 +282,15 @@ class BookingViewModel @Inject constructor(
             )
             android.util.Log.d("TowMechSecurity", "PAYMENT_API_CALLED: Calling createJob for ${service.code}")
             val res = jobRepository.createJob(request)
-            android.util.Log.d("TowMechSecurity", "PAYMENT_RESPONSE_RECEIVED: createJob success=${res.success}")
+            android.util.Log.d("TowMechSecurity", "PAYMENT_RESPONSE_RECEIVED: createJob success=${res.success} hasData=${res.data != null}")
             if (res.success && res.data != null) {
                 createdJob.value = res.data
                 loadPaymentMethods()
                 _currentStep.value = BookingStep.PAYMENT_GATEWAY
             } else {
-                android.util.Log.e("TowMechSecurity", "PAYMENT_INIT_FAILED: ${res.error?.message}")
-                _error.value = res.error?.message
+                val errorMsg = res.error?.message ?: "Data payload is null despite success=${res.success}"
+                android.util.Log.e("TowMechSecurity", "PAYMENT_INIT_FAILED: $errorMsg. Full Response: $res")
+                _error.value = errorMsg
             }
             _isLoading.value = false
         }
@@ -315,39 +316,47 @@ class BookingViewModel @Inject constructor(
             _isLoading.value = true
             android.util.Log.d("TowMechSecurity", "PAYMENT_API_CALLED: Calling payBookingFee")
             val res = jobRepository.payBookingFee(jobId)
-            android.util.Log.d("TowMechSecurity", "PAYMENT_RESPONSE_RECEIVED: payBookingFee success=${res.success}")
+            android.util.Log.d("TowMechSecurity", "PAYMENT_RESPONSE_RECEIVED: payBookingFee success=${res.success} hasData=${res.data != null}")
             if (res.success && res.data != null) {
                 if (res.data.paymentUrl != null) {
-                    android.util.Log.d("TowMechSecurity", "PAYMENT_URL_RECEIVED: ${res.data.paymentUrl}")
+                    android.util.Log.d("TowMechSecurity", "PAYMENT_URL_RECEIVED: URL=${res.data.paymentUrl}, Ref=${res.data.reference}")
                     paymentUrl.value = res.data.paymentUrl
                     paymentReference.value = res.data.reference
-                    android.util.Log.d("TowMechSecurity", "PAYMENT_SCREEN_OPENING: Moving to WebView")
+                    android.util.Log.d("TowMechSecurity", "PAYMENT_SCREEN_OPENING: Moving to WebView Step")
                     _currentStep.value = BookingStep.PAYMENT_WEBVIEW
                 } else {
-                    android.util.Log.w("TowMechSecurity", "PAYMENT_URL_MISSING: No URL in response, fallback to matching")
-                    // Fallback for simulated success
+                    android.util.Log.w("TowMechSecurity", "PAYMENT_URL_MISSING: No URL in response. JobID: $jobId")
                     _currentStep.value = BookingStep.MATCHING
                     startTracking()
                 }
             } else {
-                android.util.Log.e("TowMechSecurity", "PAYMENT_STEP2_FAILED: ${res.error?.message}")
-                _error.value = res.error?.message ?: "Failed to initialize payment"
+                val errorMsg = res.error?.message ?: "Payment data payload is null"
+                android.util.Log.e("TowMechSecurity", "PAYMENT_STEP2_FAILED: $errorMsg. Response: $res")
+                _error.value = errorMsg
             }
             _isLoading.value = false
         }
     }
 
     fun verifyPayment() {
-        val reference = paymentReference.value ?: return
+        val reference = paymentReference.value ?: run {
+            android.util.Log.e("TowMechSecurity", "PAYMENT_VERIFY_FAILED: Reference is null")
+            return
+        }
+        android.util.Log.d("TowMechSecurity", "PAYMENT_VERIFY_STARTED: Verifying reference $reference")
         viewModelScope.launch {
             _isLoading.value = true
             val res = jobRepository.verifyPayment(reference)
+            android.util.Log.d("TowMechSecurity", "PAYMENT_VERIFY_RESPONSE: success=${res.success} hasData=${res.data != null}")
             if (res.success && res.data != null) {
                 createdJob.value = res.data
+                android.util.Log.d("TowMechSecurity", "PAYMENT_VERIFY_SUCCESS: Transitioning to Matching")
                 _currentStep.value = BookingStep.MATCHING
                 startTracking()
             } else {
-                _error.value = res.error?.message ?: "Verification failed"
+                val errorMsg = res.error?.message ?: "Verification data is null"
+                android.util.Log.e("TowMechSecurity", "PAYMENT_VERIFY_FAILED: $errorMsg")
+                _error.value = errorMsg
             }
             _isLoading.value = false
         }
