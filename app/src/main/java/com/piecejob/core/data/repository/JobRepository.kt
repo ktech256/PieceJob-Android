@@ -55,6 +55,14 @@ class JobRepository @Inject constructor(
         }
     }
 
+    suspend fun getOnlineProviders(lat: Double? = null, lng: Double? = null): ApiResponse<List<ProviderDto>> {
+        return try {
+            api.getOnlineProviders(lat, lng)
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
     suspend fun acceptJob(jobId: String): ApiResponse<JobDto> {
         return try {
             api.acceptJob(jobId)

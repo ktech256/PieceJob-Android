@@ -1,9 +1,12 @@
 package com.piecejob.customer.ui.tracking
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,7 +17,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.maps.android.compose.*
 import com.piecejob.core.ui.components.LiveTrackingMap
+import kotlinx.coroutines.delay
 
 @Composable
 fun CustomerTrackingScreen(
@@ -25,109 +33,270 @@ fun CustomerTrackingScreen(
     onBack: () -> Unit
 ) {
     val job by viewModel.job.collectAsState()
+    val nearbyProviders by viewModel.nearbyProviders.collectAsState()
     val providerLocation by viewModel.providerLocation.collectAsState()
-    
-    // Hardcoded for demo, in real app extract from job object
-    val customerLocation = 0.0 to 0.0 
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+
+    val customerLatLng = remember(job) {
+        job?.location?.coordinates?.let { LatLng(it[1], it[0]) } ?: LatLng(0.0, 0.0)
+    }
+
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(customerLatLng, 15f)
+    }
+
+    // Auto-adjust camera to fit both customer and provider when assigned
+    LaunchedEffect(customerLatLng, providerLocation) {
+        if (providerLocation != null) {
+            val providerLatLng = LatLng(providerLocation!!.first, providerLocation!!.second)
+            val bounds = LatLngBounds.builder()
+                .include(customerLatLng)
+                .include(providerLatLng)
+                .build()
+            cameraPositionState.animate(
+                com.google.android.gms.maps.CameraUpdateFactory.newLatLngBounds(bounds, 150)
+            )
+        } else {
+            cameraPositionState.animate(
+                com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(customerLatLng, 15f)
+            )
+        }
+    }
 
     LaunchedEffect(jobId) {
         viewModel.initTracking(jobId)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        LiveTrackingMap(
-            providerLocation = providerLocation,
-            customerLocation = customerLocation,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Top Status Bar (Customer Red)
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 48.dp, start = 16.dp, end = 16.dp)
-                .align(Alignment.TopCenter),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFD32F2F)),
-            shape = RoundedCornerShape(16.dp)
+        // MAP
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = true),
+            properties = MapProperties(isMyLocationEnabled = true)
         ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = "Status: ${job?.status ?: "Connecting..."}", color = Color.White, fontSize = 12.sp)
-                    Text(text = "Job #${jobId.takeLast(6)}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            // Customer Marker
+            Marker(
+                state = MarkerState(position = customerLatLng),
+                title = "Your Location",
+                icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_RED)
+            )
+
+            // Nearby Providers (Only shown when searching)
+            if (providerLocation == null) {
+                nearbyProviders.forEach { p ->
+                    Marker(
+                        state = MarkerState(position = LatLng(p.location.coordinates[1], p.location.coordinates[0])),
+                        title = "${p.firstName}",
+                        alpha = 0.6f,
+                        icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_GREEN)
+                    )
                 }
-                if (job?.status == "ACCEPTED" || job?.status == "ARRIVED") {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+            }
+
+            // Assigned Provider Marker
+            providerLocation?.let { loc ->
+                Marker(
+                    state = MarkerState(position = LatLng(loc.first, loc.second)),
+                    title = "Your Professional",
+                    icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_AZURE)
+                )
+                
+                // Draw Route Polyline (Simplified straight line for now, or use actual route API if available)
+                Polyline(
+                    points = listOf(customerLatLng, LatLng(loc.first, loc.second)),
+                    color = Color(0xFFD32F2F),
+                    width = 8f
+                )
+            }
+        }
+
+        // Top Status Bar
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically() + fadeIn(),
+            modifier = Modifier.align(Alignment.TopCenter)
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 48.dp, start = 16.dp, end = 16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFD32F2F)),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val statusText = when (job?.status) {
+                        "BROADCASTED", "BROADCASTING" -> "Searching for Provider..."
+                        "PROVIDER_ACCEPTED" -> "Provider Accepted!"
+                        "EN_ROUTE" -> "Provider En Route"
+                        "ARRIVED" -> "Provider Arrived"
+                        "STARTED" -> "Job in Progress"
+                        "COMPLETED" -> "Job Completed"
+                        else -> "Connecting..."
+                    }
+                    
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = statusText, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                        Text(text = "Job #${jobId.takeLast(6).toUpperCase()}", color = Color.White.copy(alpha = 0.8f), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
+                    
+                    if (job?.status != "COMPLETED" && job?.status != "CANCELLED") {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    }
                 }
             }
         }
 
-        // Bottom Provider Info Card
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter),
-            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
+        // Bottom Info Panel
+        AnimatedVisibility(
+            visible = job != null,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFFDECEA)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = "P", color = Color(0xFFD32F2F), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    }
-                    
-                    Spacer(modifier = Modifier.width(16.dp))
-                    
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = job?.providerInfo?.let { "${it.firstName} ${it.lastName}" } ?: "Provider assigned",
-                            fontWeight = FontWeight.ExtraBold, 
-                            fontSize = 18.sp
-                        )
-                        Text(
-                            text = "⭐ ${job?.providerInfo?.ratingAvg ?: "4.8"} • ${job?.providerInfo?.jobsCompleted ?: "0"} Jobs", 
-                            color = Color.Gray, 
-                            fontSize = 14.sp
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 24.dp)
+            ) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    if (providerLocation == null) {
+                        // Searching UI
+                        SearchingPanel(job?.serviceCode ?: "Service", nearbyProviders.size)
+                    } else {
+                        // Assigned Provider UI
+                        AssignedProviderPanel(
+                            job = job!!,
+                            onChatOpen = onChatOpen,
+                            onSosTrigger = onSosTrigger
                         )
                     }
                     
-                    IconButton(
-                        onClick = { job?.providerId?.let { onChatOpen(it) } },
-                        modifier = Modifier.size(48.dp).background(Color(0xFFF5F5F5), CircleShape)
-                    ) {
-                        Text("💬")
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    if (job?.status != "COMPLETED" && job?.status != "STARTED") {
+                        Button(
+                            onClick = { viewModel.cancelJob(); onBack() },
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5)),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text(text = "Cancel Request", color = Color.DarkGray, fontWeight = FontWeight.Black)
+                        }
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+        
+        if (error != null) {
+            Snackbar(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+                action = { TextButton(onClick = { onBack() }) { Text("DISMISS", color = Color.White) } }
+            ) { Text(error!!) }
+        }
+    }
+}
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(
-                        onClick = onSosTrigger,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red)
-                    ) {
-                        Text("SOS", color = Color.Red)
-                    }
-                    
-                    Button(
-                        onClick = { viewModel.cancelJob(); onBack() },
-                        modifier = Modifier.weight(2f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5)),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(text = "Cancel Job", color = Color.DarkGray)
-                    }
+@Composable
+fun SearchingPanel(serviceName: String, nearbyCount: Int) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        LinearProgressIndicator(
+            modifier = Modifier.fillMaxWidth().clip(CircleShape),
+            color = Color(0xFFD32F2F),
+            trackColor = Color(0xFFFDECEA)
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Build, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = serviceName, fontWeight = FontWeight.Black, fontSize = 18.sp)
+        }
+        Text(
+            text = if (nearbyCount > 0) "$nearbyCount providers notified nearby" else "Broadcasting request to best professionals",
+            color = Color.Gray,
+            fontSize = 14.sp
+        )
+    }
+}
+
+@Composable
+fun AssignedProviderPanel(
+    job: com.piecejob.core.data.remote.dto.JobDto,
+    onChatOpen: (String) -> Unit,
+    onSosTrigger: () -> Unit
+) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(64.dp).clip(CircleShape).background(Color(0xFFFDECEA)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFFD32F2F), modifier = Modifier.size(32.dp))
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = job.providerInfo?.let { "${it.firstName} ${it.lastName}" } ?: "Provider assigned",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 20.sp,
+                    lineHeight = 22.sp
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(14.dp))
+                    Text(
+                        text = " ${job.providerInfo?.ratingAvg ?: "4.9"} • ${job.providerInfo?.jobsCompleted ?: "12"} Jobs",
+                        color = Color.Gray,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilledIconButton(
+                    onClick = { /* Call logic */ },
+                    modifier = Modifier.size(48.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFE8F5E9))
+                ) {
+                    Icon(Icons.Default.Phone, contentDescription = "Call", tint = Color(0xFF2E7D32))
+                }
+                
+                FilledIconButton(
+                    onClick = { job.providerId?.let { onChatOpen(it) } },
+                    modifier = Modifier.size(48.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFE3F2FD))
+                ) {
+                    Icon(Icons.Default.Email, contentDescription = "Message", tint = Color(0xFF1976D2))
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(
+                onClick = onSosTrigger,
+                modifier = Modifier.weight(1f).height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text("SOS", fontWeight = FontWeight.Black)
+            }
+            
+            Surface(
+                modifier = Modifier.weight(2f).height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFFF5F5F5)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(text = "ETA: 8 mins", fontWeight = FontWeight.Black, color = Color.Black)
                 }
             }
         }

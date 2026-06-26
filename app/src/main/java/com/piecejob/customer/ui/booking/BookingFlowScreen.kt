@@ -78,7 +78,12 @@ fun BookingFlowScreen(
                 BookingStep.PAYMENT_GATEWAY -> { /* Skipped - handled automatically by backend routing */ }
                 BookingStep.PAYMENT_WEBVIEW -> PaymentWebViewStep(viewModel)
                 BookingStep.MATCHING -> MatchingStep(viewModel, onTrackingStart)
-                BookingStep.TRACKING -> { /* Handled by onTrackingStart */ }
+                BookingStep.TRACKING -> {
+                    val job by viewModel.createdJob.collectAsState()
+                    LaunchedEffect(job) {
+                        job?.id?.let { onTrackingStart(it) }
+                    }
+                }
             }
 
             if (isLoading) {

@@ -344,9 +344,9 @@ class BookingViewModel @Inject constructor(
             android.util.Log.d("TowMechSecurity", "PAYMENT_VERIFY_RESPONSE: success=${res.success} hasData=${res.data != null}")
             if (res.success && res.data != null) {
                 createdJob.value = res.data
-                android.util.Log.d("TowMechSecurity", "PAYMENT_VERIFY_SUCCESS: Transitioning to Matching")
-                _currentStep.value = BookingStep.MATCHING
-                startTracking()
+                android.util.Log.d("TowMechSecurity", "PAYMENT_VERIFY_SUCCESS: Transitioning to Matching (Tracking)")
+                // Immediately navigate to Tracking screen
+                _currentStep.value = BookingStep.TRACKING
             } else {
                 val errorMsg = res.error?.message ?: "Verification data is null"
                 android.util.Log.e("TowMechSecurity", "PAYMENT_VERIFY_FAILED: $errorMsg")

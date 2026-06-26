@@ -53,6 +53,11 @@ class SocketManager @Inject constructor(
         Log.d(TAG, "Joined job room: $jobId")
     }
 
+    fun joinUser(userId: String) {
+        socket?.emit("join_user", userId)
+        Log.d(TAG, "Joined user room: $userId")
+    }
+
     fun sendHeartbeat(lat: Double, lng: Double, hardwareId: String, isMock: Boolean) {
         val userId = sessionManager.getUserId() ?: return
         val data = JSONObject().apply {
@@ -96,6 +101,13 @@ class SocketManager @Inject constructor(
         socket?.on("status_updated") { args ->
             val data = args[0] as JSONObject
             callback(data.getString("status"))
+        }
+    }
+
+    fun onJobAccepted(callback: (String, String) -> Unit) {
+        socket?.on("JOB_ACCEPTED") { args ->
+            val data = args[0] as JSONObject
+            callback(data.getString("jobId"), data.getString("providerId"))
         }
     }
 
