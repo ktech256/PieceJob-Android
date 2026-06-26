@@ -82,12 +82,23 @@ class MainActivity : ComponentActivity() {
                     if (authViewModel.isLoggedIn()) {
                         try {
                             val token = FirebaseMessaging.getInstance().token.await()
-                            android.util.Log.d("FCM_AUDIT", "Current token for user ${authViewModel.loginIdentifier.value}: $token")
+                            android.util.Log.d("FCM_AUDIT", "Syncing token for user: $token")
                             val response = userRepository.updateFcmToken(token)
-                            android.util.Log.d("FCM_AUDIT", "Token upload response: ${response.success}, message: ${response.message}")
+                            android.util.Log.d("FCM_AUDIT", "Token upload result: ${response.success}")
                         } catch (e: Exception) {
                             android.util.Log.e("FCM_AUDIT", "Token sync failed", e)
                         }
+                    }
+                }
+                
+                // Extra trigger for startup case when already logged in
+                LaunchedEffect(Unit) {
+                    if (authViewModel.isLoggedIn()) {
+                        try {
+                            val token = FirebaseMessaging.getInstance().token.await()
+                            android.util.Log.d("FCM_AUDIT", "Startup token sync: $token")
+                            userRepository.updateFcmToken(token)
+                        } catch (e: Exception) {}
                     }
                 }
 

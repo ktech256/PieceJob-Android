@@ -26,9 +26,9 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun login(identifier: String, password: String, deviceId: String?): ApiResponse<LoginResponse> {
+    suspend fun login(identifier: String, password: String, deviceId: String?, fcmToken: String? = null): ApiResponse<LoginResponse> {
         return try {
-            api.login(LoginRequest(identifier, password, deviceId))
+            api.login(LoginRequest(identifier, password, deviceId, fcmToken = fcmToken))
         } catch (e: Exception) {
             handleError(e)
         }

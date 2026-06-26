@@ -135,6 +135,12 @@ class AuthViewModel @Inject constructor(
             
             try {
                 val deviceId = sessionManager.getDeviceId()
+                val fcmToken = try {
+                    com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+                } catch (e: Exception) {
+                    null
+                }
+
                 val countryCode = selectedCountry.value?.code ?: "ZA"
                 val isProvider = BuildConfig.FLAVOR == "provider"
 
@@ -151,7 +157,8 @@ class AuthViewModel @Inject constructor(
                         dob = dob.value,
                         idNumber = idNumber.value,
                         gender = gender.value,
-                        deviceId = deviceId
+                        deviceId = deviceId,
+                        fcmToken = fcmToken
                     )
                     Log.d(TAG, "Calling registerCustomer API")
                     repository.registerCustomer(request)
@@ -168,7 +175,8 @@ class AuthViewModel @Inject constructor(
                         dob = dob.value,
                         nationalityType = "Citizen",
                         idOrPassportNumber = idNumber.value,
-                        servicesOffered = selectedServices.value
+                        servicesOffered = selectedServices.value,
+                        fcmToken = fcmToken
                     )
                     Log.d(TAG, "Calling registerProvider API")
                     repository.registerProvider(request)
@@ -200,7 +208,13 @@ class AuthViewModel @Inject constructor(
         _authState.value = AuthState.Loading
         try {
             val deviceId = sessionManager.getDeviceId()
-            val response = repository.login(identifier, pass, deviceId)
+            val fcmToken = try {
+                com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+            } catch (e: Exception) {
+                null
+            }
+
+            val response = repository.login(identifier, pass, deviceId, fcmToken)
             
             if (response.success && response.data != null) {
                 Log.d(TAG, "loginInternal SUCCESS")
