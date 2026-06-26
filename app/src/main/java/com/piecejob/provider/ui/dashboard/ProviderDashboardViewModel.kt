@@ -9,6 +9,7 @@ import com.piecejob.core.data.repository.JobRepository
 import com.piecejob.core.data.remote.dto.*
 import com.piecejob.core.location.LocationService
 import com.piecejob.core.socket.SocketManager
+import com.piecejob.core.data.local.SessionManager
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +22,8 @@ import javax.inject.Inject
 class ProviderDashboardViewModel @Inject constructor(
     private val repository: ProviderRepository,
     private val jobRepository: JobRepository,
-    private val socketManager: SocketManager
+    private val socketManager: SocketManager,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _stats = MutableStateFlow<ProviderStatsDto?>(null)
@@ -179,6 +181,7 @@ class ProviderDashboardViewModel @Inject constructor(
                     _isOnline.value = newStatus
                     if (newStatus) {
                         socketManager.connect("https://piecejob-backend.onrender.com")
+                        sessionManager.getUserId()?.let { socketManager.joinUser(it) }
                         LocationService.startService(context)
                         loadAvailableJobs()
                     } else {

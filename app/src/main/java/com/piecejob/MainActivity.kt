@@ -82,11 +82,15 @@ class MainActivity : ComponentActivity() {
                     if (authViewModel.isLoggedIn()) {
                         try {
                             val token = FirebaseMessaging.getInstance().token.await()
-                            android.util.Log.d("FCM_AUDIT", "Syncing token for user: $token")
-                            val response = userRepository.updateFcmToken(token)
-                            android.util.Log.d("FCM_AUDIT", "Token upload result: ${response.success}")
+                            if (token.isNullOrBlank()) {
+                                android.util.Log.e("FCM_AUDIT", "FCM_TOKEN_ERROR: Generated token is null or blank.")
+                            } else {
+                                android.util.Log.d("FCM_AUDIT", "FCM_TOKEN: Generated successfully. Token: ${token.take(20)}...")
+                                val response = userRepository.updateFcmToken(token)
+                                android.util.Log.d("FCM_AUDIT", "FCM_UPLOAD: Result=${response.success}. User=${authViewModel.loginIdentifier.value}")
+                            }
                         } catch (e: Exception) {
-                            android.util.Log.e("FCM_AUDIT", "Token sync failed", e)
+                            android.util.Log.e("FCM_AUDIT", "FCM_TOKEN_ERROR: Generation/Upload failed", e)
                         }
                     }
                 }

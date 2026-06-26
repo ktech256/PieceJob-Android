@@ -47,9 +47,9 @@ class PieceJobMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        Log.d("FCM_AUDIT", "Message received from: ${message.from}")
-        Log.d("FCM_AUDIT", "Data Payload: ${message.data}")
-        Log.d("FCM_AUDIT", "Notification Block: ${message.notification?.title} / ${message.notification?.body}")
+        android.util.Log.d("FCM_AUDIT", "MESSAGE_RECEIVED: from=${message.from}")
+        android.util.Log.d("FCM_AUDIT", "PAYLOAD_DATA: ${message.data}")
+        android.util.Log.d("FCM_AUDIT", "NOTIFICATION_BLOCK: ${message.notification?.title} / ${message.notification?.body}")
 
         val type = message.data["type"]
         val jobId = message.data["jobId"]
