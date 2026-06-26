@@ -9,6 +9,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.messaging.FirebaseMessaging
@@ -74,15 +76,17 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // Sync FCM Token on Startup if logged in
-                LaunchedEffect(Unit) {
+                // Sync FCM Token on Startup and Login
+                val authState by authViewModel.authState.collectAsState()
+                LaunchedEffect(authState) {
                     if (authViewModel.isLoggedIn()) {
                         try {
                             val token = FirebaseMessaging.getInstance().token.await()
-                            android.util.Log.d("FCM", "Current token synced: $token")
-                            userRepository.updateFcmToken(token)
+                            android.util.Log.d("FCM_AUDIT", "Current token for user ${authViewModel.loginIdentifier.value}: $token")
+                            val response = userRepository.updateFcmToken(token)
+                            android.util.Log.d("FCM_AUDIT", "Token upload response: ${response.success}, message: ${response.message}")
                         } catch (e: Exception) {
-                            android.util.Log.e("FCM", "Token sync failed", e)
+                            android.util.Log.e("FCM_AUDIT", "Token sync failed", e)
                         }
                     }
                 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.BuildConfig
 import com.piecejob.core.data.repository.AuthRepository
+import com.piecejob.core.data.repository.UserRepository
 import com.piecejob.core.data.local.SessionManager
 import com.piecejob.core.data.remote.dto.*
 import com.piecejob.core.data.remote.ApiResponse
@@ -14,11 +15,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val repository: AuthRepository,
+    private val userRepository: UserRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
@@ -213,6 +216,9 @@ class AuthViewModel @Inject constructor(
                 sessionManager.saveCountryCode(data.user.countryCode)
                 sessionManager.saveLastPhoneNumber(identifier)
                 _authState.value = AuthState.Authenticated(data)
+
+                // FORENSIC: Sync FCM Token immediately after login
+                syncFcmToken()
             } else {
                 Log.e(TAG, "loginInternal API ERROR: ${response.error?.message}")
                 _authState.value = AuthState.Error(response.error?.message ?: "Login failed")
@@ -223,13 +229,28 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    private fun syncFcmToken() {
+        viewModelScope.launch {
+            try {
+                val token = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+                Log.d("FCM_AUDIT", "Syncing token after auth: $token")
+                val res = userRepository.updateFcmToken(token)
+                Log.d("FCM_AUDIT", "Auth sync response: ${res.success}")
+            } catch (e: Exception) {
+                Log.e("FCM_AUDIT", "Auth sync failed", e)
+            }
+        }
+    }
+
     fun resetState() {
         Log.d(TAG, "Resetting AuthState to Idle")
         _authState.value = AuthState.Idle
     }
 
     fun logout() {
-        Log.d(TAG, "Logging out user")
+        Log.d(TAG, "Logging out user. Should ideally clear FCM token on backend.")
+        // Note: Clearing FCM token on backend is recommended but requires a network call.
+        // For now, we clear the session immediately.
         sessionManager.clearSession()
         _authState.value = AuthState.Idle
     }
