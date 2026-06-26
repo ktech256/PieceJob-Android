@@ -69,6 +69,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
     }
 
     private fun handleIncomingJob(data: Map<String, String>) {
+        Log.d("FCM_AUDIT", "ENTRY: handleIncomingJob")
         val incomingJob = IncomingJob(
             jobId = data["jobId"] ?: "",
             serviceCode = data["serviceCode"] ?: "Service Request",
@@ -80,16 +81,20 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         )
 
         // 1. Update Global UI State (For Banners)
+        Log.d("FCM_AUDIT", "Updating notificationState with Job ${incomingJob.jobId}")
         notificationState.showJobRequest(incomingJob)
 
         // 2. Play Sound & Vibration
+        Log.d("FCM_AUDIT", "Triggering AlertManager")
         alertManager.start()
 
         // 3. Show Heads-Up Notification (For Background/Lockscreen)
+        Log.d("FCM_AUDIT", "Triggering Heads-Up Notification")
         showHeadsUpNotification(incomingJob)
     }
 
     private fun handleBroadcastTermination(jobId: String?) {
+        Log.d("FCM_AUDIT", "ENTRY: handleBroadcastTermination for $jobId")
         notificationState.dismissJobRequest()
         alertManager.stop()
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -97,6 +102,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
     }
 
     private fun showHeadsUpNotification(job: IncomingJob) {
+        Log.d("FCM_AUDIT", "ENTRY: showHeadsUpNotification")
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("jobId", job.jobId)
@@ -109,6 +115,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         )
 
         val channelId = "piecejob_broadcasts_v2"
+        Log.d("FCM_AUDIT", "Building notification for channel: $channelId")
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(job.serviceCode)
@@ -123,6 +130,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Log.d("FCM_AUDIT", "Ensuring channel $channelId exists")
             val channel = NotificationChannel(channelId, "Service Requests", NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "Urgent service requests for providers"
                 enableLights(true)
@@ -133,6 +141,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(channel)
         }
 
+        Log.d("FCM_AUDIT", "Executing notify() for ID ${job.jobId.hashCode()}")
         notificationManager.notify(job.jobId.hashCode(), builder.build())
     }
 

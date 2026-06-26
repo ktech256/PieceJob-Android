@@ -25,6 +25,7 @@ class ProviderMainViewModel @Inject constructor(
 
     private fun setupSocketListeners() {
         socketManager.onNewBroadcast { data ->
+            android.util.Log.d("FCM_AUDIT", "ENTRY: setupSocketListeners -> onNewBroadcast")
             android.util.Log.d("SOCKET_AUDIT", "NEW_JOB_BROADCAST received via Socket: $data")
             val incomingJob = IncomingJob(
                 jobId = data.optString("jobId"),
@@ -35,7 +36,9 @@ class ProviderMainViewModel @Inject constructor(
                 earnings = "R 150.00",
                 expiresAt = System.currentTimeMillis() + 60000
             )
+            android.util.Log.d("FCM_AUDIT", "Triggering banner display for Job ${incomingJob.jobId}")
             notificationState.showJobRequest(incomingJob)
+            android.util.Log.d("FCM_AUDIT", "Triggering AlertManager via Socket")
             alertManager.start()
         }
     }
