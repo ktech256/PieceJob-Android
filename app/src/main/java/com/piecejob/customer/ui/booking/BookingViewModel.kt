@@ -17,6 +17,8 @@ import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.model.Place
+import com.piecejob.core.socket.SocketManager
+import com.piecejob.core.data.local.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,6 +51,8 @@ class BookingViewModel @Inject constructor(
     private val serviceRepository: ServiceRepository,
     private val providerRepository: ProviderRepository,
     private val settingsRepository: SettingsRepository,
+    private val socketManager: SocketManager,
+    private val sessionManager: SessionManager,
     private val placesClient: PlacesClient
 ) : ViewModel() {
 
@@ -91,6 +95,29 @@ class BookingViewModel @Inject constructor(
     init {
         android.util.Log.d("BOOKING_VM", "BookingViewModel Initialized")
         loadCategories()
+        setupPaymentSocket()
+    }
+
+    private fun setupPaymentSocket() {
+        socketManager.connect("https://piecejob-backend.onrender.com")
+        sessionManager.getUserId()?.let { socketManager.joinUser(it) }
+        
+        socketManager.onStatusUpdated { status ->
+            if (status == "BROADCASTED" && _currentStep.value == BookingStep.PAYMENT_WEBVIEW) {
+                android.util.Log.d("TowMechSecurity", "SOCKET_SIGNAL: Payment confirmed via Webhook. Navigating to Matching.")
+                refreshCreatedJob()
+                _currentStep.value = BookingStep.TRACKING
+            }
+        }
+    }
+
+    private fun refreshCreatedJob() {
+        createdJob.value?.id?.let { jobId ->
+            viewModelScope.launch {
+                val res = jobRepository.getJobById(jobId)
+                if (res.success) createdJob.value = res.data
+            }
+        }
     }
 
     private fun loadCategories() {
