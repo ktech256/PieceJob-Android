@@ -1,9 +1,7 @@
 package com.piecejob.core.socket
 
 import android.util.Log
-import com.google.gson.Gson
 import com.piecejob.core.data.local.SessionManager
-import com.piecejob.core.data.remote.dto.JobDto
 import io.socket.client.IO
 import io.socket.client.Socket
 import org.json.JSONObject
@@ -16,7 +14,6 @@ class SocketManager @Inject constructor(
 ) {
     private var socket: Socket? = null
     private val TAG = "SocketManager"
-    private val gson = Gson()
 
     fun connect(baseUrl: String) {
         if (socket?.connected() == true) return
@@ -112,12 +109,11 @@ class SocketManager @Inject constructor(
         }
     }
 
-    fun onNewBroadcast(callback: (JobDto) -> Unit) {
-        socket?.on("new_job_broadcast") { args ->
+    fun onNewBroadcast(callback: (JSONObject) -> Unit) {
+        socket?.on("NEW_JOB_BROADCAST") { args ->
             try {
                 val data = args[0] as JSONObject
-                val job = gson.fromJson(data.toString(), JobDto::class.java)
-                callback(job)
+                callback(data)
             } catch (e: Exception) {
                 Log.e(TAG, "Error parsing broadcast job", e)
             }

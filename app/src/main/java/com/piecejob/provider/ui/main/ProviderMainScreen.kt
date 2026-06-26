@@ -1,12 +1,17 @@
 package com.piecejob.provider.ui.main
 
+import androidx.compose.animation.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -14,11 +19,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.piecejob.core.ui.navigation.Screen
-import com.piecejob.provider.ui.dashboard.ProviderDashboardScreen // This will become HomeTab
+import com.piecejob.provider.ui.components.JobRequestBanner
+import com.piecejob.provider.ui.dashboard.ProviderDashboardScreen
 import com.piecejob.provider.ui.jobs.ProviderJobsScreen
-import com.piecejob.provider.ui.wallet.ProviderWalletTabScreen
 import com.piecejob.provider.ui.messages.ProviderMessagesScreen
 import com.piecejob.provider.ui.profile.ProviderProfileScreen
+import com.piecejob.provider.ui.wallet.ProviderWalletTabScreen
 
 sealed class BottomBarScreen(
     val route: String,
@@ -36,9 +42,12 @@ sealed class BottomBarScreen(
 fun ProviderMainScreen(
     onSosTrigger: () -> Unit,
     onLogout: () -> Unit,
-    onNavigateToSubScreen: (Screen) -> Unit
+    onNavigateToSubScreen: (Screen) -> Unit,
+    viewModel: ProviderMainViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
+    val activeJobRequest by viewModel.notificationState.activeJobRequest.collectAsState()
+    
     val items = listOf(
         BottomBarScreen.Home,
         BottomBarScreen.Jobs,
@@ -71,28 +80,46 @@ fun ProviderMainScreen(
             }
         }
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = BottomBarScreen.Home.route,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable(BottomBarScreen.Home.route) {
-                ProviderDashboardScreen(onSosTrigger = onSosTrigger)
+        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+            NavHost(
+                navController = navController,
+                startDestination = BottomBarScreen.Home.route,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                composable(BottomBarScreen.Home.route) {
+                    ProviderDashboardScreen(onSosTrigger = onSosTrigger)
+                }
+                composable(BottomBarScreen.Jobs.route) {
+                    ProviderJobsScreen()
+                }
+                composable(BottomBarScreen.Wallet.route) {
+                    ProviderWalletTabScreen(onNavigate = onNavigateToSubScreen)
+                }
+                composable(BottomBarScreen.Messages.route) {
+                    ProviderMessagesScreen()
+                }
+                composable(BottomBarScreen.Profile.route) {
+                    ProviderProfileScreen(
+                        onLogout = onLogout,
+                        onNavigate = onNavigateToSubScreen
+                    )
+                }
             }
-            composable(BottomBarScreen.Jobs.route) {
-                ProviderJobsScreen()
-            }
-            composable(BottomBarScreen.Wallet.route) {
-                ProviderWalletTabScreen(onNavigate = onNavigateToSubScreen)
-            }
-            composable(BottomBarScreen.Messages.route) {
-                ProviderMessagesScreen()
-            }
-            composable(BottomBarScreen.Profile.route) {
-                ProviderProfileScreen(
-                    onLogout = onLogout,
-                    onNavigate = onNavigateToSubScreen
-                )
+
+            // UBER-STYLE FOREGROUND BANNER
+            AnimatedVisibility(
+                visible = activeJobRequest != null,
+                enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
+                modifier = Modifier.align(Alignment.TopCenter)
+            ) {
+                activeJobRequest?.let { job ->
+                    JobRequestBanner(
+                        job = job,
+                        onAccept = { viewModel.acceptJob(it) },
+                        onDecline = { viewModel.declineJob(it) }
+                    )
+                }
             }
         }
     }
