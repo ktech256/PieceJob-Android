@@ -209,11 +209,15 @@ class AuthViewModel @Inject constructor(
         try {
             val deviceId = sessionManager.getDeviceId()
             val fcmToken = try {
-                com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+                val t = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+                Log.d("FCM_AUDIT", "FCM_TOKEN_ACQUIRED: ${t.take(15)}...")
+                t
             } catch (e: Exception) {
+                Log.e("FCM_AUDIT", "FCM_TOKEN_ACQUIRE_FAILED: ${e.message}")
                 null
             }
 
+            Log.d("FCM_AUDIT", "LOGIN_PAYLOAD: identifier=$identifier, hasToken=${fcmToken != null}")
             val response = repository.login(identifier, pass, deviceId, fcmToken)
             
             if (response.success && response.data != null) {
@@ -230,6 +234,8 @@ class AuthViewModel @Inject constructor(
                 sessionManager.saveCountryCode(data.user.countryCode)
                 sessionManager.saveLastPhoneNumber(identifier)
                 _authState.value = AuthState.Authenticated(data)
+                
+                Log.d("FCM_AUDIT", "SESSION_VERIFY: userId=${sessionManager.getUserId()}, role=${sessionManager.getRole()}")
 
                 // FORENSIC: Sync FCM Token immediately after login
                 syncFcmToken()

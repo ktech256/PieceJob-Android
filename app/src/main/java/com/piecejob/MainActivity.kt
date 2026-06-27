@@ -85,17 +85,17 @@ class MainActivity : ComponentActivity() {
                             if (token.isNullOrBlank()) {
                                 android.util.Log.e("FCM_AUDIT", "FCM_TOKEN_ERROR: Generated token is null or blank.")
                             } else {
-                                android.util.Log.d("FCM_AUDIT", "FCM_GENERATED: Token=${token.take(20)}...")
-                                android.util.Log.d("FCM_AUDIT", "FCM_UPLOAD_START: Sending to backend...")
+                                android.util.Log.d("FCM_AUDIT", "FCM_TOKEN_ACQUIRED: ${token.take(20)}...")
+                                android.util.Log.d("FCM_AUDIT", "FCM_UPLOAD_START: Sending to backend. User=${authViewModel.loginIdentifier.value}")
                                 val response = userRepository.updateFcmToken(token)
                                 if (response.success) {
                                     android.util.Log.d("FCM_AUDIT", "FCM_UPLOAD_SUCCESS: Server accepted token.")
                                 } else {
-                                    android.util.Log.e("FCM_AUDIT", "FCM_UPLOAD_FAILED: ${response.message}")
+                                    android.util.Log.e("FCM_AUDIT", "FCM_UPLOAD_FAILED: Code=${response.error?.code}, Msg=${response.message}")
                                 }
                             }
                         } catch (e: Exception) {
-                            android.util.Log.e("FCM_AUDIT", "FCM_TOKEN_ERROR: Generation/Upload failed", e)
+                            android.util.Log.e("FCM_AUDIT", "FCM_TOKEN_ERROR: Critical failure during generation/upload", e)
                         }
                     }
                 }
