@@ -81,12 +81,13 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(authState) {
                     if (authViewModel.isLoggedIn()) {
                         try {
+                            android.util.Log.d("FCM_AUDIT", "FORENSIC_STARTUP: Logged in user detected. Syncing...")
                             val token = FirebaseMessaging.getInstance().token.await()
                             if (token.isNullOrBlank()) {
-                                android.util.Log.e("FCM_AUDIT", "FCM_TOKEN_ERROR: Generated token is null or blank.")
+                                android.util.Log.e("FCM_AUDIT", "FORENSIC_FAILED: Generated token is NULL or BLANK.")
                             } else {
-                                android.util.Log.d("FCM_AUDIT", "FCM_TOKEN_ACQUIRED: ${token.take(20)}...")
-                                android.util.Log.d("FCM_AUDIT", "FCM_UPLOAD_START: Sending to backend. User=${authViewModel.loginIdentifier.value}")
+                                android.util.Log.d("FCM_AUDIT", "FCM_GENERATED: Token acquired. Len=${token.length}")
+                                android.util.Log.d("FCM_AUDIT", "FCM_UPLOAD_START: Sending to backend...")
                                 val response = userRepository.updateFcmToken(token)
                                 if (response.success) {
                                     android.util.Log.d("FCM_AUDIT", "FCM_UPLOAD_SUCCESS: Server accepted token.")
@@ -95,22 +96,11 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         } catch (e: Exception) {
-                            android.util.Log.e("FCM_AUDIT", "FCM_TOKEN_ERROR: Critical failure during generation/upload", e)
+                            android.util.Log.e("FCM_AUDIT", "FORENSIC_CRITICAL: Generation/Upload failed", e)
                         }
                     }
                 }
                 
-                // Extra trigger for startup case when already logged in
-                LaunchedEffect(Unit) {
-                    if (authViewModel.isLoggedIn()) {
-                        try {
-                            val token = FirebaseMessaging.getInstance().token.await()
-                            android.util.Log.d("FCM_AUDIT", "Startup token sync: $token")
-                            userRepository.updateFcmToken(token)
-                        } catch (e: Exception) {}
-                    }
-                }
-
                 NavGraph(
                     navController = navController,
                     authViewModel = authViewModel

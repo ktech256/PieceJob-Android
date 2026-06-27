@@ -252,17 +252,25 @@ class AuthViewModel @Inject constructor(
     private fun syncFcmToken() {
         viewModelScope.launch {
             try {
+                Log.d("FCM_AUDIT", "FORENSIC_STEP_1: Entering syncFcmToken")
                 val token = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
-                Log.d("FCM_AUDIT", "FCM_GENERATED: Token=${token.take(20)}...")
-                Log.d("FCM_AUDIT", "FCM_UPLOAD_START (Auth): Sending token...")
+                
+                if (token.isNullOrBlank()) {
+                    Log.e("FCM_AUDIT", "FORENSIC_FAILED: Generated token is NULL or BLANK")
+                    return@launch
+                }
+
+                Log.d("FCM_AUDIT", "FCM_GENERATED: Token acquired successfully. Len=${token.length}")
+                Log.d("FCM_AUDIT", "FCM_UPLOAD_START: Attempting to send to backend...")
+
                 val res = userRepository.updateFcmToken(token)
                 if (res.success) {
-                    Log.d("FCM_AUDIT", "FCM_UPLOAD_SUCCESS: Server accepted token.")
+                    Log.d("FCM_AUDIT", "FCM_UPLOAD_SUCCESS: Backend confirmed receipt and storage.")
                 } else {
-                    Log.e("FCM_AUDIT", "FCM_UPLOAD_FAILED: ${res.message}")
+                    Log.e("FCM_AUDIT", "FCM_UPLOAD_FAILED: Server returned error. Code=${res.error?.code}, Msg=${res.message}")
                 }
             } catch (e: Exception) {
-                Log.e("FCM_AUDIT", "Auth sync failed", e)
+                Log.e("FCM_AUDIT", "FORENSIC_CRITICAL: syncFcmToken crashed. ${e.message}", e)
             }
         }
     }
