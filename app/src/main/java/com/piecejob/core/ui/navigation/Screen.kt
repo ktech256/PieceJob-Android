@@ -51,6 +51,9 @@ sealed class Screen(val route: String) {
     object CustomerTracking : Screen("customer_tracking/{jobId}") {
         fun passJobId(jobId: String) = "customer_tracking/$jobId"
     }
+    object ProviderTracking : Screen("provider_tracking/{jobId}") {
+        fun passJobId(jobId: String) = "provider_tracking/$jobId"
+    }
     object CorporateProfile : Screen("corporate_profile")
     object ReportIssue : Screen("report_issue")
     
@@ -95,6 +98,9 @@ sealed class Screen(val route: String) {
 
     // Common
     object Referral : Screen("referral")
+    object Rating : Screen("rating/{jobId}") {
+        fun passJobId(jobId: String) = "rating/$jobId"
+    }
     object Chat : Screen("chat/{jobId}/{otherUserId}") {
         fun passArgs(jobId: String, otherUserId: String) = "chat/$jobId/$otherUserId"
     }

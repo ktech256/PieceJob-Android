@@ -134,7 +134,7 @@ fun CustomerTrackingScreen(
                 ) {
                     val statusText = when (job?.status) {
                         "BROADCASTED", "BROADCASTING" -> "Searching for Provider..."
-                        "PROVIDER_ACCEPTED" -> "Provider Accepted!"
+                        "ACCEPTED" -> "Provider Accepted!"
                         "EN_ROUTE" -> "Provider En Route"
                         "ARRIVED" -> "Provider Arrived"
                         "STARTED" -> "Job in Progress"
@@ -144,7 +144,7 @@ fun CustomerTrackingScreen(
                     
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = statusText, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
-                        Text(text = "Job #${jobId.takeLast(6).toUpperCase()}", color = Color.White.copy(alpha = 0.8f), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(text = "Job #${jobId.takeLast(6).uppercase()}", color = Color.White.copy(alpha = 0.8f), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                     
                     if (job?.status != "COMPLETED" && job?.status != "CANCELLED") {

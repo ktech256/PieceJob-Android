@@ -8,6 +8,8 @@ import com.piecejob.core.notification.manager.IncomingJob
 import com.piecejob.core.notification.manager.NotificationState
 import com.piecejob.core.socket.SocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,8 +21,25 @@ class ProviderMainViewModel @Inject constructor(
     val notificationState: NotificationState
 ) : ViewModel() {
 
+    private val _navigationEvent = MutableSharedFlow<String>()
+    val navigationEvent: SharedFlow<String> = _navigationEvent
+
     init {
         setupSocketListeners()
+        checkForActiveJob()
+    }
+
+    private fun checkForActiveJob() {
+        viewModelScope.launch {
+            // Find if there's any job currently in progress for this provider
+            val response = jobRepository.getAvailableJobs()
+            if (response.success) {
+                val active = response.data?.find { it.status in listOf("ACCEPTED", "ARRIVED", "STARTED") }
+                active?.let {
+                    _navigationEvent.emit(it.id)
+                }
+            }
+        }
     }
 
     private fun setupSocketListeners() {
@@ -49,6 +68,7 @@ class ProviderMainViewModel @Inject constructor(
             if (res.success) {
                 notificationState.dismissJobRequest()
                 alertManager.stop()
+                _navigationEvent.emit(jobId)
             }
         }
     }

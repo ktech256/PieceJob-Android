@@ -71,7 +71,7 @@ class ProviderDashboardViewModel @Inject constructor(
 
     private suspend fun fetchActiveJob() {
         // Find if there's any job currently in progress for this provider
-        val response = jobRepository.getAvailableJobs() // We reuse this or have a specific 'active' endpoint
+        val response = jobRepository.getAvailableJobs()
         if (response.success) {
             val active = response.data?.find { it.status in listOf("ACCEPTED", "ARRIVED", "STARTED") }
             _activeJob.value = active

@@ -73,15 +73,15 @@ class JobRepository @Inject constructor(
 
     suspend fun markArrival(jobId: String): ApiResponse<Unit> {
         return try {
-            api.markArrival(jobId)
+            api.updateJobStatus(jobId, JobStatusRequest(status = "ARRIVED"))
         } catch (e: Exception) {
             handleError(e)
         }
     }
 
-    suspend fun startJob(jobId: String): ApiResponse<Unit> {
+    suspend fun startJob(jobId: String, providerCoordinates: List<Double>? = null): ApiResponse<Unit> {
         return try {
-            api.startJob(jobId)
+            api.updateJobStatus(jobId, JobStatusRequest(status = "STARTED", providerCoordinates = providerCoordinates))
         } catch (e: Exception) {
             handleError(e)
         }
@@ -89,7 +89,7 @@ class JobRepository @Inject constructor(
 
     suspend fun completeJob(jobId: String): ApiResponse<Unit> {
         return try {
-            api.completeJob(jobId)
+            api.updateJobStatus(jobId, JobStatusRequest(status = "COMPLETED"))
         } catch (e: Exception) {
             handleError(e)
         }

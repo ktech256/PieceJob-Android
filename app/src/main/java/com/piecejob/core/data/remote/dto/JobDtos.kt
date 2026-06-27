@@ -12,6 +12,11 @@ data class CreateJobRequest(
     val recipientPhone: String? = null
 )
 
+data class JobStatusRequest(
+    val status: String,
+    val providerCoordinates: List<Double>? = null
+)
+
 data class JobDto(
     val id: String,
     val serviceCode: String,

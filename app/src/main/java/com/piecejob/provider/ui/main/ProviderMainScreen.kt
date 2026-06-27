@@ -1,5 +1,6 @@
 package com.piecejob.provider.ui.main
 
+import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,11 +46,18 @@ sealed class BottomBarScreen(
 fun ProviderMainScreen(
     onSosTrigger: () -> Unit,
     onLogout: () -> Unit,
-    onNavigateToSubScreen: (Screen) -> Unit,
+    onNavigateToSubScreen: (String) -> Unit,
     viewModel: ProviderMainViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
     val activeJobRequest by viewModel.notificationState.activeJobRequest.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { jobId ->
+            Log.d("NavGraphTrace", "Auto-navigating to tracking for job $jobId")
+            onNavigateToSubScreen(Screen.ProviderTracking.passJobId(jobId))
+        }
+    }
     
     val items = listOf(
         BottomBarScreen.Home,
@@ -96,7 +104,7 @@ fun ProviderMainScreen(
                     ProviderJobsScreen()
                 }
                 composable(BottomBarScreen.Wallet.route) {
-                    ProviderWalletTabScreen(onNavigate = onNavigateToSubScreen)
+                    ProviderWalletTabScreen(onNavigate = { onNavigateToSubScreen(it.route) })
                 }
                 composable(BottomBarScreen.Messages.route) {
                     ProviderMessagesScreen()
@@ -104,7 +112,7 @@ fun ProviderMainScreen(
                 composable(BottomBarScreen.Profile.route) {
                     ProviderProfileScreen(
                         onLogout = onLogout,
-                        onNavigate = onNavigateToSubScreen
+                        onNavigate = { onNavigateToSubScreen(it.route) }
                     )
                 }
             }

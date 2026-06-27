@@ -46,6 +46,8 @@ class LocationService : Service() {
         private val _currentLocation = MutableStateFlow<Location?>(null)
         val currentLocation: StateFlow<Location?> = _currentLocation
 
+        val lastLocation: Location? get() = _currentLocation.value
+
         var activeJobId: String? = null
         var isSosActive: Boolean = false
         var activeIncidentId: String? = null

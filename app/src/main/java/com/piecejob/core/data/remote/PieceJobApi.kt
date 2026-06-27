@@ -156,17 +156,11 @@ interface PieceJobApi {
         @Query("lng") lng: Double? = null
     ): ApiResponse<List<ProviderDto>>
 
-    @PATCH("providers/jobs/{jobId}/accept")
+    @PUT("jobs/{jobId}/accept")
     suspend fun acceptJob(@Path("jobId") jobId: String): ApiResponse<JobDto>
 
-    @PATCH("providers/jobs/{jobId}/arrive")
-    suspend fun markArrival(@Path("jobId") jobId: String): ApiResponse<Unit>
-
-    @PATCH("providers/jobs/{jobId}/start")
-    suspend fun startJob(@Path("jobId") jobId: String): ApiResponse<Unit>
-
-    @PATCH("providers/jobs/{jobId}/complete")
-    suspend fun completeJob(@Path("jobId") jobId: String): ApiResponse<Unit>
+    @PATCH("jobs/{jobId}/status")
+    suspend fun updateJobStatus(@Path("jobId") jobId: String, @Body request: JobStatusRequest): ApiResponse<Unit>
 
     @GET("payments/verify/{reference}")
     suspend fun verifyPayment(@Path("reference") reference: String): ApiResponse<JobDto>
