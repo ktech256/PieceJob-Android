@@ -43,6 +43,10 @@ fun CustomerDashboardScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val activeJob by viewModel.activeJob.collectAsState()
 
+    LaunchedEffect(Unit) {
+        viewModel.loadActiveJob()
+    }
+
     var selectedServiceForDetails by remember { mutableStateOf<ServiceDto?>(null) }
 
     if (selectedServiceForDetails != null) {

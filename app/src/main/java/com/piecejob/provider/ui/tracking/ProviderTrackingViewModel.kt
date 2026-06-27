@@ -142,21 +142,29 @@ class ProviderTrackingViewModel @Inject constructor(
     }
 
     fun startJob() {
+        Log.d("TrackingFlow", "startJob() called")
         _showStartReminder.value = false
         autoStartTimer?.cancel()
         reminderTimer?.cancel()
         
         viewModelScope.launch {
-            val jobId = _job.value?.id ?: return@launch
+            val jobId = _job.value?.id ?: run {
+                Log.e("TrackingFlow", "jobId is null")
+                return@launch
+            }
             // Need coordinates for proximity check on backend
             val loc = _providerLocation.value
             val providerCoords = if (loc != null) listOf(loc.longitude, loc.latitude) else null
             
+            Log.d("TrackingFlow", "Sending startJob request for job $jobId with coords $providerCoords")
             val res = jobRepository.startJob(jobId, providerCoords)
             if (res.success) {
+                Log.d("TrackingFlow", "startJob success")
                 _job.value = _job.value?.copy(status = "STARTED")
             } else {
-                _error.value = res.message ?: "Failed to start job"
+                val errorMsg = res.message ?: res.error?.message ?: "Failed to start job"
+                Log.e("TrackingFlow", "startJob failed: $errorMsg")
+                _error.value = errorMsg
             }
         }
     }

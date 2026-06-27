@@ -29,6 +29,12 @@ import androidx.activity.compose.BackHandler
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.google.android.libraries.navigation.*
+import com.google.android.gms.maps.GoogleMap
+
 @Composable
 fun ProviderTrackingScreen(
     jobId: String,
@@ -37,12 +43,87 @@ fun ProviderTrackingScreen(
     onNavigateToRating: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
+    
     val job by viewModel.job.collectAsState()
     val providerLocation by viewModel.providerLocation.collectAsState()
     val eta by viewModel.eta.collectAsState()
     val distance by viewModel.distance.collectAsState()
     val showReminder by viewModel.showStartReminder.collectAsState()
     val error by viewModel.error.collectAsState()
+
+    var navigator by remember { mutableStateOf<Navigator?>(null) }
+    var sdkEtaText by remember { mutableStateOf("") }
+    var sdkDistanceText by remember { mutableStateOf("") }
+
+    val navigationView = remember {
+        NavigationView(context).apply { onCreate(null) }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> navigationView.onStart()
+                Lifecycle.Event.ON_RESUME -> navigationView.onResume()
+                Lifecycle.Event.ON_PAUSE -> navigationView.onPause()
+                Lifecycle.Event.ON_STOP -> navigationView.onStop()
+                Lifecycle.Event.ON_DESTROY -> navigationView.onDestroy()
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(Unit) {
+        val activity = (context as? android.app.Activity)
+        if (activity != null) {
+            NavigationApi.getNavigator(activity, object : NavigationApi.NavigatorListener {
+                override fun onNavigatorReady(nav: Navigator) {
+                    navigator = nav
+                    nav.setAudioGuidance(Navigator.AudioGuidance.VOICE_ALERTS_AND_GUIDANCE)
+                    scope.launch {
+                        while (true) {
+                            val tad = nav.currentTimeAndDistance
+                            if (tad != null) {
+                                val mins = (tad.seconds / 60).toInt()
+                                sdkEtaText = if (mins < 1) "1 min" else "$mins mins"
+                                val km = tad.meters / 1000.0
+                                sdkDistanceText = if (km < 1.0) "${tad.meters.toInt()} m" else String.format("%.1f km", km)
+                            }
+                            delay(2000)
+                        }
+                    }
+                }
+                override fun onError(errorCode: Int) { 
+                    Log.e("NAV_SDK", "Error: $errorCode") 
+                }
+            })
+        }
+    }
+
+    LaunchedEffect(navigator, job) {
+        val nav = navigator ?: return@LaunchedEffect
+        val j = job ?: return@LaunchedEffect
+        val status = j.status
+        
+        if (status == "COMPLETED" || status == "CANCELLED") {
+            nav.stopGuidance()
+            nav.clearDestinations()
+            return@LaunchedEffect
+        }
+
+        val dest = j.location?.coordinates
+        if (dest != null && dest.size >= 2) {
+            val waypoint = Waypoint.builder()
+                .setLatLng(dest[1], dest[0])
+                .setTitle("Customer Location")
+                .build()
+            nav.setDestination(waypoint)
+            nav.startGuidance()
+        }
+    }
 
     // Prevent accidental exit during active job
     BackHandler {
@@ -63,23 +144,6 @@ fun ProviderTrackingScreen(
         job?.location?.coordinates?.let { LatLng(it[1], it[0]) } ?: LatLng(0.0, 0.0)
     }
 
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(customerLatLng, 15f)
-    }
-
-    // Auto-adjust camera with padding to see both points
-    LaunchedEffect(providerLocation, customerLatLng) {
-        if (providerLocation != null && customerLatLng.latitude != 0.0) {
-            val bounds = LatLngBounds.builder()
-                .include(providerLocation!!)
-                .include(customerLatLng)
-                .build()
-            cameraPositionState.animate(
-                CameraUpdateFactory.newLatLngBounds(bounds, 300)
-            )
-        }
-    }
-
     if (showReminder) {
         AlertDialog(
             onDismissRequest = { },
@@ -95,40 +159,10 @@ fun ProviderTrackingScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (customerLatLng.latitude != 0.0) {
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState,
-                uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = true),
-                properties = MapProperties(isMyLocationEnabled = true)
-            ) {
-                // Customer Marker
-                Marker(
-                    state = MarkerState(position = customerLatLng),
-                    title = "Customer",
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
-                )
-
-                // Provider Live Marker
-                providerLocation?.let { loc ->
-                    Marker(
-                        state = MarkerState(position = loc),
-                        title = "You",
-                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
-                    )
-                    
-                    Polyline(
-                        points = listOf(loc, customerLatLng),
-                        color = Color(0xFF1976D2),
-                        width = 10f
-                    )
-                }
-            }
-        } else {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        }
+        AndroidView(
+            factory = { navigationView },
+            modifier = Modifier.fillMaxSize()
+        )
 
         // Top Status & Navigation Info
         Column(
@@ -138,23 +172,32 @@ fun ProviderTrackingScreen(
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Job Status Chip
+            // Header with Back Button
             Surface(
-                color = when(job?.status) {
-                    "ACCEPTED" -> Color(0xFF1976D2)
-                    "ARRIVED" -> Color(0xFFFFA000)
-                    "STARTED" -> Color(0xFF4CAF50)
-                    else -> Color.DarkGray
-                },
-                shape = RoundedCornerShape(12.dp)
+                color = Color.White.copy(alpha = 0.9f),
+                shape = RoundedCornerShape(12.dp),
+                shadowElevation = 4.dp
             ) {
-                Text(
-                    text = job?.status?.replace("_", " ") ?: "LOADING...",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                    color = Color.White,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 12.sp
-                )
+                Row(
+                    modifier = Modifier.padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = job?.status?.replace("_", " ") ?: "LOADING...",
+                        color = when(job?.status) {
+                            "ACCEPTED" -> Color(0xFF1976D2)
+                            "ARRIVED" -> Color(0xFFFFA000)
+                            "STARTED" -> Color(0xFF4CAF50)
+                            else -> Color.DarkGray
+                        },
+                        fontWeight = FontWeight.Black,
+                        fontSize = 14.sp
+                    )
+                }
             }
 
             // ETA Card
@@ -167,11 +210,25 @@ fun ProviderTrackingScreen(
                     Icon(Icons.Default.Navigation, contentDescription = null, tint = Color(0xFF1976D2))
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text(text = "ETA: $eta", fontWeight = FontWeight.Black, fontSize = 16.sp)
-                        Text(text = "Distance: $distance", color = Color.Gray, fontSize = 12.sp)
+                        Text(text = "ETA: ${sdkEtaText.ifBlank { eta }}", fontWeight = FontWeight.Black, fontSize = 16.sp)
+                        Text(text = "Distance: ${sdkDistanceText.ifBlank { distance }}", color = Color.Gray, fontSize = 12.sp)
                     }
                 }
             }
+        }
+
+        // FAB to Recenter
+        SmallFloatingActionButton(
+            onClick = { 
+                navigationView.getMapAsync { map -> 
+                    map.followMyLocation(GoogleMap.CameraPerspective.TILTED) 
+                } 
+            },
+            modifier = Modifier.padding(16.dp).align(Alignment.CenterEnd).offset(y = (-40).dp),
+            containerColor = Color.White,
+            contentColor = Color.Black
+        ) { 
+            Icon(Icons.Default.MyLocation, contentDescription = "Recenter") 
         }
 
         // Bottom Action Panel
@@ -202,36 +259,38 @@ fun ProviderTrackingScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     
                     when (currentJob.status) {
-                        "ACCEPTED" -> {
+                        "ACCEPTED", "ARRIVED" -> {
+                            val isArrived = currentJob.status == "ARRIVED"
                             Button(
-                                onClick = {
-                                    val gmmIntentUri = Uri.parse("google.navigation:q=${customerLatLng.latitude},${customerLatLng.longitude}")
-                                    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
-                                    mapIntent.setPackage("com.google.android.apps.maps")
-                                    context.startActivity(mapIntent)
+                                onClick = { 
+                                    if (isArrived) {
+                                        Log.d("TrackingFlow", "Start Work pressed")
+                                        viewModel.startJob() 
+                                    } else {
+                                        Log.d("TrackingFlow", "Recenter pressed while accepted")
+                                        navigationView.getMapAsync { map -> 
+                                            map.followMyLocation(GoogleMap.CameraPerspective.TILTED) 
+                                        }
+                                    }
                                 },
                                 modifier = Modifier.fillMaxWidth().height(60.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isArrived) Color(0xFFFFA000) else Color(0xFF4CAF50)
+                                ),
                                 shape = RoundedCornerShape(16.dp)
                             ) {
-                                Icon(Icons.Default.Directions, contentDescription = null)
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text("OPEN NAVIGATION", fontWeight = FontWeight.Black)
-                            }
-                        }
-                        "ARRIVED" -> {
-                            Button(
-                                onClick = { viewModel.startJob() },
-                                modifier = Modifier.fillMaxWidth().height(60.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000)),
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
-                                Text("START WORK NOW", fontWeight = FontWeight.Black)
+                                Text(
+                                    text = if (isArrived) "START WORK NOW" else "NAVIGATING TO CUSTOMER", 
+                                    fontWeight = FontWeight.Black
+                                )
                             }
                         }
                         "STARTED" -> {
                             Button(
-                                onClick = { viewModel.completeJob() },
+                                onClick = { 
+                                    Log.d("TrackingFlow", "Complete Work pressed")
+                                    viewModel.completeJob() 
+                                },
                                 modifier = Modifier.fillMaxWidth().height(60.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
                                 shape = RoundedCornerShape(16.dp)
