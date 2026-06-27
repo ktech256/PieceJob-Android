@@ -2,7 +2,14 @@ package com.piecejob.core.data.remote.dto
 
 data class OtpRequest(val phoneNumber: String)
 data class OtpVerifyRequest(val phoneNumber: String, val otp: String)
-data class LoginRequest(val identifier: String, val password: String, val deviceId: String?, val hardwareId: String? = null, val fcmToken: String? = null)
+data class LoginRequest(
+    val identifier: String,
+    val password: String,
+    val deviceId: String?,
+    val hardwareId: String? = null,
+    val fcmToken: String? = null,
+    val appType: String? = null
+)
 data class LoginResponse(val token: String, val refreshToken: String, val user: UserDto)
 
 data class RefreshRequest(val refreshToken: String)

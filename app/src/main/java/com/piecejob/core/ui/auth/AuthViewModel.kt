@@ -218,8 +218,9 @@ class AuthViewModel @Inject constructor(
                 null
             }
 
-            Log.d("FCM_AUDIT", "FCM_UPLOAD_START (Login): identifier=$identifier, hasToken=${fcmToken != null}")
-            val response = repository.login(identifier, pass, deviceId, fcmToken)
+            val appType = if (BuildConfig.FLAVOR == "provider") "PROVIDER_APP" else "CUSTOMER_APP"
+            Log.d("FCM_AUDIT", "FCM_UPLOAD_START (Login): identifier=$identifier, app=$appType, hasToken=${fcmToken != null}")
+            val response = repository.login(identifier, pass, deviceId, fcmToken, appType)
             
             if (response.success && response.data != null) {
                 Log.d("FCM_AUDIT", "LOGIN_SUCCESS: Received auth response.")
