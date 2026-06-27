@@ -25,6 +25,30 @@ class PieceJobApp : Application() {
                 android.util.Log.e("PIECEJOB_FCM", "API Key: ${options.apiKey?.take(5)}...")
                 android.util.Log.e("PIECEJOB_FCM", "Package Name: $packageName")
 
+                // FORENSIC: Signature Audit
+                try {
+                    val info = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                        packageManager.getPackageInfo(packageName, android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        packageManager.getPackageInfo(packageName, android.content.pm.PackageManager.GET_SIGNATURES)
+                    }
+                    val signatures = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                        info.signingInfo?.signingCertificateHistory
+                    } else {
+                        @Suppress("DEPRECATION")
+                        info.signatures
+                    }
+                    signatures?.forEach { signature ->
+                        val md = java.security.MessageDigest.getInstance("SHA-1")
+                        val publicKey = md.digest(signature.toByteArray())
+                        val hexString = publicKey.joinToString(":") { "%02X".format(it) }
+                        android.util.Log.e("PIECEJOB_FCM", "SHA-1: $hexString")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("PIECEJOB_FCM", "Failed to get SHA-1: ${e.message}")
+                }
+
                 android.util.Log.e("PIECEJOB_FCM", "Requesting Firebase token")
                 // Fetch token for startup log
                 com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
