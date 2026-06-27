@@ -211,17 +211,18 @@ class AuthViewModel @Inject constructor(
             val deviceId = sessionManager.getDeviceId()
             val fcmToken = try {
                 val t = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
-                Log.d("FCM_AUDIT", "FCM_TOKEN_ACQUIRED: Token acquired successfully.")
+                Log.d("FCM_AUDIT", "FCM_TOKEN_ACQUIRED: Token acquired successfully. Len=${t.length}")
                 t
             } catch (e: Exception) {
                 Log.e("FCM_AUDIT", "FCM_TOKEN_ACQUIRE_FAILED: ${e.message}")
                 null
             }
 
+            Log.d("FCM_AUDIT", "FCM_UPLOAD_START (Login): identifier=$identifier, hasToken=${fcmToken != null}")
             val response = repository.login(identifier, pass, deviceId, fcmToken)
             
             if (response.success && response.data != null) {
-                Log.d("FCM_AUDIT", "LOGIN_SUCCESS")
+                Log.d("FCM_AUDIT", "LOGIN_SUCCESS: Received auth response.")
                 val data = response.data
                 sessionManager.saveAuthToken(data.token)
                 sessionManager.saveRefreshToken(data.refreshToken)
@@ -239,14 +240,21 @@ class AuthViewModel @Inject constructor(
 
                 // Sync FCM Token immediately after login
                 val token = try {
-                    com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+                    val t = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+                    Log.d("FCM_AUDIT", "Post-login: Token acquired. Len=${t.length}")
+                    t
                 } catch (e: Exception) {
                     null
                 }
                 
                 if (token != null) {
-                    userRepository.updateFcmToken(token)
-                    Log.d("FCM_AUDIT", "Post-login token sync success")
+                    Log.d("FCM_AUDIT", "FCM_UPLOAD_START (Sync): Syncing token after login...")
+                    val syncRes = userRepository.updateFcmToken(token)
+                    if (syncRes.success) {
+                        Log.d("FCM_AUDIT", "FCM_UPLOAD_SUCCESS: Post-login token sync success")
+                    } else {
+                        Log.e("FCM_AUDIT", "FCM_UPLOAD_FAILED: Post-login sync error: ${syncRes.message}")
+                    }
                 } else {
                     Log.e("FCM_AUDIT", "Post-login token sync failed: token is null")
                 }
