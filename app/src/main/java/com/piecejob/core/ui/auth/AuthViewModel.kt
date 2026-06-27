@@ -237,8 +237,19 @@ class AuthViewModel @Inject constructor(
                 
                 Log.d("FCM_AUDIT", "SESSION_VERIFY: userId=${sessionManager.getUserId()}, role=${sessionManager.getRole()}")
 
-                // FORENSIC: Sync FCM Token immediately after login
-                syncFcmToken()
+                // Sync FCM Token immediately after login
+                val token = try {
+                    com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+                } catch (e: Exception) {
+                    null
+                }
+                
+                if (token != null) {
+                    userRepository.updateFcmToken(token)
+                    Log.d("FCM_AUDIT", "Post-login token sync success")
+                } else {
+                    Log.e("FCM_AUDIT", "Post-login token sync failed: token is null")
+                }
             } else {
                 Log.e(TAG, "loginInternal API ERROR: ${response.error?.message}")
                 _authState.value = AuthState.Error(response.error?.message ?: "Login failed")
@@ -246,32 +257,6 @@ class AuthViewModel @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "loginInternal CRASH: ${e.message}", e)
             _authState.value = AuthState.Error("Login failed: ${e.message}")
-        }
-    }
-
-    private fun syncFcmToken() {
-        viewModelScope.launch {
-            try {
-                Log.d("FCM_AUDIT", "FORENSIC_STEP_1: Entering syncFcmToken")
-                val token = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
-                
-                if (token.isNullOrBlank()) {
-                    Log.e("FCM_AUDIT", "FORENSIC_FAILED: Generated token is NULL or BLANK")
-                    return@launch
-                }
-
-                Log.d("FCM_AUDIT", "FCM_TOKEN_ACQUIRED: Token acquired successfully. Len=${token.length}")
-                Log.d("FCM_AUDIT", "FCM_UPLOAD_START: Attempting to send to backend...")
-
-                val res = userRepository.updateFcmToken(token)
-                if (res.success) {
-                    Log.d("FCM_AUDIT", "FCM_UPLOAD_SUCCESS: Backend confirmed receipt and storage.")
-                } else {
-                    Log.e("FCM_AUDIT", "FCM_UPLOAD_FAILED: Server returned error. Code=${res.error?.code}, Msg=${res.message}")
-                }
-            } catch (e: Exception) {
-                Log.e("FCM_AUDIT", "FORENSIC_CRITICAL: syncFcmToken crashed. ${e.message}", e)
-            }
         }
     }
 
