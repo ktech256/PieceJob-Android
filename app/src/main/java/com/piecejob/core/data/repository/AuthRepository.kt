@@ -28,8 +28,16 @@ class AuthRepository @Inject constructor(
 
     suspend fun login(identifier: String, password: String, deviceId: String?, fcmToken: String? = null): ApiResponse<LoginResponse> {
         return try {
-            api.login(LoginRequest(identifier, password, deviceId, fcmToken = fcmToken))
+            android.util.Log.d("FCM_AUDIT", "LOGIN_START: id=$identifier")
+            val response = api.login(LoginRequest(identifier, password, deviceId, fcmToken = fcmToken))
+            if (response.success) {
+                android.util.Log.d("FCM_AUDIT", "LOGIN_SUCCESS")
+            } else {
+                android.util.Log.e("FCM_AUDIT", "LOGIN_FAILED: ${response.message}")
+            }
+            response
         } catch (e: Exception) {
+            android.util.Log.e("FCM_AUDIT", "LOGIN_CRASH: ${e.message}")
             handleError(e)
         }
     }

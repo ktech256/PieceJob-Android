@@ -199,29 +199,29 @@ class AuthViewModel @Inject constructor(
 
     fun login(identifier: String, pass: String) {
         viewModelScope.launch {
+            Log.d("FCM_AUDIT", "LOGIN_START: identifier=$identifier")
             loginInternal(identifier, pass)
         }
     }
 
     private suspend fun loginInternal(identifier: String, pass: String) {
-        Log.d(TAG, "Executing loginInternal for $identifier")
+        Log.d("FCM_AUDIT", "LOGIN_START: identifier=$identifier")
         _authState.value = AuthState.Loading
         try {
             val deviceId = sessionManager.getDeviceId()
             val fcmToken = try {
                 val t = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
-                Log.d("FCM_AUDIT", "FCM_TOKEN_ACQUIRED: ${t.take(15)}...")
+                Log.d("FCM_AUDIT", "FCM_TOKEN_ACQUIRED: Token acquired successfully.")
                 t
             } catch (e: Exception) {
                 Log.e("FCM_AUDIT", "FCM_TOKEN_ACQUIRE_FAILED: ${e.message}")
                 null
             }
 
-            Log.d("FCM_AUDIT", "LOGIN_PAYLOAD: identifier=$identifier, hasToken=${fcmToken != null}")
             val response = repository.login(identifier, pass, deviceId, fcmToken)
             
             if (response.success && response.data != null) {
-                Log.d(TAG, "loginInternal SUCCESS")
+                Log.d("FCM_AUDIT", "LOGIN_SUCCESS")
                 val data = response.data
                 sessionManager.saveAuthToken(data.token)
                 sessionManager.saveRefreshToken(data.refreshToken)
@@ -260,7 +260,7 @@ class AuthViewModel @Inject constructor(
                     return@launch
                 }
 
-                Log.d("FCM_AUDIT", "FCM_GENERATED: Token acquired successfully. Len=${token.length}")
+                Log.d("FCM_AUDIT", "FCM_TOKEN_ACQUIRED: Token acquired successfully. Len=${token.length}")
                 Log.d("FCM_AUDIT", "FCM_UPLOAD_START: Attempting to send to backend...")
 
                 val res = userRepository.updateFcmToken(token)

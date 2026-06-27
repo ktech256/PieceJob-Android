@@ -86,7 +86,7 @@ class MainActivity : ComponentActivity() {
                             if (token.isNullOrBlank()) {
                                 android.util.Log.e("FCM_AUDIT", "FORENSIC_FAILED: Generated token is NULL or BLANK.")
                             } else {
-                                android.util.Log.d("FCM_AUDIT", "FCM_GENERATED: Token acquired. Len=${token.length}")
+                                android.util.Log.d("FCM_AUDIT", "FCM_TOKEN_ACQUIRED: Token acquired. Len=${token.length}")
                                 android.util.Log.d("FCM_AUDIT", "FCM_UPLOAD_START: Sending to backend...")
                                 val response = userRepository.updateFcmToken(token)
                                 if (response.success) {
@@ -96,7 +96,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         } catch (e: Exception) {
-                            android.util.Log.e("FCM_AUDIT", "FORENSIC_CRITICAL: Generation/Upload failed", e)
+                            android.util.Log.e("FCM_AUDIT", "FORENSIC_CRITICAL: Generation/Upload failed. Error: ${e.message}", e)
                         }
                     }
                 }

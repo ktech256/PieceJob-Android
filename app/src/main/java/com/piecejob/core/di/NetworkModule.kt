@@ -11,6 +11,10 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
+import java.net.InetAddress
+import okhttp3.Dns
+import okhttp3.logging.HttpLoggingInterceptor
+import java.util.concurrent.TimeUnit
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -34,6 +38,30 @@ object NetworkModule {
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .addInterceptor(logging)
+            .addInterceptor { chain ->
+                val request = chain.request()
+                android.util.Log.d("FCM_AUDIT", "NETWORK_REQUEST: ${request.method} ${request.url}")
+                try {
+                    val response = chain.proceed(request)
+                    android.util.Log.d("FCM_AUDIT", "NETWORK_RESPONSE: ${response.code}")
+                    response
+                } catch (e: Exception) {
+                    android.util.Log.e("FCM_AUDIT", "NETWORK_FAILED: ${e.message}")
+                    throw e
+                }
+            }
+            .dns(object : okhttp3.Dns {
+                override fun lookup(hostname: String): List<java.net.InetAddress> {
+                    return try {
+                        val addresses = okhttp3.Dns.SYSTEM.lookup(hostname)
+                        android.util.Log.d("FCM_AUDIT", "DNS_LOOKUP: $hostname -> $addresses")
+                        addresses
+                    } catch (e: Exception) {
+                        android.util.Log.e("FCM_AUDIT", "DNS_FAILED: $hostname. Error: ${e.message}")
+                        throw e
+                    }
+                }
+            })
             .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
             .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
             .build()

@@ -13,8 +13,16 @@ class UserRepository @Inject constructor(
 ) {
     suspend fun updateFcmToken(fcmToken: String): ApiResponse<Unit> {
         return try {
-            api.updateFcmToken(FcmTokenRequest(fcmToken))
+            android.util.Log.d("FCM_AUDIT", "FCM_UPLOAD_START: Token=${fcmToken.take(15)}...")
+            val response = api.updateFcmToken(FcmTokenRequest(fcmToken))
+            if (response.success) {
+                android.util.Log.d("FCM_AUDIT", "FCM_UPLOAD_SUCCESS")
+            } else {
+                android.util.Log.e("FCM_AUDIT", "FCM_UPLOAD_FAILED: ${response.message}")
+            }
+            response
         } catch (e: Exception) {
+            android.util.Log.e("FCM_AUDIT", "FCM_UPLOAD_CRASH: ${e.message}")
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
     }
