@@ -1,56 +1,58 @@
 package com.piecejob.core.data.remote.dto
 
+import com.google.gson.annotations.SerializedName
+
 data class CreateJobRequest(
-    val serviceCode: String,
-    val coordinates: List<Double>,
-    val address: String,
-    val description: String? = null,
-    val zoneId: String? = null,
-    val isEmergency: Boolean = false,
-    val isForSomeoneElse: Boolean = false,
-    val recipientName: String? = null,
-    val recipientPhone: String? = null
+    @SerializedName("serviceCode") val serviceCode: String,
+    @SerializedName("coordinates") val coordinates: List<Double>,
+    @SerializedName("address") val address: String,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("zoneId") val zoneId: String? = null,
+    @SerializedName("isEmergency") val isEmergency: Boolean = false,
+    @SerializedName("isForSomeoneElse") val isForSomeoneElse: Boolean = false,
+    @SerializedName("recipientName") val recipientName: String? = null,
+    @SerializedName("recipientPhone") val recipientPhone: String? = null
 )
 
 data class JobStatusRequest(
-    val status: String,
-    val providerCoordinates: List<Double>? = null
+    @SerializedName("status") val status: String,
+    @SerializedName("providerCoordinates") val providerCoordinates: List<Double>? = null
 )
 
 data class JobDto(
-    val id: String,
-    val serviceCode: String,
-    val status: String,
-    val customerId: String,
-    val providerId: String?,
-    val providerInfo: ProviderInfoDto?,
-    val bookingFee: Double,
-    val serviceFee: Double?,
-    val currency: String,
-    val location: LocationDto?,
-    val isForSomeoneElse: Boolean,
-    val recipientName: String?,
-    val recipientPhone: String?,
-    val createdAt: String,
-    val paymentReference: String? = null
+    @SerializedName("id") val id: String,
+    @SerializedName("serviceCode") val serviceCode: String,
+    @SerializedName("status") val status: String,
+    @SerializedName("customerId") val customerId: String,
+    @SerializedName("providerId") val providerId: String?,
+    @SerializedName("providerInfo") val providerInfo: ProviderInfoDto?,
+    @SerializedName("bookingFee") val bookingFee: Double,
+    @SerializedName("serviceFee") val serviceFee: Double?,
+    @SerializedName("currency") val currency: String,
+    @SerializedName("location") val location: LocationDto?,
+    @SerializedName("isForSomeoneElse") val isForSomeoneElse: Boolean,
+    @SerializedName("recipientName") val recipientName: String?,
+    @SerializedName("recipientPhone") val recipientPhone: String?,
+    @SerializedName("createdAt") val createdAt: String,
+    @SerializedName("paymentReference") val paymentReference: String? = null
 )
 
 data class PayBookingFeeResponse(
-    val paymentUrl: String?,
-    val reference: String?,
-    val job: JobDto
+    @SerializedName("paymentUrl") val paymentUrl: String?,
+    @SerializedName("reference") val reference: String?,
+    @SerializedName("job") val job: JobDto
 )
 
 data class ProviderInfoDto(
-    val firstName: String,
-    val lastName: String,
-    val ratingAvg: Double,
-    val jobsCompleted: Int
+    @SerializedName("firstName") val firstName: String,
+    @SerializedName("lastName") val lastName: String,
+    @SerializedName("ratingAvg") val ratingAvg: Double,
+    @SerializedName("jobsCompleted") val jobsCompleted: Int
 )
 
 data class LocationDto(
-    val coordinates: List<Double>,
-    val address: String?
+    @SerializedName("coordinates") val coordinates: List<Double>,
+    @SerializedName("address") val address: String?
 )
 
 data class DisputeDto(
