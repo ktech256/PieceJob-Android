@@ -198,6 +198,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun login(identifier: String, pass: String) {
+        android.util.Log.e("PIECEJOB_LOGIN", "Login function entered")
         viewModelScope.launch {
             Log.d("FCM_AUDIT", "LOGIN_START: identifier=$identifier")
             loginInternal(identifier, pass)
@@ -213,10 +214,13 @@ class AuthViewModel @Inject constructor(
             
             // FORENSIC: Explicit token fetch attempt
             val fcmToken = try {
+                android.util.Log.e("PIECEJOB_FCM", "Requesting Firebase token")
                 val t = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+                android.util.Log.e("PIECEJOB_FCM", "Token = $t")
                 android.util.Log.d("FCM_AUDIT", "FCM_GENERATED (Login): Token acquired. Len=${t.length}, Thread=${Thread.currentThread().name}, Duration=${System.currentTimeMillis() - startTime}ms")
                 t
             } catch (e: Exception) {
+                android.util.Log.e("PIECEJOB_FCM", "Token retrieval failed: ${e.message}")
                 android.util.Log.e("FCM_AUDIT", "FCM_GENERATED (Login) FAILED: ${e.message}", e)
                 null
             }

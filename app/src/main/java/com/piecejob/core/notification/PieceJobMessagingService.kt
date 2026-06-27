@@ -25,6 +25,11 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class PieceJobMessagingService : FirebaseMessagingService() {
 
+    override fun onCreate() {
+        android.util.Log.e("PIECEJOB_FCM", "Messaging service created")
+        super.onCreate()
+    }
+
     @Inject
     lateinit var userRepository: UserRepository
     
@@ -39,6 +44,8 @@ class PieceJobMessagingService : FirebaseMessagingService() {
     
     override fun onNewToken(token: String) {
         super.onNewToken(token)
+        android.util.Log.e("PIECEJOB_FCM", "onNewToken executed")
+        android.util.Log.e("PIECEJOB_FCM", "Token = $token")
         android.util.Log.d("FCM_AUDIT", "FCM_GENERATED (onNewToken): Tokenacquired. Len=${token.length}, Thread=${Thread.currentThread().name}")
         scope.launch {
             val res = userRepository.updateFcmToken(token)

@@ -26,6 +26,10 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onBack: () -> Unit
 ) {
+    LaunchedEffect(Unit) {
+        android.util.Log.e("PIECEJOB_LOGIN", "Login screen created")
+    }
+
     val prefilledPhone by viewModel.loginIdentifier.collectAsState()
     val selectedCountry by viewModel.selectedCountry.collectAsState()
     

@@ -33,6 +33,7 @@ class AuthRepository @Inject constructor(
         fcmToken: String? = null,
         appType: String? = null
     ): ApiResponse<LoginResponse> {
+        android.util.Log.e("PIECEJOB_NETWORK", "Repository login called")
         return try {
             val request = LoginRequest(identifier, password, deviceId, fcmToken = fcmToken, appType = appType)
             val json = com.google.gson.Gson().toJson(request)
