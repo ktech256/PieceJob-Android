@@ -247,9 +247,14 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val token = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
-                Log.d("FCM_AUDIT", "Syncing token after auth: $token")
+                Log.d("FCM_AUDIT", "FCM_GENERATED: Token=${token.take(20)}...")
+                Log.d("FCM_AUDIT", "FCM_UPLOAD_START (Auth): Sending token...")
                 val res = userRepository.updateFcmToken(token)
-                Log.d("FCM_AUDIT", "Auth sync response: ${res.success}")
+                if (res.success) {
+                    Log.d("FCM_AUDIT", "FCM_UPLOAD_SUCCESS: Server accepted token.")
+                } else {
+                    Log.e("FCM_AUDIT", "FCM_UPLOAD_FAILED: ${res.message}")
+                }
             } catch (e: Exception) {
                 Log.e("FCM_AUDIT", "Auth sync failed", e)
             }
