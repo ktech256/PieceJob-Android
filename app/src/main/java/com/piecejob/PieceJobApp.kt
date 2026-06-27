@@ -13,19 +13,31 @@ class PieceJobApp : Application() {
         
         // FORENSIC: Firebase Initialization Audit
         try {
-            android.util.Log.e("PIECEJOB_FCM", "Requesting Firebase token")
+            android.util.Log.e("PIECEJOB_FCM", "Checking Firebase Configuration")
             val app = FirebaseApp.initializeApp(this)
             if (app == null) {
                 android.util.Log.e("FCM_AUDIT", "FIREBASE_INIT_FAILED: FirebaseApp.initializeApp returned null.")
             } else {
-                android.util.Log.d("FCM_AUDIT", "FIREBASE_INIT_SUCCESS: ProjectID=${app.options.projectId}")
-                
+                val options = app.options
+                android.util.Log.e("PIECEJOB_FCM", "Firebase Project ID: ${options.projectId}")
+                android.util.Log.e("PIECEJOB_FCM", "Firebase App ID: ${options.applicationId}")
+                android.util.Log.e("PIECEJOB_FCM", "GCM Sender ID: ${options.gcmSenderId}")
+                android.util.Log.e("PIECEJOB_FCM", "API Key: ${options.apiKey?.take(5)}...")
+                android.util.Log.e("PIECEJOB_FCM", "Package Name: $packageName")
+
+                android.util.Log.e("PIECEJOB_FCM", "Requesting Firebase token")
                 // Fetch token for startup log
                 com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         android.util.Log.e("PIECEJOB_FCM", "Token = ${task.result}")
                     } else {
-                        android.util.Log.e("PIECEJOB_FCM", "Token retrieval failed: ${task.exception?.message}")
+                        android.util.Log.e("PIECEJOB_FCM", "Token retrieval failed. Error type: ${task.exception?.javaClass?.simpleName}")
+                        android.util.Log.e("PIECEJOB_FCM", "Error Message: ${task.exception?.message}")
+                        
+                        // Check if it's an FIS error specifically
+                        if (task.exception?.message?.contains("FIS") == true) {
+                            android.util.Log.e("PIECEJOB_FCM", "CRITICAL: Firebase Installations Service error detected. Check API Key restrictions in Google Cloud Console.")
+                        }
                     }
                 }
             }
