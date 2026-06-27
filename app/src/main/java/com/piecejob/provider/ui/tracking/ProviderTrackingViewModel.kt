@@ -51,11 +51,17 @@ class ProviderTrackingViewModel @Inject constructor(
             _isLoading.value = true
             val res = jobRepository.getJobById(jobId)
             if (res.success && res.data != null) {
-                _job.value = res.data
+                val job = res.data
+                _job.value = job
                 LocationService.activeJobId = jobId
                 socketManager.joinJob(jobId)
                 startLocationTracking()
                 observeStatusUpdates()
+
+                // Recovery logic: if already arrived but not started, start timer
+                if (job.status == "ARRIVED") {
+                    startReminderTimer()
+                }
             } else {
                 _error.value = res.message ?: "Failed to load job details"
             }

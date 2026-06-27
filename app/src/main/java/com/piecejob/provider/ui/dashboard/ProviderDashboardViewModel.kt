@@ -71,9 +71,9 @@ class ProviderDashboardViewModel @Inject constructor(
 
     private suspend fun fetchActiveJob() {
         // Find if there's any job currently in progress for this provider
-        val response = jobRepository.getAvailableJobs()
+        val response = jobRepository.getActiveJob()
         if (response.success) {
-            val active = response.data?.find { it.status in listOf("ACCEPTED", "ARRIVED", "STARTED") }
+            val active = response.data
             _activeJob.value = active
             if (active != null) {
                 LocationService.activeJobId = active.id
@@ -105,6 +105,7 @@ class ProviderDashboardViewModel @Inject constructor(
 
     fun refresh() {
         loadDashboard()
+        viewModelScope.launch { fetchActiveJob() }
     }
 
     private suspend fun loadProfile() {

@@ -32,12 +32,9 @@ class ProviderMainViewModel @Inject constructor(
     private fun checkForActiveJob() {
         viewModelScope.launch {
             // Find if there's any job currently in progress for this provider
-            val response = jobRepository.getAvailableJobs()
-            if (response.success) {
-                val active = response.data?.find { it.status in listOf("ACCEPTED", "ARRIVED", "STARTED") }
-                active?.let {
-                    _navigationEvent.emit(it.id)
-                }
+            val response = jobRepository.getActiveJob()
+            if (response.success && response.data != null) {
+                _navigationEvent.emit(response.data.id)
             }
         }
     }

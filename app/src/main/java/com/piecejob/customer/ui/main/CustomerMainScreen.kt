@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -36,9 +37,17 @@ sealed class CustomerBottomBarScreen(
 @Composable
 fun CustomerMainScreen(
     onLogout: () -> Unit,
-    onNavigateToSubScreen: (Screen) -> Unit
+    onNavigateToSubScreen: (String) -> Unit,
+    viewModel: CustomerMainViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
+
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { jobId ->
+            onNavigateToSubScreen(Screen.CustomerTracking.passJobId(jobId))
+        }
+    }
+
     val items = listOf(
         CustomerBottomBarScreen.Home,
         CustomerBottomBarScreen.Jobs,
@@ -88,11 +97,12 @@ fun CustomerMainScreen(
         ) {
             composable(CustomerBottomBarScreen.Home.route) {
                 CustomerDashboardScreen(
-                    onServiceClick = { service -> onNavigateToSubScreen(Screen.BookingFlow) },
-                    onRequestServiceClick = { onNavigateToSubScreen(Screen.BookingFlow) },
+                    onServiceClick = { service -> onNavigateToSubScreen(Screen.BookingFlow.route) },
+                    onRequestServiceClick = { onNavigateToSubScreen(Screen.BookingFlow.route) },
                     onProfileClick = { navController.navigate(CustomerBottomBarScreen.Account.route) },
-                    onNotificationsClick = { onNavigateToSubScreen(Screen.CustomerNotifications) },
-                    onSosClick = { onNavigateToSubScreen(Screen.ReportIssue) }
+                    onNotificationsClick = { onNavigateToSubScreen(Screen.CustomerNotifications.route) },
+                    onSosClick = { onNavigateToSubScreen(Screen.ReportIssue.route) },
+                    onNavigateToTracking = { jobId -> onNavigateToSubScreen(Screen.CustomerTracking.passJobId(jobId)) }
                 )
             }
             composable(CustomerBottomBarScreen.Jobs.route) {
@@ -107,7 +117,7 @@ fun CustomerMainScreen(
             composable(CustomerBottomBarScreen.Account.route) {
                 CustomerAccountScreen(
                     onLogout = onLogout,
-                    onNavigate = onNavigateToSubScreen
+                    onNavigate = { screen -> onNavigateToSubScreen(screen.route) }
                 )
             }
         }

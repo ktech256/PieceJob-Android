@@ -15,6 +15,14 @@ class JobRepository @Inject constructor(
         }
     }
 
+    suspend fun getActiveJob(): ApiResponse<JobDto> {
+        return try {
+            api.getActiveJob()
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
     suspend fun getJobById(jobId: String): ApiResponse<JobDto> {
         return try {
             api.getJobById(jobId)

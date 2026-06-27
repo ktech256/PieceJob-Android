@@ -138,6 +138,9 @@ interface PieceJobApi {
     @POST("jobs/request")
     suspend fun createJob(@Body request: CreateJobRequest): ApiResponse<JobDto>
 
+    @GET("jobs/active")
+    suspend fun getActiveJob(): ApiResponse<JobDto>
+
     @GET("jobs/{jobId}")
     suspend fun getJobById(@Path("jobId") jobId: String): ApiResponse<JobDto>
 

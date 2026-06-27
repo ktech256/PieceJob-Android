@@ -35,11 +35,13 @@ fun CustomerDashboardScreen(
     onRequestServiceClick: () -> Unit,
     onProfileClick: () -> Unit,
     onNotificationsClick: () -> Unit,
-    onSosClick: () -> Unit
+    onSosClick: () -> Unit,
+    onNavigateToTracking: (String) -> Unit
 ) {
     val services by viewModel.services.collectAsState()
     val categoriesList by viewModel.categories.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val activeJob by viewModel.activeJob.collectAsState()
 
     var selectedServiceForDetails by remember { mutableStateOf<ServiceDto?>(null) }
 
@@ -76,7 +78,14 @@ fun CustomerDashboardScreen(
         item { PopularCategories(categoriesList) }
 
         // SECTION 11: CURRENT ACTIVE JOB CARD (Conditional)
-        item { ActiveJobMiniCard() }
+        if (activeJob != null) {
+            item {
+                ActiveJobMiniCard(
+                    job = activeJob!!,
+                    onClick = { onNavigateToTracking(activeJob!!.id) }
+                )
+            }
+        }
 
         // SECTION 7: RECENTLY USED SERVICES
         item { SectionTitle("Book Again") }
@@ -434,9 +443,12 @@ fun RecommendedServiceCard() {
 }
 
 @Composable
-fun ActiveJobMiniCard() {
+fun ActiveJobMiniCard(job: com.piecejob.core.data.remote.dto.JobDto, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 8.dp)
+            .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFC8E6C9))
@@ -445,8 +457,8 @@ fun ActiveJobMiniCard() {
             Icon(Icons.Default.Timer, contentDescription = null, tint = Color(0xFF2E7D32))
             Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text("Active Job: House Cleaning", fontWeight = FontWeight.Black, fontSize = 15.sp)
-                Text("Provider is arriving in 4 mins", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+                Text("Active Job: ${job.serviceCode}", fontWeight = FontWeight.Black, fontSize = 15.sp)
+                Text("Status: ${job.status.replace("_", " ")}", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
             }
             Spacer(modifier = Modifier.weight(1f))
             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)

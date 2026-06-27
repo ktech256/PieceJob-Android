@@ -25,7 +25,8 @@ import com.piecejob.core.data.remote.dto.JobDto
 @Composable
 fun ProviderDashboardScreen(
     viewModel: ProviderDashboardViewModel = hiltViewModel(),
-    onSosTrigger: () -> Unit
+    onSosTrigger: () -> Unit,
+    onNavigateToTracking: (String) -> Unit
 ) {
     val stats by viewModel.stats.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -208,13 +209,14 @@ fun ProviderDashboardScreen(
 
             if (activeJob != null) {
                 item {
-                    Text("Active Engagement", fontWeight = FontWeight.Black, fontSize = 16.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Current Engagement", fontWeight = FontWeight.Black, fontSize = 18.sp, color = Color(0xFF2E7D32))
+                    Spacer(modifier = Modifier.height(12.dp))
                     ActiveJobCard(
                         job = activeJob!!,
                         onStart = { viewModel.startJob(it) },
                         onComplete = { viewModel.completeJob(it) },
-                        onArrive = { viewModel.markArrival(it) }
+                        onArrive = { viewModel.markArrival(it) },
+                        onClick = { onNavigateToTracking(activeJob!!.id) }
                     )
                 }
             }
@@ -375,12 +377,15 @@ fun ShadowBanNotice() {
 }
 
 @Composable
-fun ActiveJobCard(job: JobDto, onArrive: (String) -> Unit, onStart: (String) -> Unit, onComplete: (String) -> Unit) {
+fun ActiveJobCard(job: JobDto, onArrive: (String) -> Unit, onStart: (String) -> Unit, onComplete: (String) -> Unit, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF4CAF50).copy(alpha = 0.5f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

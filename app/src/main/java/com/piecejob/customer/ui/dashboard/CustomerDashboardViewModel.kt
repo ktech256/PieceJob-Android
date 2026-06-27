@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.remote.ServiceDto
 import com.piecejob.core.data.remote.GroupedServicesDto
+import com.piecejob.core.data.remote.dto.JobDto
 import com.piecejob.core.data.repository.ServiceRepository
+import com.piecejob.core.data.repository.JobRepository
 import com.piecejob.core.location.LocationService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CustomerDashboardViewModel @Inject constructor(
-    private val serviceRepository: ServiceRepository
+    private val serviceRepository: ServiceRepository,
+    private val jobRepository: JobRepository
 ) : ViewModel() {
 
     private val _services = MutableStateFlow<List<ServiceDto>>(emptyList())
@@ -27,6 +30,9 @@ class CustomerDashboardViewModel @Inject constructor(
     private val _categories = MutableStateFlow<List<com.piecejob.core.data.remote.ServiceCategoryDto>>(emptyList())
     val categories: StateFlow<List<com.piecejob.core.data.remote.ServiceCategoryDto>> = _categories
 
+    private val _activeJob = MutableStateFlow<JobDto?>(null)
+    val activeJob: StateFlow<JobDto?> = _activeJob
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -37,6 +43,7 @@ class CustomerDashboardViewModel @Inject constructor(
         // Only auto-load if we're likely already logged in (Customer App standard flow)
         if (serviceRepository.hasStoredGender()) {
             observeLocationAndLoad()
+            loadActiveJob()
         }
     }
 
@@ -44,6 +51,15 @@ class CustomerDashboardViewModel @Inject constructor(
         viewModelScope.launch {
             LocationService.currentLocation.collectLatest { location ->
                 loadServices(lat = location?.latitude, lng = location?.longitude)
+            }
+        }
+    }
+
+    fun loadActiveJob() {
+        viewModelScope.launch {
+            val response = jobRepository.getActiveJob()
+            if (response.success) {
+                _activeJob.value = response.data
             }
         }
     }
