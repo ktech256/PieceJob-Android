@@ -34,16 +34,19 @@ class AuthRepository @Inject constructor(
         appType: String? = null
     ): ApiResponse<LoginResponse> {
         return try {
-            android.util.Log.d("FCM_AUDIT", "LOGIN_START: id=$identifier, app=$appType")
-            val response = api.login(LoginRequest(identifier, password, deviceId, fcmToken = fcmToken, appType = appType))
+            val request = LoginRequest(identifier, password, deviceId, fcmToken = fcmToken, appType = appType)
+            val json = com.google.gson.Gson().toJson(request)
+            android.util.Log.d("FCM_AUDIT", "OUTGOING_LOGIN_REQUEST: $json")
+            
+            val response = api.login(request)
             if (response.success) {
-                android.util.Log.d("FCM_AUDIT", "LOGIN_SUCCESS")
+                android.util.Log.d("FCM_AUDIT", "LOGIN_RESPONSE: SUCCESS")
             } else {
-                android.util.Log.e("FCM_AUDIT", "LOGIN_FAILED: ${response.message}")
+                android.util.Log.e("FCM_AUDIT", "LOGIN_RESPONSE: FAILED. Msg=${response.message}")
             }
             response
         } catch (e: Exception) {
-            android.util.Log.e("FCM_AUDIT", "LOGIN_CRASH: ${e.message}")
+            android.util.Log.e("FCM_AUDIT", "LOGIN_NETWORK_CRASH: ${e.message}", e)
             handleError(e)
         }
     }

@@ -205,26 +205,30 @@ class AuthViewModel @Inject constructor(
     }
 
     private suspend fun loginInternal(identifier: String, pass: String) {
-        Log.d("FCM_AUDIT", "LOGIN_START: identifier=$identifier")
+        val startTime = System.currentTimeMillis()
+        android.util.Log.d("FCM_AUDIT", "LOGIN_FLOW_START: time=$startTime")
         _authState.value = AuthState.Loading
         try {
             val deviceId = sessionManager.getDeviceId()
+            
+            // FORENSIC: Explicit token fetch attempt
             val fcmToken = try {
                 val t = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
-                Log.d("FCM_AUDIT", "FCM_TOKEN_ACQUIRED: Token acquired successfully. Len=${t.length}")
+                android.util.Log.d("FCM_AUDIT", "FCM_GENERATED (Login): Token acquired. Len=${t.length}, Thread=${Thread.currentThread().name}, Duration=${System.currentTimeMillis() - startTime}ms")
                 t
             } catch (e: Exception) {
-                Log.e("FCM_AUDIT", "FCM_TOKEN_ACQUIRE_FAILED: ${e.message}")
+                android.util.Log.e("FCM_AUDIT", "FCM_GENERATED (Login) FAILED: ${e.message}", e)
                 null
             }
 
             val appType = if (BuildConfig.FLAVOR == "provider") "PROVIDER_APP" else "CUSTOMER_APP"
-            Log.d("FCM_AUDIT", "FCM_UPLOAD_START (Login): identifier=$identifier, app=$appType, hasToken=${fcmToken != null}")
+            android.util.Log.d("FCM_AUDIT", "LOGIN_PAYLOAD_READY: identifier=$identifier, app=$appType, hasToken=${!fcmToken.isNullOrBlank()}")
+            
             val response = repository.login(identifier, pass, deviceId, fcmToken, appType)
             
             if (response.success && response.data != null) {
-                Log.d("FCM_AUDIT", "LOGIN_SUCCESS: Received auth response.")
-                val data = response.data
+                android.util.Log.d("FCM_AUDIT", "LOGIN_API_SUCCESS: UserRole=${response.data!!.user.role}")
+                val data = response.data!!
                 sessionManager.saveAuthToken(data.token)
                 sessionManager.saveRefreshToken(data.refreshToken)
                 sessionManager.saveUser(

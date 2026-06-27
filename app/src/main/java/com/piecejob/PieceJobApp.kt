@@ -2,12 +2,25 @@ package com.piecejob
 
 import android.app.Application
 import com.google.android.libraries.places.api.Places
+import com.google.firebase.FirebaseApp
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
 class PieceJobApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        
+        // FORENSIC: Firebase Initialization Audit
+        try {
+            val app = FirebaseApp.initializeApp(this)
+            if (app == null) {
+                android.util.Log.e("FCM_AUDIT", "FIREBASE_INIT_FAILED: FirebaseApp.initializeApp returned null.")
+            } else {
+                android.util.Log.d("FCM_AUDIT", "FIREBASE_INIT_SUCCESS: ProjectID=${app.options.projectId}")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FCM_AUDIT", "FIREBASE_INIT_CRASH: ${e.message}", e)
+        }
         
         // Initialize Google Places SDK
         val apiKey = BuildConfig.GOOGLE_MAPS_API_KEY

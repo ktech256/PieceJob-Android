@@ -39,9 +39,10 @@ class PieceJobMessagingService : FirebaseMessagingService() {
     
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d("FCM", "New token: $token")
+        android.util.Log.d("FCM_AUDIT", "FCM_GENERATED (onNewToken): Tokenacquired. Len=${token.length}, Thread=${Thread.currentThread().name}")
         scope.launch {
-            userRepository.updateFcmToken(token)
+            val res = userRepository.updateFcmToken(token)
+            android.util.Log.d("FCM_AUDIT", "FCM_ON_NEW_TOKEN_UPLOAD_RESULT: ${res.success}")
         }
     }
 
