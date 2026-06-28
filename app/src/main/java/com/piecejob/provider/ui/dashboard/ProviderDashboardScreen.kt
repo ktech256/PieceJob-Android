@@ -38,7 +38,10 @@ fun ProviderDashboardScreen(
     
     val context = LocalContext.current
 
-    // PULL TO REFRESH logic could be added here
+    // ✅ Refresh data every time we return to dashboard to catch active job state
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
     
     Column(
         modifier = Modifier
@@ -143,12 +146,59 @@ fun ProviderDashboardScreen(
             }
         }
 
+        // ✅ NEW: RESUME JOB OVERLAY (If job is started but screen is closed)
+        if (activeJob != null && (activeJob!!.status == "STARTED" || activeJob!!.status == "IN_PROGRESS")) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clickable { onNavigateToTracking(activeJob!!.id) },
+                color = Color(0xFFE8F5E9),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4CAF50))
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color(0xFF2E7D32))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("JOB IN PROGRESS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFF2E7D32))
+                        Text("Resume tracking for ${activeJob!!.serviceCode}", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Text("RESUME", color = Color(0xFF2E7D32), fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF2E7D32))
+                }
+            }
+        }
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (isShadowBanned) item { ShadowBanNotice() }
+
+            // ✅ SECTION: ACTIVE ENGAGEMENT (Moved to top for visibility)
+            if (activeJob != null) {
+                item {
+                    Text(
+                        "Ongoing Engagement",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 18.sp,
+                        color = Color(0xFF2E7D32),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    ActiveJobCard(
+                        job = activeJob!!,
+                        onStart = { viewModel.startJob(it) },
+                        onComplete = { viewModel.completeJob(it) },
+                        onArrive = { viewModel.markArrival(it) },
+                        onClick = { onNavigateToTracking(activeJob!!.id) }
+                    )
+                }
+            }
 
             // CARD 1: EARNINGS SUMMARY
             item {
@@ -204,20 +254,6 @@ fun ProviderDashboardScreen(
                     QuickActionButton("Docs", Icons.Default.Description) {}
                     QuickActionButton("Stats", Icons.Default.BarChart) {}
                     QuickActionButton("Support", Icons.Default.HelpCenter) {}
-                }
-            }
-
-            if (activeJob != null) {
-                item {
-                    Text("Current Engagement", fontWeight = FontWeight.Black, fontSize = 18.sp, color = Color(0xFF2E7D32))
-                    Spacer(modifier = Modifier.height(12.dp))
-                    ActiveJobCard(
-                        job = activeJob!!,
-                        onStart = { viewModel.startJob(it) },
-                        onComplete = { viewModel.completeJob(it) },
-                        onArrive = { viewModel.markArrival(it) },
-                        onClick = { onNavigateToTracking(activeJob!!.id) }
-                    )
                 }
             }
 
@@ -378,42 +414,108 @@ fun ShadowBanNotice() {
 
 @Composable
 fun ActiveJobCard(job: JobDto, onArrive: (String) -> Unit, onStart: (String) -> Unit, onComplete: (String) -> Unit, onClick: () -> Unit) {
+    val isCompleted = job.status == "COMPLETED"
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF4CAF50).copy(alpha = 0.5f))
+        border = androidx.compose.foundation.BorderStroke(2.dp, if (isCompleted) Color(0xFF1976D2).copy(alpha = 0.5f) else Color(0xFF4CAF50))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(8.dp).background(Color(0xFF4CAF50), CircleShape))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "LIVE JOB", fontWeight = FontWeight.Black, color = Color(0xFF4CAF50), fontSize = 12.sp, letterSpacing = 1.sp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(8.dp).background(if (isCompleted) Color(0xFF1976D2) else Color(0xFF4CAF50), CircleShape))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = if (isCompleted) "PENDING RATING" else "CURRENT ACTIVE JOB", fontWeight = FontWeight.Black, color = if (isCompleted) Color(0xFF1976D2) else Color(0xFF4CAF50), fontSize = 11.sp, letterSpacing = 1.sp)
+                }
+                
+                Surface(
+                    color = (if (isCompleted) Color(0xFF1976D2) else Color(0xFF4CAF50)).copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = job.status.replace("_", " "),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        color = if (isCompleted) Color(0xFF1565C0) else Color(0xFF2E7D32),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(text = job.serviceCode, fontSize = 20.sp, fontWeight = FontWeight.Black)
-            Text(text = "Status: ${job.status}", fontSize = 14.sp, color = Color.Gray)
             
-            if (job.isForSomeoneElse) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Surface(color = Color(0xFFF5F5F5), shape = RoundedCornerShape(8.dp)) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text("RECIPIENT INFO", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                        Text(text = job.recipientName ?: "Unknown", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        job.recipientPhone?.let { Text(text = it, fontSize = 12.sp, color = Color.Gray) }
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = Color(0xFFF4F5F7)) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.Gray)
                     }
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(text = job.serviceCode, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                    Text(text = job.location?.address ?: "Client Location", fontSize = 13.sp, color = Color.Gray, maxLines = 1)
                 }
             }
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            when (job.status) {
-                "ACCEPTED" -> Button(onClick = { onArrive(job.id) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) { Text("MARK ARRIVED") }
-                "ARRIVED" -> Button(onClick = { onStart(job.id) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) { Text("START WORK") }
-                "STARTED" -> Button(onClick = { onComplete(job.id) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))) { Text("COMPLETE WORK") }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Main Control Button
+                Box(modifier = Modifier.weight(1f)) {
+                    when (job.status) {
+                        "ACCEPTED" -> Button(
+                            onClick = { onArrive(job.id) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
+                        ) { Text("MARK ARRIVED", fontWeight = FontWeight.Bold) }
+                        
+                        "ARRIVED" -> Button(
+                            onClick = { onStart(job.id) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                        ) { Text("START WORK", fontWeight = FontWeight.Bold) }
+                        
+                        "STARTED", "IN_PROGRESS" -> Button(
+                            onClick = { onComplete(job.id) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                        ) { Text("COMPLETE WORK", fontWeight = FontWeight.Bold) }
+
+                        "COMPLETED" -> Button(
+                            onClick = onClick,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
+                        ) { Text("RATE CUSTOMER", fontWeight = FontWeight.Bold) }
+                    }
+                }
+                
+                if (!isCompleted) {
+                    // Resume Tracking Button
+                    OutlinedButton(
+                        onClick = onClick,
+                        modifier = Modifier.weight(0.8f),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Navigation, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("RESUME", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
         }
     }

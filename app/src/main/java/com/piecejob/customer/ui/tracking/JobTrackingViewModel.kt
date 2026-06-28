@@ -108,6 +108,10 @@ class JobTrackingViewModel @Inject constructor(
             // Update status immediately in local state
             _job.value = _job.value?.copy(status = status)
             
+            if (status == "COMPLETED" || status == "CANCELLED" || status == "RATED") {
+                // Handle termination states if needed
+            }
+            
             // If providerInfo is provided in socket event, update it too
             if (providerInfo != null) {
                 try {

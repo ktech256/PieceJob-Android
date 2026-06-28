@@ -26,17 +26,6 @@ class ProviderMainViewModel @Inject constructor(
 
     init {
         setupSocketListeners()
-        checkForActiveJob()
-    }
-
-    private fun checkForActiveJob() {
-        viewModelScope.launch {
-            // Find if there's any job currently in progress for this provider
-            val response = jobRepository.getActiveJob()
-            if (response.success && response.data != null) {
-                _navigationEvent.emit(response.data.id)
-            }
-        }
     }
 
     private fun setupSocketListeners() {

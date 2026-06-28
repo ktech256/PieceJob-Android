@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.repository.JobRepository
 import com.piecejob.core.data.remote.dto.JobDto
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,6 +28,9 @@ class ProviderJobsViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _navigationEvent = MutableSharedFlow<String>()
+    val navigationEvent: SharedFlow<String> = _navigationEvent
 
     init {
         loadJobs()
@@ -54,6 +59,7 @@ class ProviderJobsViewModel @Inject constructor(
             val response = jobRepository.acceptJob(jobId)
             if (response.success) {
                 loadJobs()
+                _navigationEvent.emit(jobId)
             }
         }
     }

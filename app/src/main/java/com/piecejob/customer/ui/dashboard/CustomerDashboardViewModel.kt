@@ -8,6 +8,8 @@ import com.piecejob.core.data.remote.dto.JobDto
 import com.piecejob.core.data.repository.ServiceRepository
 import com.piecejob.core.data.repository.JobRepository
 import com.piecejob.core.location.LocationService
+import com.piecejob.core.socket.SocketManager
+import com.piecejob.core.data.local.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +20,9 @@ import javax.inject.Inject
 @HiltViewModel
 class CustomerDashboardViewModel @Inject constructor(
     private val serviceRepository: ServiceRepository,
-    private val jobRepository: JobRepository
+    private val jobRepository: JobRepository,
+    private val socketManager: SocketManager,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _services = MutableStateFlow<List<ServiceDto>>(emptyList())
@@ -43,6 +47,16 @@ class CustomerDashboardViewModel @Inject constructor(
         // Only auto-load if we're likely already logged in (Customer App standard flow)
         if (serviceRepository.hasStoredGender()) {
             observeLocationAndLoad()
+            loadActiveJob()
+            setupSocket()
+        }
+    }
+
+    private fun setupSocket() {
+        socketManager.connect("https://piecejob-backend.onrender.com")
+        sessionManager.getUserId()?.let { socketManager.joinUser(it) }
+        
+        socketManager.onStatusUpdated { _, _ ->
             loadActiveJob()
         }
     }

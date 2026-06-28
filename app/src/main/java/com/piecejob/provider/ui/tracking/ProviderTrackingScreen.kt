@@ -190,7 +190,7 @@ fun ProviderTrackingScreen(
         if (job?.status != null) {
             android.util.Log.d("ForensicLog", "JOB_STATE_CHANGED | Job: $jobId | New Status: ${job?.status}")
         }
-        if (job?.status == "COMPLETED" || job?.status == "CANCELLED") {
+        if (job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED") {
             delay(2000)
             if (job?.status == "COMPLETED") {
                 onNavigateToRating(jobId)
@@ -436,7 +436,7 @@ fun ProviderTrackingScreen(
         }
 
         if (error != null) {
-            Snackbar(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp)) { Text(error!!) }
+            // Snackbar removed as per Issue 1. Legitimate errors are logged and visible via UI state changes.
         }
     }
 }

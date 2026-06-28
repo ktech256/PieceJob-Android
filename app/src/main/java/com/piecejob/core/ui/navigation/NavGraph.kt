@@ -26,6 +26,7 @@ import com.piecejob.core.ui.chat.ChatScreen
 import com.piecejob.core.ui.analytics.ProviderAnalyticsScreen
 import com.piecejob.core.ui.analytics.CustomerAnalyticsScreen
 import com.piecejob.provider.ui.tracking.ProviderTrackingScreen
+import com.piecejob.core.ui.rating.RatingScreen
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -283,6 +284,11 @@ fun NavGraph(
                     navController.navigate(Screen.Chat.passArgs(jobId, otherUserId))
                 },
                 onSosTrigger = { },
+                onNavigateToRating = {
+                    navController.navigate(Screen.Rating.passJobId(jobId)) {
+                        popUpTo(Screen.Dashboard.route)
+                    }
+                },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -308,17 +314,14 @@ fun NavGraph(
             arguments = listOf(navArgument("jobId") { type = NavType.StringType })
         ) { backStackEntry ->
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
-            // Simple placeholder for Rating Screen
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Job Completed!", fontWeight = FontWeight.Black, fontSize = 24.sp)
-                    Text("How was your experience?", color = Color.Gray)
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Button(onClick = { navController.popBackStack(Screen.Dashboard.route, false) }) {
-                        Text("SUBMIT RATING")
+            RatingScreen(
+                jobId = jobId,
+                onSuccess = {
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.Dashboard.route) { inclusive = true }
                     }
                 }
-            }
+            )
         }
         
         composable(route = Screen.CorporateProfile.route) { 

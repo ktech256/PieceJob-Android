@@ -33,6 +33,7 @@ fun CustomerTrackingScreen(
     viewModel: JobTrackingViewModel = hiltViewModel(),
     onChatOpen: (String) -> Unit,
     onSosTrigger: () -> Unit,
+    onNavigateToRating: (String) -> Unit,
     onBack: () -> Unit
 ) {
     val job by viewModel.job.collectAsState()
@@ -83,9 +84,12 @@ fun CustomerTrackingScreen(
     }
 
     LaunchedEffect(job?.status) {
-        if (job?.status == "CANCELLED" || job?.status == "COMPLETED") {
+        if (job?.status == "CANCELLED") {
             delay(2000)
             onBack()
+        } else if (job?.status == "COMPLETED") {
+            delay(2000)
+            onNavigateToRating(jobId)
         }
     }
 
@@ -163,6 +167,21 @@ fun CustomerTrackingScreen(
             }
         }
 
+        // Overlay: Top Back Button (Issue 3)
+        Surface(
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(16.dp)
+                .align(Alignment.TopStart),
+            color = Color.White.copy(alpha = 0.9f),
+            shape = RoundedCornerShape(12.dp),
+            shadowElevation = 8.dp
+        ) {
+            IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+            }
+        }
+
         // Top Status Bar
         AnimatedVisibility(
             visible = true,
@@ -187,7 +206,7 @@ fun CustomerTrackingScreen(
                         "ACCEPTED" -> "$providerName accepted your request!"
                         "EN_ROUTE" -> "$providerName is on the way"
                         "ARRIVED" -> "$providerName has arrived"
-                        "STARTED" -> "$providerName started the job"
+                        "STARTED", "IN_PROGRESS" -> "$providerName started the work"
                         "COMPLETED" -> "Job Completed!"
                         "CANCELLED" -> "Job Cancelled"
                         else -> "Connecting..."
@@ -261,10 +280,7 @@ fun CustomerTrackingScreen(
         }
         
         if (error != null) {
-            Snackbar(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
-                action = { TextButton(onClick = { onBack() }) { Text("DISMISS", color = Color.White) } }
-            ) { Text(error!!) }
+            // Snackbar removed for consistency with Provider app.
         }
     }
 }
@@ -365,10 +381,11 @@ fun AssignedProviderPanel(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     val etaDisplay = when (job.status) {
-                        "ARRIVED", "STARTED", "IN_PROGRESS" -> "Provider has arrived"
+                        "ARRIVED" -> "Provider has arrived"
+                        "STARTED", "IN_PROGRESS" -> "Work in Progress"
                         "COMPLETED" -> "Job Completed"
                         "CANCELLED" -> "Job Cancelled"
-                        else -> "ETA: $eta"
+                        else -> if (eta.contains("min")) "Arriving in $eta" else "ETA: $eta"
                     }
                     Text(text = etaDisplay, fontWeight = FontWeight.Black, color = Color.Black)
                 }

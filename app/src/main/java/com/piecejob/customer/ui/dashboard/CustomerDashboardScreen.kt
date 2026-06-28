@@ -448,21 +448,38 @@ fun RecommendedServiceCard() {
 
 @Composable
 fun ActiveJobMiniCard(job: com.piecejob.core.data.remote.dto.JobDto, onClick: () -> Unit) {
+    val isCompleted = job.status == "COMPLETED"
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 8.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFC8E6C9))
+        colors = CardDefaults.cardColors(
+            containerColor = if (isCompleted) Color(0xFFE3F2FD) else Color(0xFFE8F5E9)
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isCompleted) Color(0xFFBBDEFB) else Color(0xFFC8E6C9))
     ) {
         Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Timer, contentDescription = null, tint = Color(0xFF2E7D32))
+            Icon(
+                imageVector = if (isCompleted) Icons.Default.Grade else Icons.Default.Timer,
+                contentDescription = null,
+                tint = if (isCompleted) Color(0xFF1976D2) else Color(0xFF2E7D32)
+            )
             Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text("Active Job: ${job.serviceCode}", fontWeight = FontWeight.Black, fontSize = 15.sp)
-                Text("Status: ${job.status.replace("_", " ")}", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+                Text(
+                    text = if (isCompleted) "Rate Your Experience" else "Active Job: ${job.serviceCode}",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 15.sp,
+                    color = if (isCompleted) Color(0xFF1565C0) else Color.Black
+                )
+                Text(
+                    text = if (isCompleted) "Tap here to submit your review" else "Status: ${job.status.replace("_", " ")}",
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Medium
+                )
             }
             Spacer(modifier = Modifier.weight(1f))
             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)

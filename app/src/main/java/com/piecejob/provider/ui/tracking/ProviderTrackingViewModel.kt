@@ -163,6 +163,7 @@ class ProviderTrackingViewModel @Inject constructor(
             if (res.success && res.data != null) {
                 Log.d("TrackingFlow", "startJob success")
                 _job.value = res.data
+                _error.value = null
             } else {
                 val errorMsg = res.message ?: res.error?.message ?: "Failed to start job"
                 Log.e("TrackingFlow", "startJob failed: $errorMsg")
@@ -178,9 +179,11 @@ class ProviderTrackingViewModel @Inject constructor(
             val res = jobRepository.completeJob(jobId)
             if (res.success && res.data != null) {
                 _job.value = res.data
+                _error.value = null
                 LocationService.activeJobId = null
             } else {
-                _error.value = res.message ?: res.error?.message ?: "Failed to complete job"
+                val errorMsg = res.message ?: res.error?.message ?: "Failed to complete job"
+                _error.value = errorMsg
             }
         }
     }

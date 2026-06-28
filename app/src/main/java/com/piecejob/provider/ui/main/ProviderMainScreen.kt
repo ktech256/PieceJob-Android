@@ -104,7 +104,9 @@ fun ProviderMainScreen(
                     )
                 }
                 composable(BottomBarScreen.Jobs.route) {
-                    ProviderJobsScreen()
+                    ProviderJobsScreen(
+                        onNavigateToTracking = { jobId -> onNavigateToSubScreen(Screen.ProviderTracking.passJobId(jobId)) }
+                    )
                 }
                 composable(BottomBarScreen.Wallet.route) {
                     ProviderWalletTabScreen(onNavigate = { onNavigateToSubScreen(it.route) })

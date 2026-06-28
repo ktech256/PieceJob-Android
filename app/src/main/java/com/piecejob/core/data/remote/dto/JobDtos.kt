@@ -26,6 +26,7 @@ data class JobDto(
     @SerializedName("customerId") val customerId: String,
     @SerializedName("providerId") val providerId: String?,
     @SerializedName("providerInfo") val providerInfo: ProviderInfoDto?,
+    @SerializedName("customerInfo") val customerInfo: CustomerInfoDto?,
     @SerializedName("bookingFee") val bookingFee: Double,
     @SerializedName("serviceFee") val serviceFee: Double?,
     @SerializedName("currency") val currency: String,
@@ -47,7 +48,14 @@ data class ProviderInfoDto(
     @SerializedName("firstName") val firstName: String,
     @SerializedName("lastName") val lastName: String,
     @SerializedName("ratingAvg") val ratingAvg: Double,
-    @SerializedName("jobsCompleted") val jobsCompleted: Int
+    @SerializedName("jobsCompleted") val jobsCompleted: Int,
+    @SerializedName("profilePicture") val profilePicture: String? = null
+)
+
+data class CustomerInfoDto(
+    @SerializedName("firstName") val firstName: String,
+    @SerializedName("lastName") val lastName: String,
+    @SerializedName("profilePicture") val profilePicture: String? = null
 )
 
 data class LocationDto(
@@ -82,4 +90,9 @@ data class ReviewDto(
     val reviewerName: String,
     val reviewerPhoto: String?,
     val createdAt: String
+)
+
+data class RatingRequest(
+    @SerializedName("rating") val rating: Int,
+    @SerializedName("comment") val comment: String? = null
 )

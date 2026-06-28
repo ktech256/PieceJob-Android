@@ -18,7 +18,8 @@ import com.piecejob.core.data.remote.dto.JobDto
 
 @Composable
 fun ProviderJobsScreen(
-    viewModel: ProviderJobsViewModel = hiltViewModel()
+    viewModel: ProviderJobsViewModel = hiltViewModel(),
+    onNavigateToTracking: (String) -> Unit
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Available", "Active", "Scheduled", "Completed", "Cancelled", "Disputed")
@@ -26,6 +27,12 @@ fun ProviderJobsScreen(
     val availableJobs by viewModel.availableJobs.collectAsState()
     val activeJobs by viewModel.activeJobs.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { jobId ->
+            onNavigateToTracking(jobId)
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF4F5F7))) {
         ScrollableTabRow(
@@ -49,7 +56,7 @@ fun ProviderJobsScreen(
             } else {
                 when (selectedTabIndex) {
                     0 -> JobsList(availableJobs) { viewModel.acceptJob(it) }
-                    1 -> JobsList(activeJobs) { /* Navigate to Active Detail */ }
+                    1 -> JobsList(activeJobs) { onNavigateToTracking(it) }
                     else -> EmptyState(tabs[selectedTabIndex])
                 }
             }
