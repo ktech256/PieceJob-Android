@@ -47,6 +47,7 @@ class ProviderTrackingViewModel @Inject constructor(
     private var autoStartTimer: Job? = null
 
     fun initTracking(jobId: String) {
+        android.util.Log.d("ForensicLog", "TRACKING_STARTED | Job: $jobId")
         viewModelScope.launch {
             _isLoading.value = true
             val res = jobRepository.getJobById(jobId)
@@ -142,6 +143,7 @@ class ProviderTrackingViewModel @Inject constructor(
     }
 
     fun startJob() {
+        android.util.Log.d("ForensicLog", "PROVIDER_STARTED_JOB | Job: ${_job.value?.id}")
         Log.d("TrackingFlow", "startJob() called")
         _showStartReminder.value = false
         autoStartTimer?.cancel()
@@ -170,6 +172,7 @@ class ProviderTrackingViewModel @Inject constructor(
     }
 
     fun completeJob() {
+        android.util.Log.d("ForensicLog", "PROVIDER_COMPLETED_JOB | Job: ${_job.value?.id}")
         viewModelScope.launch {
             val jobId = _job.value?.id ?: return@launch
             val res = jobRepository.completeJob(jobId)

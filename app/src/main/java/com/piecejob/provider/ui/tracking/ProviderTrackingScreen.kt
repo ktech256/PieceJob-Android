@@ -69,13 +69,17 @@ fun ProviderTrackingScreen(
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_START -> navigationView.onStart()
-                Lifecycle.Event.ON_RESUME -> navigationView.onResume()
-                Lifecycle.Event.ON_PAUSE -> navigationView.onPause()
-                Lifecycle.Event.ON_STOP -> navigationView.onStop()
-                Lifecycle.Event.ON_DESTROY -> navigationView.onDestroy()
-                else -> {}
+            try {
+                when (event) {
+                    Lifecycle.Event.ON_START -> navigationView.onStart()
+                    Lifecycle.Event.ON_RESUME -> navigationView.onResume()
+                    Lifecycle.Event.ON_PAUSE -> navigationView.onPause()
+                    Lifecycle.Event.ON_STOP -> navigationView.onStop()
+                    Lifecycle.Event.ON_DESTROY -> navigationView.onDestroy()
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ForensicLog", "TRACKING_CRASH | Lifecycle Error: ${e.message}", e)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -97,6 +101,10 @@ fun ProviderTrackingScreen(
                                 sdkEtaText = if (mins < 1) "1 min" else "$mins mins"
                                 val km = tad.meters / 1000.0
                                 sdkDistanceText = if (km < 1.0) "${tad.meters.toInt()} m" else String.format("%.1f km", km)
+                                
+                                if (sdkEtaText.isNotBlank()) {
+                                    android.util.Log.d("ForensicLog", "ETA_UPDATED | ETA: $sdkEtaText | Dist: $sdkDistanceText")
+                                }
                             }
                             delay(2000)
                         }
@@ -128,6 +136,7 @@ fun ProviderTrackingScreen(
                 .build()
             nav.setDestination(waypoint)
             nav.startGuidance()
+            android.util.Log.d("ForensicLog", "ROUTE_CREATED | Destination: ${dest[1]}, ${dest[0]}")
         }
     }
 

@@ -173,6 +173,8 @@ fun CustomerTrackingScreen(
                         else -> "Connecting..."
                     }
                     
+                    android.util.Log.d("ForensicLog", "JOB_STATE_CHANGED | Job: $jobId | New Status: ${job?.status}")
+                    
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = statusText, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
                         Text(text = "Job #${jobId.takeLast(6).uppercase()}", color = Color.White.copy(alpha = 0.8f), fontWeight = FontWeight.Bold, fontSize = 16.sp)

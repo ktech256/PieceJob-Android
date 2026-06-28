@@ -117,6 +117,7 @@ class JobTrackingViewModel @Inject constructor(
 
     fun cancelJob() {
         _job.value?.let {
+            android.util.Log.d("ForensicLog", "CUSTOMER_CANCEL_REQUEST | Job: ${it.id}")
             viewModelScope.launch {
                 val res = jobRepository.cancelJob(it.id)
                 if (res.success) {
