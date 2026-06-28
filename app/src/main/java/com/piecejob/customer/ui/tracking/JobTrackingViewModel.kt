@@ -72,20 +72,31 @@ class JobTrackingViewModel @Inject constructor(
     fun initTracking(jobId: String) {
         viewModelScope.launch {
             _isLoading.value = true
+            
+            // 1. Setup Sockets FIRST to ensure we don't miss any concurrent events
+            Log.d("FORENSIC", "INIT_TRACKING_STARTED | Job: $jobId")
+            socketManager.connect("https://piecejob-backend.onrender.com")
+            socketManager.clearListeners() // Clear any stale listeners from previous jobs
+            socketManager.joinJob(jobId)
+            sessionManager.getUserId()?.let { socketManager.joinUser(it) }
+            setupSocketListeners(jobId)
+
+            // 2. Fetch Initial State from API
             val response = jobRepository.getJobById(jobId)
             if (response.success && response.data != null) {
-                _job.value = response.data
+                val fetchedJob = response.data
+                Log.d("FORENSIC", "INITIAL_FETCH_COMPLETED | Status: ${fetchedJob.status}")
                 
-                // Initialize Socket
-                socketManager.connect("https://piecejob-backend.onrender.com")
-                socketManager.clearListeners()
-                socketManager.joinJob(jobId)
-                sessionManager.getUserId()?.let { socketManager.joinUser(it) }
-
-                setupSocketListeners(jobId)
+                // Only update if we don't already have a more advanced status from the socket
+                val currentStatus = _job.value?.status
+                if (currentStatus == null || (statusPriority[fetchedJob.status] ?: 0) >= (statusPriority[currentStatus] ?: 0)) {
+                    _job.value = fetchedJob
+                    Log.d("FORENSIC", "STATEFLOW_INITIALIZED | Status: ${fetchedJob.status}")
+                } else {
+                    Log.w("FORENSIC", "INITIAL_FETCH_IGNORED | Socket already moved to $currentStatus")
+                }
                 
-                // If still searching, load nearby providers
-                if (isSearching(response.data.status)) {
+                if (isSearching(_job.value?.status ?: "")) {
                     startNearbyProvidersPolling()
                 }
             } else {
@@ -120,25 +131,35 @@ class JobTrackingViewModel @Inject constructor(
         }
 
         socketManager.onStatusUpdated { status, providerInfo ->
-            Log.d("FORENSIC", "VIEWMODEL_STATUS_UPDATED | Status: $status | Prev: ${_job.value?.status}")
+            Log.d("FORENSIC", "CUSTOMER_SOCKET_RECEIVED | Event: status_updated | Status: $status")
             
-            // Update status immediately in local state
-            _job.value = _job.value?.copy(status = status)
-            
-            if (status == "COMPLETED" || status == "CANCELLED" || status == "RATED") {
-                // Handle termination states if needed
-            }
-            
-            // If providerInfo is provided in socket event, update it too
-            if (providerInfo != null) {
-                try {
-                    val info = com.google.gson.Gson().fromJson(providerInfo.toString(), com.piecejob.core.data.remote.dto.ProviderInfoDto::class.java)
-                    _job.value = _job.value?.copy(providerInfo = info)
-                } catch (e: Exception) {
-                    Log.e("JobTracking", "Error parsing provider info from socket", e)
+            // 1. Update local state IMMEDIATELY for responsiveness
+            val currentJob = _job.value
+            if (currentJob != null) {
+                // Only progress status, never regress (except to CANCELLED)
+                val currentPrio = statusPriority[currentJob.status] ?: 0
+                val newPrio = statusPriority[status] ?: 0
+                
+                if (newPrio >= currentPrio || newPrio == -1) {
+                    var updatedJob = currentJob.copy(status = status)
+                    
+                    if (providerInfo != null) {
+                        try {
+                            val info = com.google.gson.Gson().fromJson(providerInfo.toString(), com.piecejob.core.data.remote.dto.ProviderInfoDto::class.java)
+                            updatedJob = updatedJob.copy(providerInfo = info)
+                        } catch (e: Exception) {
+                            Log.e("JobTracking", "Error parsing provider info from socket", e)
+                        }
+                    }
+                    _job.value = updatedJob
+                    Log.d("FORENSIC", "STATEFLOW_UPDATED | New Status: $status")
                 }
+            } else {
+                // If initial fetch hasn't finished, we just queue a refresh to be safe
+                Log.w("FORENSIC", "VIEWMODEL_UPDATE_DELAYED | Job is null, using refresh")
             }
 
+            // 2. Trigger background refresh to sync full details
             refreshJobDetails(jobId)
             
             if (!isSearching(status)) {
@@ -148,17 +169,21 @@ class JobTrackingViewModel @Inject constructor(
 
         socketManager.onJobAccepted { acceptedJobId, providerId, providerInfo ->
             if (acceptedJobId == jobId) {
-                Log.d("FORENSIC", "VIEWMODEL_STATUS_UPDATED | Status: ACCEPTED | Trigger: JOB_ACCEPTED")
+                Log.d("FORENSIC", "CUSTOMER_SOCKET_RECEIVED | Event: JOB_ACCEPTED")
                 
-                // Update local state for instant transition
-                _job.value = _job.value?.copy(status = "ACCEPTED", providerId = providerId)
-                if (providerInfo != null) {
-                    try {
-                        val info = com.google.gson.Gson().fromJson(providerInfo.toString(), com.piecejob.core.data.remote.dto.ProviderInfoDto::class.java)
-                        _job.value = _job.value?.copy(providerInfo = info)
-                    } catch (e: Exception) {
-                        Log.e("JobTracking", "Error parsing provider info from socket", e)
+                val currentJob = _job.value
+                if (currentJob != null) {
+                    var updatedJob = currentJob.copy(status = "ACCEPTED", providerId = providerId)
+                    if (providerInfo != null) {
+                        try {
+                            val info = com.google.gson.Gson().fromJson(providerInfo.toString(), com.piecejob.core.data.remote.dto.ProviderInfoDto::class.java)
+                            updatedJob = updatedJob.copy(providerInfo = info)
+                        } catch (e: Exception) {
+                            Log.e("JobTracking", "Error parsing provider info from socket", e)
+                        }
                     }
+                    _job.value = updatedJob
+                    Log.d("FORENSIC", "STATEFLOW_UPDATED | Status: ACCEPTED")
                 }
 
                 refreshJobDetails(jobId)

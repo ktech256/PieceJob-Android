@@ -37,8 +37,12 @@ fun CustomerTrackingScreen(
     onBack: () -> Unit
 ) {
     val job by viewModel.job.collectAsState()
-    SideEffect {
-        android.util.Log.d("FORENSIC", "COMPOSE_RECOMPOSED | Status: ${job?.status}")
+    
+    // FORENSIC: Track recompositions
+    LaunchedEffect(job?.status) {
+        if (job?.status != null) {
+            android.util.Log.d("FORENSIC", "JOB_STATUS_CHANGED | New Status: ${job?.status}")
+        }
     }
     val nearbyProviders by viewModel.nearbyProviders.collectAsState()
     val providerLocation by viewModel.providerLocation.collectAsState()
@@ -170,39 +174,31 @@ fun CustomerTrackingScreen(
             }
         }
 
-        // Overlay: Top Back Button (Issue 3)
-        Surface(
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(16.dp)
-                .align(Alignment.TopStart),
-            color = Color.White.copy(alpha = 0.9f),
-            shape = RoundedCornerShape(12.dp),
-            shadowElevation = 8.dp
-        ) {
-            IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
-            }
-        }
-
-        // Top Status Bar
+        // Top Status Bar (Mirroring Provider Layout with Back Arrow inside)
         AnimatedVisibility(
             visible = true,
             enter = slideInVertically() + fadeIn(),
-            modifier = Modifier.align(Alignment.TopCenter)
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(16.dp)
         ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 48.dp, start = 16.dp, end = 16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFD32F2F)),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White.copy(alpha = 0.95f),
+                shape = RoundedCornerShape(12.dp),
+                shadowElevation = 8.dp
             ) {
                 Row(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                    }
+                    
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
                     val providerName = job?.providerInfo?.firstName ?: "Provider"
                     val statusText = when (job?.status) {
                         "BROADCASTED", "BROADCASTING" -> "Broadcasting request..."
@@ -216,12 +212,16 @@ fun CustomerTrackingScreen(
                     }
                     
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = statusText, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
-                        Text(text = if (job?.status == "ACCEPTED" || job?.status == "EN_ROUTE") "ETA: $eta ($distance)" else "Job #${jobId.takeLast(6).uppercase()}", color = Color.White.copy(alpha = 0.8f), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(text = statusText, color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                        if (job?.status == "ACCEPTED" || job?.status == "EN_ROUTE") {
+                            Text(text = "ETA: $eta ($distance)", color = Color.Gray, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        } else {
+                            Text(text = "Job #${jobId.takeLast(6).uppercase()}", color = Color.Gray, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
                     }
                     
                     if (job?.status != "COMPLETED" && job?.status != "CANCELLED") {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color(0xFFD32F2F), strokeWidth = 2.dp)
                     }
                 }
             }

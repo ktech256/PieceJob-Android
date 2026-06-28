@@ -47,17 +47,22 @@ class ProviderTrackingViewModel @Inject constructor(
     private var autoStartTimer: Job? = null
 
     fun initTracking(jobId: String) {
-        android.util.Log.d("ForensicLog", "TRACKING_STARTED | Job: $jobId")
+        android.util.Log.d("FORENSIC", "INIT_TRACKING_STARTED | Job: $jobId (Provider)")
         viewModelScope.launch {
             _isLoading.value = true
+            
+            // 1. Setup Sockets and Listeners FIRST
+            LocationService.activeJobId = jobId
+            socketManager.joinJob(jobId)
+            observeStatusUpdates()
+
+            // 2. Fetch State
             val res = jobRepository.getJobById(jobId)
             if (res.success && res.data != null) {
                 val job = res.data
+                Log.d("FORENSIC", "INITIAL_FETCH_COMPLETED | Status: ${job.status}")
                 _job.value = job
-                LocationService.activeJobId = jobId
-                socketManager.joinJob(jobId)
                 startLocationTracking()
-                observeStatusUpdates()
 
                 // Recovery logic: if already arrived but not started, start timer
                 if (job.status == "ARRIVED") {
