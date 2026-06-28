@@ -16,7 +16,8 @@ data class UserSummaryDto(
     val _id: String,
     val firstName: String,
     val lastName: String,
-    val role: String
+    val role: String,
+    val profilePicture: String? = null
 )
 
 data class SendMessageRequest(

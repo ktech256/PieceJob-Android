@@ -1,5 +1,6 @@
 package com.piecejob.core.ui.chat
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.remote.dto.*
@@ -28,10 +29,14 @@ class ChatViewModel @Inject constructor(
 
     fun initChat(jobId: String) {
         currentJobId = jobId
+        Log.d("FORENSIC", "CHAT_LOAD_HISTORY | Job: $jobId")
         loadMessages(jobId)
         socketManager.joinJob(jobId)
-        socketManager.onNewMessage { json ->
-            handleIncomingMessage(json)
+        
+        viewModelScope.launch {
+            socketManager.messageEventFlow.collect { json ->
+                handleIncomingMessage(json)
+            }
         }
     }
 
@@ -40,7 +45,10 @@ class ChatViewModel @Inject constructor(
             _isLoading.value = true
             val response = repository.getChatMessages(jobId)
             if (response.success && response.data != null) {
+                Log.d("FORENSIC", "CHAT_HISTORY_LOADED | Count: ${response.data.size}")
                 _messages.value = response.data
+            } else {
+                Log.e("FORENSIC", "CHAT_HISTORY_FAILED | Error: ${response.message}")
             }
             _isLoading.value = false
         }
@@ -48,33 +56,64 @@ class ChatViewModel @Inject constructor(
 
     fun sendMessage(receiverId: String, text: String) {
         val jobId = currentJobId ?: return
+        Log.d("FORENSIC", "CHAT_SEND_TRIGGERED | To: $receiverId | Text: $text")
         viewModelScope.launch {
             val request = SendMessageRequest(jobId, receiverId, text)
-            repository.sendMessage(request)
-            // Socket will broadcast the message back to us as well
+            val res = repository.sendMessage(request)
+            if (res.success) {
+                Log.d("FORENSIC", "CHAT_DATABASE_SAVE | Success")
+                // Socket will broadcast the message back to us as well
+            } else {
+                Log.e("FORENSIC", "CHAT_DATABASE_SAVE | Failed: ${res.message}")
+            }
         }
     }
 
     private fun handleIncomingMessage(json: JSONObject) {
-        val message = MessageDto(
-            id = json.optString("_id"),
-            jobId = json.optString("jobId"),
-            senderId = UserSummaryDto(
-                _id = json.optString("senderId"),
-                firstName = "", // We might not have full names in simple broadcast
-                lastName = "",
-                role = ""
-            ),
-            receiverId = "",
-            text = json.optString("text"),
-            mediaUrl = json.optString("mediaUrl"),
-            mediaType = json.optString("mediaType"),
-            isRead = false,
-            createdAt = json.optString("createdAt")
-        )
-        
-        if (message.jobId == currentJobId) {
-            _messages.value = _messages.value + message
+        try {
+            val jobId = json.optString("jobId")
+            if (jobId != currentJobId) return
+
+            Log.d("FORENSIC", "CHAT_SOCKET_RECEIVED | Parsing message...")
+
+            // Handle senderId being a string (old) or an object (populated)
+            val senderJson = json.optJSONObject("senderId")
+            val senderId = if (senderJson != null) {
+                UserSummaryDto(
+                    _id = senderJson.optString("_id"),
+                    firstName = senderJson.optString("firstName"),
+                    lastName = senderJson.optString("lastName"),
+                    role = senderJson.optString("role"),
+                    profilePicture = senderJson.optString("profilePicture")
+                )
+            } else {
+                UserSummaryDto(
+                    _id = json.optString("senderId"),
+                    firstName = "",
+                    lastName = "",
+                    role = ""
+                )
+            }
+
+            val message = MessageDto(
+                id = json.optString("_id").ifEmpty { json.optString("id") },
+                jobId = jobId,
+                senderId = senderId,
+                receiverId = json.optString("receiverId"),
+                text = json.optString("text"),
+                mediaUrl = json.optString("mediaUrl"),
+                mediaType = json.optString("mediaType"),
+                isRead = json.optBoolean("isRead", false),
+                createdAt = json.optString("createdAt")
+            )
+
+            // Deduplication
+            if (_messages.value.none { it.id == message.id }) {
+                _messages.value = _messages.value + message
+                Log.d("FORENSIC", "CHAT_RECOMPOSE | Message Added")
+            }
+        } catch (e: Exception) {
+            Log.e("FORENSIC", "CHAT_PARSE_ERROR", e)
         }
     }
 }

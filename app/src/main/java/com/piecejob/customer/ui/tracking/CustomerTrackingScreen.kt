@@ -32,6 +32,7 @@ fun CustomerTrackingScreen(
     jobId: String,
     viewModel: JobTrackingViewModel = hiltViewModel(),
     onChatOpen: (String) -> Unit,
+    onCallOpen: (String, String, String) -> Unit,
     onSosTrigger: () -> Unit,
     onNavigateToRating: (String) -> Unit,
     onBack: () -> Unit
@@ -258,6 +259,7 @@ fun CustomerTrackingScreen(
                             job = job!!,
                             eta = eta,
                             onChatOpen = onChatOpen,
+                            onCallOpen = onCallOpen,
                             onSosTrigger = onSosTrigger
                         )
                     }
@@ -319,6 +321,7 @@ fun AssignedProviderPanel(
     job: com.piecejob.core.data.remote.dto.JobDto,
     eta: String,
     onChatOpen: (String) -> Unit,
+    onCallOpen: (String, String, String) -> Unit,
     onSosTrigger: () -> Unit
 ) {
     Column {
@@ -352,7 +355,11 @@ fun AssignedProviderPanel(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledIconButton(
-                    onClick = { /* Call logic */ },
+                    onClick = { 
+                        job?.providerInfo?.let { info ->
+                            onCallOpen(job!!.providerId!!, "${info.firstName} ${info.lastName}", info.phoneNumber ?: "")
+                        }
+                    },
                     modifier = Modifier.size(48.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFE8F5E9))
                 ) {
@@ -360,7 +367,7 @@ fun AssignedProviderPanel(
                 }
                 
                 FilledIconButton(
-                    onClick = { job.providerId?.let { onChatOpen(it) } },
+                    onClick = { job?.providerId?.let { onChatOpen(it) } },
                     modifier = Modifier.size(48.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFE3F2FD))
                 ) {

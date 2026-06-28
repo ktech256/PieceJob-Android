@@ -27,6 +27,8 @@ import com.piecejob.core.ui.analytics.ProviderAnalyticsScreen
 import com.piecejob.core.ui.analytics.CustomerAnalyticsScreen
 import com.piecejob.provider.ui.tracking.ProviderTrackingScreen
 import com.piecejob.core.ui.rating.RatingScreen
+import com.piecejob.core.ui.communication.CallScreen
+import com.piecejob.core.ui.communication.IncomingCallScreen
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -283,6 +285,9 @@ fun NavGraph(
                 onChatOpen = { otherUserId ->
                     navController.navigate(Screen.Chat.passArgs(jobId, otherUserId))
                 },
+                onCallOpen = { receiverId, name, phone ->
+                    navController.navigate(Screen.Call.passArgs(jobId, receiverId, name, phone))
+                },
                 onSosTrigger = { },
                 onNavigateToRating = {
                     navController.navigate(Screen.Rating.passJobId(jobId)) {
@@ -300,6 +305,12 @@ fun NavGraph(
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
             ProviderTrackingScreen(
                 jobId = jobId,
+                onChatOpen = { otherUserId ->
+                    navController.navigate(Screen.Chat.passArgs(jobId, otherUserId))
+                },
+                onCallOpen = { receiverId, name, phone ->
+                    navController.navigate(Screen.Call.passArgs(jobId, receiverId, name, phone))
+                },
                 onBack = { navController.popBackStack() },
                 onNavigateToRating = {
                     navController.navigate(Screen.Rating.passJobId(jobId)) {
@@ -366,6 +377,55 @@ fun NavGraph(
                 jobId = jobId,
                 otherUserId = otherUserId,
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.Call.route,
+            arguments = listOf(
+                navArgument("jobId") { type = NavType.StringType },
+                navArgument("receiverId") { type = NavType.StringType },
+                navArgument("receiverName") { type = NavType.StringType },
+                navArgument("receiverPhone") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
+            val receiverId = backStackEntry.arguments?.getString("receiverId") ?: ""
+            val receiverName = backStackEntry.arguments?.getString("receiverName") ?: ""
+            val receiverPhone = backStackEntry.arguments?.getString("receiverPhone") ?: ""
+            CallScreen(
+                jobId = jobId,
+                receiverId = receiverId,
+                receiverName = receiverName,
+                receiverPhone = receiverPhone,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.IncomingCall.route,
+            arguments = listOf(
+                navArgument("jobId") { type = NavType.StringType },
+                navArgument("callerId") { type = NavType.StringType },
+                navArgument("callerName") { type = NavType.StringType },
+                navArgument("callerPhone") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
+            val callerId = backStackEntry.arguments?.getString("callerId") ?: ""
+            val callerName = backStackEntry.arguments?.getString("callerName") ?: ""
+            val callerPhone = backStackEntry.arguments?.getString("callerPhone") ?: ""
+            IncomingCallScreen(
+                jobId = jobId,
+                callerId = callerId,
+                callerName = callerName,
+                callerPhone = callerPhone,
+                onAccept = {
+                    navController.popBackStack()
+                },
+                onReject = {
+                    navController.popBackStack()
+                }
             )
         }
         

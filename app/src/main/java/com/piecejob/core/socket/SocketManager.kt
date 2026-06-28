@@ -23,6 +23,12 @@ class SocketManager @Inject constructor(
     private val _statusEventFlow = MutableSharedFlow<StatusEvent>(extraBufferCapacity = 10)
     val statusEventFlow: SharedFlow<StatusEvent> = _statusEventFlow
 
+    private val _messageEventFlow = MutableSharedFlow<JSONObject>(extraBufferCapacity = 10)
+    val messageEventFlow: SharedFlow<JSONObject> = _messageEventFlow
+
+    private val _callEventFlow = MutableSharedFlow<JSONObject>(extraBufferCapacity = 10)
+    val callEventFlow: SharedFlow<JSONObject> = _callEventFlow
+
     fun connect(baseUrl: String) {
         if (socket?.connected() == true) return
 
@@ -72,6 +78,26 @@ class SocketManager @Inject constructor(
                     _statusEventFlow.tryEmit(StatusEvent(jobId, "ACCEPTED", data.optJSONObject("providerInfo")))
                 } catch (e: Exception) {
                     Log.e(TAG, "Error in JOB_ACCEPTED listener", e)
+                }
+            }
+
+            socket?.on("new_message") { args ->
+                try {
+                    val data = args[0] as JSONObject
+                    Log.d("FORENSIC", "CHAT_SOCKET_RECEIVED | Job: ${data.optString("jobId")}")
+                    _messageEventFlow.tryEmit(data)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in new_message listener", e)
+                }
+            }
+
+            socket?.on("incoming_call_intent") { args ->
+                try {
+                    val data = args[0] as JSONObject
+                    Log.d("FORENSIC", "CALL_SOCKET_RECEIVED | From: ${data.optString("callerId")}")
+                    _callEventFlow.tryEmit(data)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in incoming_call_intent listener", e)
                 }
             }
 
@@ -189,18 +215,11 @@ class SocketManager @Inject constructor(
         }
     }
 
-    fun onNewMessage(callback: (JSONObject) -> Unit) {
-        socket?.on("new_message") { args ->
-            callback(args[0] as JSONObject)
-        }
-    }
-
     fun clearListeners() {
-        // We only clear ephemeral listeners, NOT global status listeners
+        // We only clear ephemeral listeners, NOT global status/message/call listeners
         socket?.off("location_updated")
         socket?.off("route_updated")
         socket?.off("NEW_JOB_BROADCAST")
-        socket?.off("new_message")
     }
 
     fun disconnect() {

@@ -104,4 +104,12 @@ sealed class Screen(val route: String) {
     object Chat : Screen("chat/{jobId}/{otherUserId}") {
         fun passArgs(jobId: String, otherUserId: String) = "chat/$jobId/$otherUserId"
     }
+    object Call : Screen("call/{jobId}/{receiverId}/{receiverName}/{receiverPhone}") {
+        fun passArgs(jobId: String, receiverId: String, receiverName: String, receiverPhone: String) = 
+            "call/$jobId/$receiverId/$receiverName/$receiverPhone"
+    }
+    object IncomingCall : Screen("incoming_call/{jobId}/{callerId}/{callerName}/{callerPhone}") {
+        fun passArgs(jobId: String, callerId: String, callerName: String, callerPhone: String) = 
+            "incoming_call/$jobId/$callerId/$callerName/$callerPhone"
+    }
 }

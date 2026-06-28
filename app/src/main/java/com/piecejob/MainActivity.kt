@@ -122,6 +122,31 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
+
+                // GLOBAL OBSERVER: Incoming Calls (Issue 2)
+                LaunchedEffect(Unit) {
+                    socketManager.callEventFlow.collect { json ->
+                        val jobId = json.optString("jobId")
+                        val callerId = json.optString("callerId")
+                        val callerName = json.optString("callerName")
+                        val callerPhone = json.optString("callerPhone")
+                        android.util.Log.d("FORENSIC", "CALL_RINGING | From: $callerName")
+                        navController.navigate(Screen.IncomingCall.passArgs(jobId, callerId, callerName, callerPhone)) {
+                            launchSingleTop = true
+                        }
+                    }
+                }
+
+                // GLOBAL OBSERVER: Chat Notifications (Issue 1)
+                LaunchedEffect(Unit) {
+                    socketManager.messageEventFlow.collect { json ->
+                        val jobId = json.optString("jobId")
+                        val senderJson = json.optJSONObject("senderId")
+                        val senderName = senderJson?.optString("firstName") ?: "Someone"
+                        android.util.Log.d("FORENSIC", "CHAT_SOCKET_RECEIVED | From: $senderName")
+                        // TODO: Show in-app notification banner if not on chat screen
+                    }
+                }
             }
         }
     }

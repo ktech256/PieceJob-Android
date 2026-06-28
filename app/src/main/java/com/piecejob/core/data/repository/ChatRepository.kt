@@ -12,6 +12,7 @@ class ChatRepository @Inject constructor(
     private val api: PieceJobApi
 ) {
     suspend fun getChatMessages(jobId: String): ApiResponse<List<MessageDto>> {
+        android.util.Log.d("FORENSIC", "CUSTOMER_CHAT_REPOSITORY | getChatMessages | Job: $jobId")
         return try {
             api.getChatMessages(jobId)
         } catch (e: Exception) {
@@ -20,6 +21,7 @@ class ChatRepository @Inject constructor(
     }
 
     suspend fun sendMessage(request: SendMessageRequest): ApiResponse<MessageDto> {
+        android.util.Log.d("FORENSIC", "CUSTOMER_CHAT_REPOSITORY | sendMessage | To: ${request.receiverId}")
         return try {
             api.sendMessage(request)
         } catch (e: Exception) {

@@ -47,6 +47,7 @@ data class PayBookingFeeResponse(
 data class ProviderInfoDto(
     @SerializedName("firstName") val firstName: String,
     @SerializedName("lastName") val lastName: String,
+    @SerializedName("phoneNumber") val phoneNumber: String? = null,
     @SerializedName("ratingAvg") val ratingAvg: Double,
     @SerializedName("jobsCompleted") val jobsCompleted: Int,
     @SerializedName("profilePicture") val profilePicture: String? = null
@@ -55,6 +56,7 @@ data class ProviderInfoDto(
 data class CustomerInfoDto(
     @SerializedName("firstName") val firstName: String,
     @SerializedName("lastName") val lastName: String,
+    @SerializedName("phoneNumber") val phoneNumber: String? = null,
     @SerializedName("profilePicture") val profilePicture: String? = null
 )
 
@@ -95,4 +97,30 @@ data class ReviewDto(
 data class RatingRequest(
     @SerializedName("rating") val rating: Int,
     @SerializedName("comment") val comment: String? = null
+)
+
+// --- CALLS ---
+data class LogCallRequest(
+    val jobId: String,
+    val receiverId: String
+)
+
+data class UpdateCallStatusRequest(
+    val status: String,
+    val duration: Int? = null
+)
+
+data class CallInitiationResponse(
+    val callId: String
+)
+
+data class CallDto(
+    val id: String,
+    val jobId: String,
+    val callerId: String,
+    val receiverId: String,
+    val status: String,
+    val startTime: String,
+    val endTime: String?,
+    val duration: Int?
 )

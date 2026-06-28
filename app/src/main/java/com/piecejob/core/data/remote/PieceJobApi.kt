@@ -291,6 +291,13 @@ interface PieceJobApi {
     @POST("chat")
     suspend fun sendMessage(@Body request: SendMessageRequest): ApiResponse<MessageDto>
 
+    // --- CALLS ---
+    @POST("calls/init")
+    suspend fun logCallInitiation(@Body request: LogCallRequest): ApiResponse<CallInitiationResponse>
+
+    @PATCH("calls/{callId}/status")
+    suspend fun updateCallStatus(@Path("callId") callId: String, @Body request: UpdateCallStatusRequest): ApiResponse<Unit>
+
     // =========================
     // ✅ ANALYTICS ROUTES
     // =========================

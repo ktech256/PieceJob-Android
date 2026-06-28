@@ -53,6 +53,8 @@ fun Context.getActivity(): android.app.Activity? = when (this) {
 fun ProviderTrackingScreen(
     jobId: String,
     viewModel: ProviderTrackingViewModel = hiltViewModel(),
+    onChatOpen: (String) -> Unit,
+    onCallOpen: (String, String, String) -> Unit,
     onBack: () -> Unit,
     onNavigateToRating: (String) -> Unit
 ) {
@@ -346,29 +348,44 @@ fun ProviderTrackingScreen(
 
                             Spacer(modifier = Modifier.width(16.dp))
 
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = currentJob.serviceCode,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 20.sp,
-                                    lineHeight = 22.sp
-                                )
-                                Text(
-                                    text = currentJob.location?.address ?: "Customer Location",
-                                    color = Color.Gray,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1
-                                )
-                            }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = currentJob.serviceCode,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 20.sp,
+                                        lineHeight = 22.sp
+                                    )
+                                    Text(
+                                        text = currentJob.location?.address ?: "Customer Location",
+                                        color = Color.Gray,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1
+                                    )
+                                }
 
-                            Text(
-                                text = "R${currentJob.bookingFee}",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 20.sp,
-                                color = Color(0xFF2E7D32)
-                            )
-                        }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilledIconButton(
+                                        onClick = { 
+                                            job?.customerInfo?.let { info ->
+                                                onCallOpen(job!!.customerId, "${info.firstName} ${info.lastName}", info.phoneNumber ?: "")
+                                            }
+                                        },
+                                        modifier = Modifier.size(44.dp),
+                                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFE8F5E9))
+                                    ) {
+                                        Icon(Icons.Default.Phone, contentDescription = "Call", tint = Color(0xFF2E7D32))
+                                    }
+                                    
+                                    FilledIconButton(
+                                        onClick = { onChatOpen(currentJob.customerId) },
+                                        modifier = Modifier.size(44.dp),
+                                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFE3F2FD))
+                                    ) {
+                                        Icon(Icons.Default.Email, contentDescription = "Message", tint = Color(0xFF1976D2))
+                                    }
+                                }
+                            }
 
                         Spacer(modifier = Modifier.height(24.dp))
                         

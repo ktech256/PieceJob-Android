@@ -30,6 +30,10 @@ fun ChatScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     var messageText by remember { mutableStateOf("") }
 
+    SideEffect {
+        android.util.Log.d("FORENSIC", "CHAT_RECOMPOSE | Messages: ${messages.size}")
+    }
+
     LaunchedEffect(jobId) {
         viewModel.initChat(jobId)
     }
