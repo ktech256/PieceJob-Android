@@ -14,8 +14,12 @@ class PieceJobApp : Application() {
 
         // FORENSIC: Maps/Navigation Initialization
         try {
-            MapsInitializer.initialize(this)
-            android.util.Log.d("MAPS_DEBUG", "MapsInitializer initialized")
+            MapsInitializer.initialize(this, MapsInitializer.Renderer.LATEST) { renderer ->
+                when (renderer) {
+                    MapsInitializer.Renderer.LATEST -> android.util.Log.d("MAPS_DEBUG", "The latest version of the renderer is used.")
+                    MapsInitializer.Renderer.LEGACY -> android.util.Log.d("MAPS_DEBUG", "The legacy version of the renderer is used.")
+                }
+            }
         } catch (e: Exception) {
             android.util.Log.e("MAPS_DEBUG", "MapsInitializer failed: ${e.message}")
         }

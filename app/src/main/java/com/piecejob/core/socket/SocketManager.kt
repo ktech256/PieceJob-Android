@@ -4,6 +4,7 @@ import android.util.Log
 import com.piecejob.core.data.local.SessionManager
 import io.socket.client.IO
 import io.socket.client.Socket
+import org.json.JSONArray
 import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -59,7 +60,11 @@ class SocketManager @Inject constructor(
         val userId = sessionManager.getUserId() ?: return
         val data = JSONObject().apply {
             put("userId", userId)
-            put("coordinates", listOf(lng, lat))
+            val coords = JSONArray().apply {
+                put(lng)
+                put(lat)
+            }
+            put("coordinates", coords)
             put("hardwareId", hardwareId)
             put("isMockLocation", isMock)
         }
@@ -71,7 +76,11 @@ class SocketManager @Inject constructor(
         val role = sessionManager.getRole() ?: "customer"
         val data = JSONObject().apply {
             put("jobId", jobId)
-            put("coordinates", listOf(lng, lat))
+            val coords = JSONArray().apply {
+                put(lng)
+                put(lat)
+            }
+            put("coordinates", coords)
             put("userId", userId)
             put("role", role)
         }
@@ -81,7 +90,11 @@ class SocketManager @Inject constructor(
     fun sendSosGpsPing(incidentId: String, lat: Double, lng: Double) {
         val data = JSONObject().apply {
             put("incidentId", incidentId)
-            put("coordinates", listOf(lng, lat))
+            val coords = JSONArray().apply {
+                put(lng)
+                put(lat)
+            }
+            put("coordinates", coords)
         }
         socket?.emit("sos_gps_ping", data)
     }

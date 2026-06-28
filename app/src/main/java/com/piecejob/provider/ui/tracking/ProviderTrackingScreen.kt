@@ -38,6 +38,8 @@ import com.google.android.libraries.navigation.*
 import com.google.android.gms.maps.GoogleMap
 import android.content.Context
 import android.content.ContextWrapper
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
@@ -73,16 +75,11 @@ fun ProviderTrackingScreen(
     var sdkDistanceText by remember { mutableStateOf("") }
 
     val navigationView = remember {
-        NavigationView(context).apply { 
-            // Forensic: Ensure NavigationView is initialized on UI thread with Activity context
+        val activity = context.getActivity()
+        NavigationView(activity ?: context).apply { 
             try {
-                val activity = context.getActivity()
-                if (activity != null) {
-                    onCreate(null)
-                    android.util.Log.d("ForensicLog", "TRACKING_MAP | NavigationView onCreate SUCCESS")
-                } else {
-                    android.util.Log.e("ForensicLog", "TRACKING_MAP | FAILED: No Activity context for NavigationView")
-                }
+                onCreate(null)
+                android.util.Log.d("ForensicLog", "TRACKING_MAP | NavigationView onCreate SUCCESS")
             } catch (e: Exception) {
                 android.util.Log.e("ForensicLog", "TRACKING_CRASH | NavigationView.onCreate Error: ${e.message}", e)
             }
@@ -117,16 +114,16 @@ fun ProviderTrackingScreen(
             android.util.Log.d("ForensicLog", "TRACKING_INIT | Activity context found. Requesting navigator...")
             NavigationApi.getNavigator(activity, object : NavigationApi.NavigatorListener {
                 override fun onNavigatorReady(nav: Navigator) {
-                    android.util.Log.d("ForensicLog", "TRACKING_INIT | Navigator READY. Setting up guidance...")
                     navigator = nav
-                    
                     try {
                         nav.setAudioGuidance(Navigator.AudioGuidance.VOICE_ALERTS_AND_GUIDANCE)
                         
-                        // Automatic camera following with tilted perspective
+                        // Set 3D perspective and follow mode
                         navigationView.getMapAsync { map ->
                             android.util.Log.d("ForensicLog", "TRACKING_INIT | Map READY. Setting camera follow...")
-                            map.followMyLocation(GoogleMap.CameraPerspective.TILTED)
+                            if (navigator != null) {
+                                map.followMyLocation(GoogleMap.CameraPerspective.TILTED)
+                            }
                         }
 
                         scope.launch {
@@ -137,10 +134,6 @@ fun ProviderTrackingScreen(
                                     sdkEtaText = if (mins < 1) "1 min" else "$mins mins"
                                     val km = tad.meters / 1000.0
                                     sdkDistanceText = if (km < 1.0) "${tad.meters.toInt()} m" else String.format("%.1f km", km)
-                                    
-                                    if (sdkEtaText.isNotBlank()) {
-                                        android.util.Log.d("ForensicLog", "ETA_UPDATED | ETA: $sdkEtaText | Dist: $sdkDistanceText")
-                                    }
                                 }
                                 delay(2000)
                             }
@@ -151,11 +144,8 @@ fun ProviderTrackingScreen(
                 }
                 override fun onError(errorCode: Int) { 
                     android.util.Log.e("ForensicLog", "TRACKING_INIT | Navigator Error: $errorCode")
-                    Log.e("NAV_SDK", "Error: $errorCode") 
                 }
             })
-        } else {
-            android.util.Log.e("ForensicLog", "TRACKING_INIT_FAILED | Activity context NOT found!")
         }
     }
 
@@ -170,21 +160,23 @@ fun ProviderTrackingScreen(
             return@LaunchedEffect
         }
 
+        // AUTO-START NAVIGATION TO CUSTOMER
         val dest = j.location?.coordinates
         if (dest != null && dest.size >= 2) {
             val waypoint = Waypoint.builder()
                 .setLatLng(dest[1], dest[0])
                 .setTitle("Customer Location")
                 .build()
+            
             nav.setDestination(waypoint)
             nav.startGuidance()
-            android.util.Log.d("ForensicLog", "ROUTE_CREATED | Destination: ${dest[1]}, ${dest[0]}")
+            android.util.Log.d("ForensicLog", "NAV_START | Automated turn-by-turn started to ${dest[1]}, ${dest[0]}")
         }
     }
 
     // Prevent accidental exit during active job
     BackHandler {
-        onBack() // This will go to Home (Dashboard) while job remains active
+        onBack() 
     }
 
     LaunchedEffect(jobId) {
@@ -238,33 +230,34 @@ fun ProviderTrackingScreen(
                 Button(onClick = { viewModel.startJob() }) { Text("START NOW") }
             },
             dismissButton = {
-                TextButton(onClick = { /* Dismissed but viewModel might auto-start anyway */ }) { Text("NOT YET") }
+                TextButton(onClick = { /* Dismissed */ }) { Text("NOT YET") }
             }
         )
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Core Navigation UI
         AndroidView(
             factory = { navigationView },
             modifier = Modifier.fillMaxSize()
         )
 
-        // Top Status & Navigation Info
+        // Overlay 1: Top Navigation Stats
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 56.dp, start = 16.dp, end = 16.dp)
+                .statusBarsPadding()
+                .padding(16.dp)
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Header with Back Button
             Surface(
-                color = Color.White.copy(alpha = 0.9f),
+                color = Color.White.copy(alpha = 0.95f),
                 shape = RoundedCornerShape(12.dp),
-                shadowElevation = 4.dp
+                shadowElevation = 8.dp
             ) {
                 Row(
-                    modifier = Modifier.padding(8.dp),
+                    modifier = Modifier.padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
@@ -272,20 +265,20 @@ fun ProviderTrackingScreen(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = job?.status?.replace("_", " ") ?: "LOADING...",
+                        text = job?.status?.replace("_", " ") ?: "INITIALIZING...",
                         color = when(job?.status) {
                             "ACCEPTED" -> Color(0xFF1976D2)
                             "ARRIVED" -> Color(0xFFFFA000)
                             "STARTED" -> Color(0xFF4CAF50)
                             else -> Color.DarkGray
                         },
-                        fontWeight = FontWeight.Black,
+                        fontWeight = FontWeight.ExtraBold,
                         fontSize = 14.sp
                     )
                 }
             }
 
-            // ETA Card
+            // Real-time Navigation Stats Card
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 shape = RoundedCornerShape(16.dp),
@@ -299,110 +292,145 @@ fun ProviderTrackingScreen(
                         Text(
                             text = if (isArrivedOrStarted) "You have arrived" else "ETA: ${sdkEtaText.ifBlank { eta }}", 
                             fontWeight = FontWeight.Black, 
-                            fontSize = 16.sp
+                            fontSize = 18.sp
                         )
                         Text(
                             text = if (isArrivedOrStarted) "Customer is waiting" else "Distance: ${sdkDistanceText.ifBlank { distance }}", 
                             color = Color.Gray, 
-                            fontSize = 12.sp
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
         }
 
-        // FAB to Recenter
+        // Overlay 2: Recenter Button
         SmallFloatingActionButton(
             onClick = { 
-                navigationView.getMapAsync { map -> 
-                    map.followMyLocation(GoogleMap.CameraPerspective.TILTED) 
-                } 
+                if (navigator != null) {
+                    navigationView.getMapAsync { map -> 
+                        map.followMyLocation(GoogleMap.CameraPerspective.TILTED) 
+                    }
+                }
             },
-            modifier = Modifier.padding(16.dp).align(Alignment.CenterEnd).offset(y = (-40).dp),
+            modifier = Modifier
+                .padding(16.dp)
+                .align(Alignment.CenterEnd)
+                .offset(y = (-40).dp),
             containerColor = Color.White,
             contentColor = Color.Black
         ) { 
             Icon(Icons.Default.MyLocation, contentDescription = "Recenter") 
         }
 
-        // Bottom Action Panel
-        Surface(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            color = Color.White,
-            shadowElevation = 24.dp
+        // Overlay 3: Bottom Action Panel (Copy of Customer Style)
+        AnimatedVisibility(
+            visible = job != null,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                job?.let { currentJob ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = Color(0xFFF5F5F5)) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.Gray)
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(text = currentJob.serviceCode, fontWeight = FontWeight.Black, fontSize = 18.sp)
-                            Text(text = currentJob.location?.address ?: "Near pickup", color = Color.Gray, fontSize = 12.sp)
-                        }
-                        Text(text = "R${currentJob.bookingFee}", fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Color(0xFF2E7D32))
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    when (currentJob.status) {
-                        "ACCEPTED", "ARRIVED" -> {
-                            val isArrived = currentJob.status == "ARRIVED"
-                            Button(
-                                onClick = { 
-                                    if (isArrived) {
-                                        Log.d("TrackingFlow", "Start Work pressed")
-                                        viewModel.startJob() 
-                                    } else {
-                                        Log.d("TrackingFlow", "Recenter pressed while accepted")
-                                        navigationView.getMapAsync { map -> 
-                                            map.followMyLocation(GoogleMap.CameraPerspective.TILTED) 
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth().height(60.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isArrived) Color(0xFFFFA000) else Color(0xFF4CAF50)
-                                ),
-                                shape = RoundedCornerShape(16.dp)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 24.dp)
+            ) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    job?.let { currentJob ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier.size(64.dp).clip(CircleShape).background(Color(0xFFFDECEA)),
+                                contentAlignment = Alignment.Center
                             ) {
+                                Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFFD32F2F), modifier = Modifier.size(32.dp))
+                            }
+
+                            Spacer(modifier = Modifier.width(16.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = if (isArrived) "START WORK NOW" else "NAVIGATING TO CUSTOMER", 
-                                    fontWeight = FontWeight.Black
+                                    text = currentJob.serviceCode,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 20.sp,
+                                    lineHeight = 22.sp
+                                )
+                                Text(
+                                    text = currentJob.location?.address ?: "Customer Location",
+                                    color = Color.Gray,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1
                                 )
                             }
+
+                            Text(
+                                text = "R${currentJob.bookingFee}",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 20.sp,
+                                color = Color(0xFF2E7D32)
+                            )
                         }
-                        "STARTED" -> {
-                            Button(
-                                onClick = { 
-                                    Log.d("TrackingFlow", "Complete Work pressed")
-                                    viewModel.completeJob() 
-                                },
-                                modifier = Modifier.fillMaxWidth().height(60.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
-                                Text("COMPLETE WORK", fontWeight = FontWeight.Black)
+
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            when (currentJob.status) {
+                                "ACCEPTED", "ARRIVED" -> {
+                                    val isArrived = currentJob.status == "ARRIVED"
+                                    Button(
+                                        onClick = { 
+                                            if (isArrived) viewModel.startJob() 
+                                        },
+                                        modifier = Modifier.weight(1f).height(56.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (isArrived) Color(0xFF4CAF50) else Color(0xFFF5F5F5),
+                                            disabledContainerColor = Color(0xFFF5F5F5)
+                                        ),
+                                        shape = RoundedCornerShape(16.dp),
+                                        enabled = isArrived
+                                    ) {
+                                        Text(
+                                            text = if (isArrived) "START JOB" else "DRIVING TO CUSTOMER", 
+                                            fontWeight = FontWeight.Black,
+                                            color = if (isArrived) Color.White else Color.Gray
+                                        )
+                                    }
+                                }
+                                "STARTED" -> {
+                                    Button(
+                                        onClick = { viewModel.completeJob() },
+                                        modifier = Modifier.weight(1f).height(56.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ) {
+                                        Text("COMPLETE JOB", fontWeight = FontWeight.Black)
+                                    }
+                                }
+                            }
+                            
+                            if (currentJob.status != "COMPLETED" && currentJob.status != "CANCELLED") {
+                                OutlinedButton(
+                                    onClick = { showCancelDialog = true },
+                                    modifier = Modifier.weight(0.6f).height(56.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                                ) {
+                                    Text("CANCEL", fontWeight = FontWeight.Black)
+                                }
                             }
                         }
-                    }
-
-                    if (currentJob.status != "COMPLETED" && currentJob.status != "CANCELLED") {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedButton(
-                            onClick = { showCancelDialog = true },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
-                            border = BorderStroke(1.dp, Color.LightGray),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text("CANCEL JOB", color = Color.Gray, fontWeight = FontWeight.Bold)
+                        
+                        if (currentJob.status == "STARTED") {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "Work in progress. Tap complete when finished.",
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
                         }
                     }
                 }
@@ -410,7 +438,11 @@ fun ProviderTrackingScreen(
         }
 
         if (error != null) {
-            Snackbar(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp)) { Text(error!!) }
+            Snackbar(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp),
+                containerColor = Color(0xFF323232),
+                contentColor = Color.White
+            ) { Text(error!!) }
         }
     }
 }
