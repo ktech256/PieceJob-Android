@@ -36,8 +36,17 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.google.android.libraries.navigation.*
 import com.google.android.gms.maps.GoogleMap
+import android.content.Context
+import android.content.ContextWrapper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
+
+fun Context.getActivity(): android.app.Activity? = when (this) {
+    is android.app.Activity -> this
+    is ContextWrapper -> baseContext.getActivity()
+    else -> null
+}
 
 @Composable
 fun ProviderTrackingScreen(
@@ -64,7 +73,14 @@ fun ProviderTrackingScreen(
     var sdkDistanceText by remember { mutableStateOf("") }
 
     val navigationView = remember {
-        NavigationView(context).apply { onCreate(null) }
+        NavigationView(context).apply { 
+            // Forensic: Ensure NavigationView is initialized on UI thread with Activity context
+            try {
+                onCreate(null)
+            } catch (e: Exception) {
+                android.util.Log.e("ForensicLog", "TRACKING_CRASH | NavigationView.onCreate Error: ${e.message}", e)
+            }
+        }
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -72,7 +88,10 @@ fun ProviderTrackingScreen(
             try {
                 when (event) {
                     Lifecycle.Event.ON_START -> navigationView.onStart()
-                    Lifecycle.Event.ON_RESUME -> navigationView.onResume()
+                    Lifecycle.Event.ON_RESUME -> {
+                        navigationView.onResume()
+                        android.util.Log.d("ForensicLog", "TRACKING_RESUMED | Screen focused")
+                    }
                     Lifecycle.Event.ON_PAUSE -> navigationView.onPause()
                     Lifecycle.Event.ON_STOP -> navigationView.onStop()
                     Lifecycle.Event.ON_DESTROY -> navigationView.onDestroy()
@@ -87,14 +106,23 @@ fun ProviderTrackingScreen(
     }
 
     LaunchedEffect(Unit) {
-        val activity = (context as? android.app.Activity)
+        val activity = context.getActivity()
         if (activity != null) {
+            android.util.Log.d("ForensicLog", "TRACKING_INIT | Activity context found. Requesting navigator...")
             NavigationApi.getNavigator(activity, object : NavigationApi.NavigatorListener {
                 override fun onNavigatorReady(nav: Navigator) {
+                    android.util.Log.d("ForensicLog", "TRACKING_INIT | Navigator READY. Setting up guidance...")
                     navigator = nav
                     nav.setAudioGuidance(Navigator.AudioGuidance.VOICE_ALERTS_AND_GUIDANCE)
+                    
+                    // Automatic camera following
+                    navigationView.getMapAsync { map ->
+                        android.util.Log.d("ForensicLog", "TRACKING_INIT | Map READY. Setting camera follow...")
+                        map.followMyLocation(GoogleMap.CameraPerspective.TILTED)
+                    }
+
                     scope.launch {
-                        while (true) {
+                        while (isActive) {
                             val tad = nav.currentTimeAndDistance
                             if (tad != null) {
                                 val mins = (tad.seconds / 60).toInt()
@@ -111,9 +139,12 @@ fun ProviderTrackingScreen(
                     }
                 }
                 override fun onError(errorCode: Int) { 
+                    android.util.Log.e("ForensicLog", "TRACKING_INIT | Navigator Error: $errorCode")
                     Log.e("NAV_SDK", "Error: $errorCode") 
                 }
             })
+        } else {
+            android.util.Log.e("ForensicLog", "TRACKING_INIT_FAILED | Activity context NOT found!")
         }
     }
 
@@ -150,6 +181,9 @@ fun ProviderTrackingScreen(
     }
 
     LaunchedEffect(job?.status) {
+        if (job?.status != null) {
+            android.util.Log.d("ForensicLog", "JOB_STATE_CHANGED | Job: $jobId | New Status: ${job?.status}")
+        }
         if (job?.status == "COMPLETED" || job?.status == "CANCELLED") {
             delay(2000)
             if (job?.status == "COMPLETED") {

@@ -114,8 +114,8 @@ class ProviderTrackingViewModel @Inject constructor(
         viewModelScope.launch {
             val jobId = _job.value?.id ?: return@launch
             val res = jobRepository.markArrival(jobId)
-            if (res.success) {
-                _job.value = _job.value?.copy(status = "ARRIVED")
+            if (res.success && res.data != null) {
+                _job.value = res.data
                 startReminderTimer()
             }
         }
@@ -160,9 +160,9 @@ class ProviderTrackingViewModel @Inject constructor(
             
             Log.d("TrackingFlow", "Sending startJob request for job $jobId with coords $providerCoords")
             val res = jobRepository.startJob(jobId, providerCoords)
-            if (res.success) {
+            if (res.success && res.data != null) {
                 Log.d("TrackingFlow", "startJob success")
-                _job.value = _job.value?.copy(status = "STARTED")
+                _job.value = res.data
             } else {
                 val errorMsg = res.message ?: res.error?.message ?: "Failed to start job"
                 Log.e("TrackingFlow", "startJob failed: $errorMsg")
@@ -176,11 +176,11 @@ class ProviderTrackingViewModel @Inject constructor(
         viewModelScope.launch {
             val jobId = _job.value?.id ?: return@launch
             val res = jobRepository.completeJob(jobId)
-            if (res.success) {
-                _job.value = _job.value?.copy(status = "COMPLETED")
+            if (res.success && res.data != null) {
+                _job.value = res.data
                 LocationService.activeJobId = null
             } else {
-                _error.value = res.message ?: "Failed to complete job"
+                _error.value = res.message ?: res.error?.message ?: "Failed to complete job"
             }
         }
     }
@@ -190,6 +190,7 @@ class ProviderTrackingViewModel @Inject constructor(
             val jobId = _job.value?.id ?: return@launch
             val res = jobRepository.cancelJob(jobId)
             if (res.success) {
+                // If the backend returns ApiResponse<Unit>, we just update the status manually
                 _job.value = _job.value?.copy(status = "CANCELLED")
                 LocationService.activeJobId = null
             } else {

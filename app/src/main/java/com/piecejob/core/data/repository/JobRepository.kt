@@ -79,7 +79,7 @@ class JobRepository @Inject constructor(
         }
     }
 
-    suspend fun markArrival(jobId: String): ApiResponse<Unit> {
+    suspend fun markArrival(jobId: String): ApiResponse<JobDto> {
         return try {
             api.updateJobStatus(jobId, JobStatusRequest(status = "ARRIVED"))
         } catch (e: Exception) {
@@ -87,7 +87,7 @@ class JobRepository @Inject constructor(
         }
     }
 
-    suspend fun startJob(jobId: String, providerCoordinates: List<Double>? = null): ApiResponse<Unit> {
+    suspend fun startJob(jobId: String, providerCoordinates: List<Double>? = null): ApiResponse<JobDto> {
         return try {
             api.updateJobStatus(jobId, JobStatusRequest(status = "STARTED", providerCoordinates = providerCoordinates))
         } catch (e: Exception) {
@@ -95,7 +95,7 @@ class JobRepository @Inject constructor(
         }
     }
 
-    suspend fun completeJob(jobId: String): ApiResponse<Unit> {
+    suspend fun completeJob(jobId: String): ApiResponse<JobDto> {
         return try {
             api.updateJobStatus(jobId, JobStatusRequest(status = "COMPLETED"))
         } catch (e: Exception) {

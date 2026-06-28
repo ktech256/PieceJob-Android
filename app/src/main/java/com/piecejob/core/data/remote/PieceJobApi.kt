@@ -163,7 +163,7 @@ interface PieceJobApi {
     suspend fun acceptJob(@Path("jobId") jobId: String): ApiResponse<JobDto>
 
     @PATCH("jobs/{jobId}/status")
-    suspend fun updateJobStatus(@Path("jobId") jobId: String, @Body request: JobStatusRequest): ApiResponse<Unit>
+    suspend fun updateJobStatus(@Path("jobId") jobId: String, @Body request: JobStatusRequest): ApiResponse<JobDto>
 
     @GET("payments/verify/{reference}")
     suspend fun verifyPayment(@Path("reference") reference: String): ApiResponse<JobDto>
