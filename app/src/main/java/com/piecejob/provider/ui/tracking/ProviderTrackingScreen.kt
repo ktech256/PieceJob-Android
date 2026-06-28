@@ -1,7 +1,5 @@
 package com.piecejob.provider.ui.tracking
 
-import android.content.Intent
-import android.net.Uri
 import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
@@ -112,40 +110,45 @@ fun ProviderTrackingScreen(
         val activity = context.getActivity()
         if (activity != null) {
             android.util.Log.d("ForensicLog", "TRACKING_INIT | Activity context found. Requesting navigator...")
-            NavigationApi.getNavigator(activity, object : NavigationApi.NavigatorListener {
-                override fun onNavigatorReady(nav: Navigator) {
-                    navigator = nav
-                    try {
-                        nav.setAudioGuidance(Navigator.AudioGuidance.VOICE_ALERTS_AND_GUIDANCE)
-                        
-                        // Set 3D perspective and follow mode
-                        navigationView.getMapAsync { map ->
-                            android.util.Log.d("ForensicLog", "TRACKING_INIT | Map READY. Setting camera follow...")
-                            if (navigator != null) {
-                                map.followMyLocation(GoogleMap.CameraPerspective.TILTED)
-                            }
-                        }
-
-                        scope.launch {
-                            while (isActive) {
-                                val tad = nav.currentTimeAndDistance
-                                if (tad != null) {
-                                    val mins = (tad.seconds / 60).toInt()
-                                    sdkEtaText = if (mins < 1) "1 min" else "$mins mins"
-                                    val km = tad.meters / 1000.0
-                                    sdkDistanceText = if (km < 1.0) "${tad.meters.toInt()} m" else String.format("%.1f km", km)
+            
+            // Explicitly show terms to ensure guidance can start
+            NavigationApi.showTermsAndConditionsDialogIfNeeded(activity) { termsAccepted ->
+                if (termsAccepted) {
+                    NavigationApi.getNavigator(activity, object : NavigationApi.NavigatorListener {
+                        override fun onNavigatorReady(nav: Navigator) {
+                            navigator = nav
+                            try {
+                                nav.setAudioGuidance(Navigator.AudioGuidance.VOICE_ALERTS_AND_GUIDANCE)
+                                
+                                navigationView.getMapAsync { map ->
+                                    android.util.Log.d("ForensicLog", "TRACKING_INIT | Map READY. Setting camera follow...")
+                                    if (navigator != null) {
+                                        map.followMyLocation(GoogleMap.CameraPerspective.TILTED)
+                                    }
                                 }
-                                delay(2000)
+
+                                scope.launch {
+                                    while (isActive) {
+                                        val tad = nav.currentTimeAndDistance
+                                        if (tad != null) {
+                                            val mins = (tad.seconds / 60).toInt()
+                                            sdkEtaText = if (mins < 1) "1 min" else "$mins mins"
+                                            val km = tad.meters / 1000.0
+                                            sdkDistanceText = if (km < 1.0) "${tad.meters.toInt()} m" else String.format("%.1f km", km)
+                                        }
+                                        delay(2000)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("ForensicLog", "TRACKING_CRASH | Navigator Ready Logic Error: ${e.message}", e)
                             }
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("ForensicLog", "TRACKING_CRASH | Navigator Ready Logic Error: ${e.message}", e)
-                    }
+                        override fun onError(errorCode: Int) { 
+                            android.util.Log.e("ForensicLog", "TRACKING_INIT | Navigator Error: $errorCode")
+                        }
+                    })
                 }
-                override fun onError(errorCode: Int) { 
-                    android.util.Log.e("ForensicLog", "TRACKING_INIT | Navigator Error: $errorCode")
-                }
-            })
+            }
         }
     }
 
@@ -168,13 +171,12 @@ fun ProviderTrackingScreen(
                 .setTitle("Customer Location")
                 .build()
             
+            android.util.Log.d("ForensicLog", "NAV_START | Setting destination to ${dest[1]}, ${dest[0]}")
             nav.setDestination(waypoint)
             nav.startGuidance()
-            android.util.Log.d("ForensicLog", "NAV_START | Automated turn-by-turn started to ${dest[1]}, ${dest[0]}")
         }
     }
 
-    // Prevent accidental exit during active job
     BackHandler {
         onBack() 
     }
@@ -236,13 +238,12 @@ fun ProviderTrackingScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Core Navigation UI
         AndroidView(
             factory = { navigationView },
             modifier = Modifier.fillMaxSize()
         )
 
-        // Overlay 1: Top Navigation Stats
+        // Overlay: Top Header
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -305,7 +306,7 @@ fun ProviderTrackingScreen(
             }
         }
 
-        // Overlay 2: Recenter Button
+        // Overlay: Recenter FAB
         SmallFloatingActionButton(
             onClick = { 
                 if (navigator != null) {
@@ -314,17 +315,14 @@ fun ProviderTrackingScreen(
                     }
                 }
             },
-            modifier = Modifier
-                .padding(16.dp)
-                .align(Alignment.CenterEnd)
-                .offset(y = (-40).dp),
+            modifier = Modifier.padding(16.dp).align(Alignment.CenterEnd).offset(y = (-40).dp),
             containerColor = Color.White,
             contentColor = Color.Black
         ) { 
             Icon(Icons.Default.MyLocation, contentDescription = "Recenter") 
         }
 
-        // Overlay 3: Bottom Action Panel (Copy of Customer Style)
+        // Overlay: Bottom Action Panel (Copy of Customer Style)
         AnimatedVisibility(
             visible = job != null,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
@@ -438,11 +436,7 @@ fun ProviderTrackingScreen(
         }
 
         if (error != null) {
-            Snackbar(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp),
-                containerColor = Color(0xFF323232),
-                contentColor = Color.White
-            ) { Text(error!!) }
+            Snackbar(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp)) { Text(error!!) }
         }
     }
 }

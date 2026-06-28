@@ -14,6 +14,7 @@ class PieceJobApp : Application() {
 
         // FORENSIC: Maps/Navigation Initialization
         try {
+            // Initialize Maps SDK with a fallback-safe approach
             MapsInitializer.initialize(this, MapsInitializer.Renderer.LATEST) { renderer ->
                 when (renderer) {
                     MapsInitializer.Renderer.LATEST -> android.util.Log.d("MAPS_DEBUG", "The latest version of the renderer is used.")

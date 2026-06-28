@@ -36,6 +36,8 @@ fun CustomerTrackingScreen(
     val nearbyProviders by viewModel.nearbyProviders.collectAsState()
     val providerLocation by viewModel.providerLocation.collectAsState()
     val providerHeading by viewModel.providerHeading.collectAsState()
+    val eta by viewModel.eta.collectAsState()
+    val distance by viewModel.distance.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -134,7 +136,7 @@ fun CustomerTrackingScreen(
                     icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_AZURE)
                 )
                 
-                // Draw Route Polyline (Simplified straight line for now, or use actual route API if available)
+                // Draw Route Polyline
                 Polyline(
                     points = listOf(customerLatLng, LatLng(loc.first, loc.second)),
                     color = Color(0xFFD32F2F),
@@ -173,13 +175,9 @@ fun CustomerTrackingScreen(
                         else -> "Connecting..."
                     }
                     
-                    if (job?.status != null) {
-                        android.util.Log.d("ForensicLog", "UI_STATUS_UPDATE | Status: ${job?.status} | Text: $statusText")
-                    }
-                    
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = statusText, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
-                        Text(text = "Job #${jobId.takeLast(6).uppercase()}", color = Color.White.copy(alpha = 0.8f), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(text = if (job?.status == "ACCEPTED" || job?.status == "EN_ROUTE") "ETA: $eta ($distance)" else "Job #${jobId.takeLast(6).uppercase()}", color = Color.White.copy(alpha = 0.8f), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                     
                     if (job?.status != "COMPLETED" && job?.status != "CANCELLED") {
@@ -210,12 +208,11 @@ fun CustomerTrackingScreen(
                                    job?.status != "DRAFT"
 
                     if (!isAssigned) {
-                        // Searching UI
                         SearchingPanel(job?.serviceCode ?: "Service", nearbyProviders.size)
                     } else {
-                        // Assigned Provider UI
                         AssignedProviderPanel(
                             job = job!!,
+                            eta = eta,
                             onChatOpen = onChatOpen,
                             onSosTrigger = onSosTrigger
                         )
@@ -279,6 +276,7 @@ fun SearchingPanel(serviceName: String, nearbyCount: Int) {
 @Composable
 fun AssignedProviderPanel(
     job: com.piecejob.core.data.remote.dto.JobDto,
+    eta: String,
     onChatOpen: (String) -> Unit,
     onSosTrigger: () -> Unit
 ) {
@@ -348,11 +346,11 @@ fun AssignedProviderPanel(
                 color = Color(0xFFF5F5F5)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    val etaDisplay = when (job?.status) {
+                    val etaDisplay = when (job.status) {
                         "ARRIVED", "STARTED", "IN_PROGRESS" -> "Provider has arrived"
                         "COMPLETED" -> "Job Completed"
                         "CANCELLED" -> "Job Cancelled"
-                        else -> "ETA: 8 mins" // Default or calculate from live location
+                        else -> "ETA: $eta"
                     }
                     Text(text = etaDisplay, fontWeight = FontWeight.Black, color = Color.Black)
                 }
