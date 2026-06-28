@@ -7,6 +7,8 @@ import io.socket.client.IO
 import io.socket.client.Socket
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,6 +18,9 @@ class SocketManager @Inject constructor(
 ) {
     private var socket: Socket? = null
     private val TAG = "SocketManager"
+
+    private val _statusEventFlow = MutableSharedFlow<StatusEvent>(extraBufferCapacity = 10)
+    val statusEventFlow: SharedFlow<StatusEvent> = _statusEventFlow
 
     fun connect(baseUrl: String) {
         if (socket?.connected() == true) return
@@ -31,6 +36,8 @@ class SocketManager @Inject constructor(
             
             socket?.on(Socket.EVENT_CONNECT) {
                 Log.d(TAG, "Socket connected")
+                // Join user room on every connect/reconnect for global observing
+                sessionManager.getUserId()?.let { joinUser(it) }
             }
             
             socket?.on(Socket.EVENT_DISCONNECT) {
@@ -39,6 +46,17 @@ class SocketManager @Inject constructor(
             
             socket?.on(Socket.EVENT_CONNECT_ERROR) { args ->
                 Log.e(TAG, "Socket connect error: ${args[0]}")
+            }
+
+            // Global Status Listener (survives clearListeners)
+            socket?.on("status_updated") { args ->
+                val data = args[0] as JSONObject
+                val jobId = data.optString("jobId")
+                val status = data.optString("status")
+                if (jobId.isNotEmpty() && status.isNotEmpty()) {
+                    Log.d("FORENSIC", "TRACKING_SCREEN_SOCKET_RECEIVED | status_updated | $status")
+                    _statusEventFlow.tryEmit(StatusEvent(jobId, status))
+                }
             }
 
             socket?.connect()
@@ -138,12 +156,12 @@ class SocketManager @Inject constructor(
         }
     }
 
-    fun onStatusUpdated(callback: (String, JSONObject?) -> Unit) {
+    fun onStatusUpdated(callback: (String, String, JSONObject?) -> Unit) {
         socket?.on("status_updated") { args ->
             val data = args[0] as JSONObject
+            val jobId = data.getString("jobId")
             val status = data.getString("status")
-            Log.d("FORENSIC", "CUSTOMER_SOCKET_RECEIVED | Event: status_updated | Status: $status")
-            callback(status, data.optJSONObject("providerInfo"))
+            callback(jobId, status, data.optJSONObject("providerInfo"))
         }
     }
 
@@ -188,3 +206,5 @@ class SocketManager @Inject constructor(
         socket = null
     }
 }
+
+data class StatusEvent(val jobId: String, val status: String)

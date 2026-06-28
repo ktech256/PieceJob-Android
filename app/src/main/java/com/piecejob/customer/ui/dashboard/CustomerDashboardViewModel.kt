@@ -1,5 +1,6 @@
 package com.piecejob.customer.ui.dashboard
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.remote.ServiceDto
@@ -56,7 +57,8 @@ class CustomerDashboardViewModel @Inject constructor(
         socketManager.connect("https://piecejob-backend.onrender.com")
         sessionManager.getUserId()?.let { socketManager.joinUser(it) }
         
-        socketManager.onStatusUpdated { _, _ ->
+        socketManager.onStatusUpdated { jobId, status, _ ->
+            Log.d("FORENSIC", "DASHBOARD_SOCKET_RECEIVED | Status: $status | Job: $jobId")
             loadActiveJob()
         }
     }

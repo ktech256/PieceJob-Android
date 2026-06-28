@@ -41,8 +41,12 @@ fun CustomerTrackingScreen(
     // FORENSIC: Track recompositions
     LaunchedEffect(job?.status) {
         if (job?.status != null) {
-            android.util.Log.d("FORENSIC", "JOB_STATUS_CHANGED | New Status: ${job?.status}")
+            android.util.Log.d("FORENSIC", "TRACKING_JOB_STATUS_CHANGED | Status: ${job?.status}")
         }
+    }
+    
+    SideEffect {
+        android.util.Log.d("FORENSIC", "TRACKING_COMPOSE_RECOMPOSED | Status: ${job?.status}")
     }
     val nearbyProviders by viewModel.nearbyProviders.collectAsState()
     val providerLocation by viewModel.providerLocation.collectAsState()

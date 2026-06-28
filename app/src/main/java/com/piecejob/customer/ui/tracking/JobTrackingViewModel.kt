@@ -130,9 +130,14 @@ class JobTrackingViewModel @Inject constructor(
             _routePoints.value = points
         }
 
-        socketManager.onStatusUpdated { status, providerInfo ->
-            Log.d("FORENSIC", "CUSTOMER_SOCKET_RECEIVED | Event: status_updated | Status: $status")
+        socketManager.onStatusUpdated { incomingJobId, status, providerInfo ->
+            Log.d("FORENSIC", "TRACKING_SCREEN_SOCKET_RECEIVED | Status: $status | Job: $incomingJobId")
             
+            if (incomingJobId != jobId) {
+                Log.w("FORENSIC", "TRACKING_SOCKET_IGNORED | Event for different job: $incomingJobId")
+                return@onStatusUpdated
+            }
+
             // 1. Update local state IMMEDIATELY for responsiveness
             val currentJob = _job.value
             if (currentJob != null) {
@@ -152,11 +157,10 @@ class JobTrackingViewModel @Inject constructor(
                         }
                     }
                     _job.value = updatedJob
-                    Log.d("FORENSIC", "STATEFLOW_UPDATED | New Status: $status")
+                    Log.d("FORENSIC", "TRACKING_STATE_UPDATED | Status: $status")
                 }
             } else {
-                // If initial fetch hasn't finished, we just queue a refresh to be safe
-                Log.w("FORENSIC", "VIEWMODEL_UPDATE_DELAYED | Job is null, using refresh")
+                Log.w("FORENSIC", "TRACKING_VIEWMODEL_UPDATED | Job is null, using refresh")
             }
 
             // 2. Trigger background refresh to sync full details

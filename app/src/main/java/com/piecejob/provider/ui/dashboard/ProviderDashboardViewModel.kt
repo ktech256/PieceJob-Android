@@ -83,13 +83,15 @@ class ProviderDashboardViewModel @Inject constructor(
     }
 
     private fun observeSocket() {
-        socketManager.onStatusUpdated { status, _ ->
+        socketManager.onStatusUpdated { jobId, status, _ ->
             if (status == "COMPLETED" || status == "CANCELLED" || status == "RATED") {
                 viewModelScope.launch { fetchActiveJob() }
                 loadDashboard()
             } else {
                 _activeJob.value?.let { currentJob ->
-                    _activeJob.value = currentJob.copy(status = status)
+                    if (currentJob.id == jobId) {
+                        _activeJob.value = currentJob.copy(status = status)
+                    }
                 }
             }
         }

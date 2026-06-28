@@ -15,8 +15,10 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.messaging.FirebaseMessaging
 import com.piecejob.core.data.repository.UserRepository
+import com.piecejob.core.socket.SocketManager
 import com.piecejob.core.ui.auth.AuthViewModel
 import com.piecejob.core.ui.navigation.NavGraph
+import com.piecejob.core.ui.navigation.Screen
 import com.piecejob.core.ui.theme.PieceJobTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.tasks.await
@@ -29,6 +31,9 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var userRepository: UserRepository
+
+    @Inject
+    lateinit var socketManager: SocketManager
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -105,6 +110,18 @@ class MainActivity : AppCompatActivity() {
                     navController = navController,
                     authViewModel = authViewModel
                 )
+
+                // GLOBAL OBSERVER: Job Completion -> Auto Rating (Issue 2)
+                LaunchedEffect(Unit) {
+                    socketManager.statusEventFlow.collect { event ->
+                        android.util.Log.d("FORENSIC", "GLOBAL_NAV_OBSERVER | Received: ${event.status}")
+                        if (event.status == "COMPLETED") {
+                            navController.navigate(Screen.Rating.passJobId(event.jobId)) {
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                }
             }
         }
     }

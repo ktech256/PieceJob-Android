@@ -208,12 +208,14 @@ class ProviderTrackingViewModel @Inject constructor(
     }
 
     private fun observeStatusUpdates() {
-        socketManager.onStatusUpdated { status, _ ->
-            _job.value = _job.value?.copy(status = status)
-            if (status == "STARTED") {
-                _showStartReminder.value = false
-                autoStartTimer?.cancel()
-                reminderTimer?.cancel()
+        socketManager.onStatusUpdated { incomingJobId, status, _ ->
+            if (incomingJobId == _job.value?.id) {
+                _job.value = _job.value?.copy(status = status)
+                if (status == "STARTED") {
+                    _showStartReminder.value = false
+                    autoStartTimer?.cancel()
+                    reminderTimer?.cancel()
+                }
             }
         }
     }
