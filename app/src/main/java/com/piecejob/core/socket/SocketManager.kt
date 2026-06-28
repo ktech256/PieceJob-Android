@@ -49,12 +49,12 @@ class SocketManager @Inject constructor(
 
     fun joinJob(jobId: String) {
         socket?.emit("join_job", jobId)
-        Log.d(TAG, "Joined job room: $jobId")
+        Log.d("FORENSIC", "JOIN_ROOM_REQUESTED | Room: job_$jobId")
     }
 
     fun joinUser(userId: String) {
         socket?.emit("join_user", userId)
-        Log.d(TAG, "Joined user room: $userId")
+        Log.d("FORENSIC", "JOIN_ROOM_REQUESTED | Room: user_$userId")
     }
 
     fun sendHeartbeat(lat: Double, lng: Double, hardwareId: String, isMock: Boolean) {
@@ -141,13 +141,17 @@ class SocketManager @Inject constructor(
     fun onStatusUpdated(callback: (String, JSONObject?) -> Unit) {
         socket?.on("status_updated") { args ->
             val data = args[0] as JSONObject
-            callback(data.getString("status"), data.optJSONObject("providerInfo"))
+            val status = data.getString("status")
+            Log.d("FORENSIC", "CUSTOMER_SOCKET_RECEIVED | Event: status_updated | Status: $status")
+            callback(status, data.optJSONObject("providerInfo"))
         }
     }
 
     fun onJobAccepted(callback: (String, String, JSONObject?) -> Unit) {
         socket?.on("JOB_ACCEPTED") { args ->
             val data = args[0] as JSONObject
+            val status = data.getString("status")
+            Log.d("FORENSIC", "CUSTOMER_SOCKET_RECEIVED | Event: JOB_ACCEPTED | Status: $status")
             callback(data.getString("jobId"), data.getString("providerId"), data.optJSONObject("providerInfo"))
         }
     }

@@ -1,5 +1,6 @@
 package com.piecejob.customer.ui.tracking
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.repository.JobRepository
@@ -52,6 +53,22 @@ class JobTrackingViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
+    private val statusPriority = mapOf(
+        "DRAFT" to 0,
+        "PAYMENT_PENDING" to 1,
+        "BOOKING_FEE_PAID" to 2,
+        "BROADCASTING" to 3,
+        "BROADCASTED" to 4,
+        "ACCEPTED" to 5,
+        "EN_ROUTE" to 6,
+        "ARRIVED" to 7,
+        "STARTED" to 8,
+        "IN_PROGRESS" to 9,
+        "COMPLETED" to 10,
+        "RATED" to 11,
+        "CANCELLED" to -1
+    )
+
     fun initTracking(jobId: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -103,7 +120,7 @@ class JobTrackingViewModel @Inject constructor(
         }
 
         socketManager.onStatusUpdated { status, providerInfo ->
-            android.util.Log.d("ForensicLog", "JOB_STATUS_EVENT | Status: $status")
+            Log.d("FORENSIC", "VIEWMODEL_STATUS_UPDATED | Status: $status | Prev: ${_job.value?.status}")
             
             // Update status immediately in local state
             _job.value = _job.value?.copy(status = status)
@@ -118,7 +135,7 @@ class JobTrackingViewModel @Inject constructor(
                     val info = com.google.gson.Gson().fromJson(providerInfo.toString(), com.piecejob.core.data.remote.dto.ProviderInfoDto::class.java)
                     _job.value = _job.value?.copy(providerInfo = info)
                 } catch (e: Exception) {
-                    android.util.Log.e("JobTracking", "Error parsing provider info from socket", e)
+                    Log.e("JobTracking", "Error parsing provider info from socket", e)
                 }
             }
 
@@ -131,7 +148,7 @@ class JobTrackingViewModel @Inject constructor(
 
         socketManager.onJobAccepted { acceptedJobId, providerId, providerInfo ->
             if (acceptedJobId == jobId) {
-                android.util.Log.d("ForensicLog", "JOB_ACCEPTED_EVENT | Refreshing details...")
+                Log.d("FORENSIC", "VIEWMODEL_STATUS_UPDATED | Status: ACCEPTED | Trigger: JOB_ACCEPTED")
                 
                 // Update local state for instant transition
                 _job.value = _job.value?.copy(status = "ACCEPTED", providerId = providerId)
@@ -140,7 +157,7 @@ class JobTrackingViewModel @Inject constructor(
                         val info = com.google.gson.Gson().fromJson(providerInfo.toString(), com.piecejob.core.data.remote.dto.ProviderInfoDto::class.java)
                         _job.value = _job.value?.copy(providerInfo = info)
                     } catch (e: Exception) {
-                        android.util.Log.e("JobTracking", "Error parsing provider info from socket", e)
+                        Log.e("JobTracking", "Error parsing provider info from socket", e)
                     }
                 }
 
@@ -181,10 +198,22 @@ class JobTrackingViewModel @Inject constructor(
         viewModelScope.launch {
             val response = jobRepository.getJobById(jobId)
             if (response.success && response.data != null) {
-                _job.value = response.data
-                // If assigned but no route yet, fetch one
-                if (!isSearching(response.data.status)) {
-                    fetchRoutePolyline()
+                val newJob = response.data
+                val currentStatus = _job.value?.status ?: "DRAFT"
+                
+                val currentPriority = statusPriority[currentStatus] ?: 0
+                val newPriority = statusPriority[newJob.status] ?: 0
+
+                Log.d("FORENSIC", "REFRESH_JOB_DETAILS | New: ${newJob.status}($newPriority) | Current: $currentStatus($currentPriority)")
+
+                if (newPriority >= currentPriority || currentPriority == -1) {
+                    _job.value = newJob
+                    // If assigned but no route yet, fetch one
+                    if (!isSearching(newJob.status)) {
+                        fetchRoutePolyline()
+                    }
+                } else {
+                    Log.w("FORENSIC", "REFRESH_IGNORED | Prevented status regression from $currentStatus to ${newJob.status}")
                 }
             }
         }

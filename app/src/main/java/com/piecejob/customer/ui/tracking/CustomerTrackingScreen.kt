@@ -37,6 +37,9 @@ fun CustomerTrackingScreen(
     onBack: () -> Unit
 ) {
     val job by viewModel.job.collectAsState()
+    SideEffect {
+        android.util.Log.d("FORENSIC", "COMPOSE_RECOMPOSED | Status: ${job?.status}")
+    }
     val nearbyProviders by viewModel.nearbyProviders.collectAsState()
     val providerLocation by viewModel.providerLocation.collectAsState()
     val providerHeading by viewModel.providerHeading.collectAsState()
