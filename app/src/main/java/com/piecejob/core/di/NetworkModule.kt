@@ -1,6 +1,7 @@
 package com.piecejob.core.di
 
 import com.piecejob.core.data.remote.PieceJobApi
+import com.piecejob.core.data.remote.GoogleMapsApi
 import com.piecejob.core.data.remote.AuthInterceptor
 import com.piecejob.core.data.local.SessionManager
 import dagger.Module
@@ -76,5 +77,15 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(PieceJobApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGoogleMapsApi(): GoogleMapsApi {
+        return Retrofit.Builder()
+            .baseUrl("https://maps.googleapis.com/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(GoogleMapsApi::class.java)
     }
 }

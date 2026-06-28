@@ -7,6 +7,8 @@ import com.piecejob.core.data.remote.dto.JobDto
 import com.piecejob.core.data.remote.dto.ProviderDto
 import com.piecejob.core.socket.SocketManager
 import com.piecejob.core.data.local.SessionManager
+import com.piecejob.core.data.remote.GoogleMapsApi
+import com.piecejob.core.utils.PolylineUtil
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +21,8 @@ import javax.inject.Inject
 class JobTrackingViewModel @Inject constructor(
     private val jobRepository: JobRepository,
     private val socketManager: SocketManager,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val googleMapsApi: GoogleMapsApi
 ) : ViewModel() {
 
     private val _job = MutableStateFlow<JobDto?>(null)
@@ -58,6 +61,7 @@ class JobTrackingViewModel @Inject constructor(
                 
                 // Initialize Socket
                 socketManager.connect("https://piecejob-backend.onrender.com")
+                socketManager.clearListeners()
                 socketManager.joinJob(jobId)
                 sessionManager.getUserId()?.let { socketManager.joinUser(it) }
 
@@ -74,36 +78,69 @@ class JobTrackingViewModel @Inject constructor(
         }
     }
 
+    private var lastRouteRefreshTime = 0L
+
     private fun setupSocketListeners(jobId: String) {
         socketManager.onLocationUpdated { lat, lng, heading ->
             android.util.Log.d("JobTracking", "Provider location update: $lat, $lng, heading: $heading")
             _providerLocation.value = lat to lng
             _providerHeading.value = heading
             
-            // Accumulate route points to follow roads where they've been
-            val newPoint = LatLng(lat, lng)
-            val currentPoints = _routePoints.value
-            if (currentPoints.isEmpty() || calculateDistance(lat, lng, currentPoints.last().latitude, currentPoints.last().longitude) > 5) {
-                _routePoints.value = currentPoints + newPoint
+            // Refresh the road route if it's empty or every 15 seconds
+            val now = System.currentTimeMillis()
+            if (_routePoints.value.isEmpty() || (now - lastRouteRefreshTime > 15000)) {
+                lastRouteRefreshTime = now
+                fetchRoutePolyline()
+            } else {
+                // Fallback to simple calculation between route refreshes
+                calculateLiveMetrics(lat, lng)
             }
-
-            calculateLiveMetrics(lat, lng)
         }
 
-        socketManager.onStatusUpdated { status ->
+        socketManager.onRouteUpdated { points ->
+            android.util.Log.d("JobTracking", "Route updated with ${points.size} points")
+            _routePoints.value = points
+        }
+
+        socketManager.onStatusUpdated { status, providerInfo ->
             android.util.Log.d("ForensicLog", "JOB_STATUS_EVENT | Status: $status")
-            // CRITICAL: Immediately refresh full job details on any status change to ensure consistency
-            _job.value?.id?.let { refreshJobDetails(it) }
+            
+            // Update status immediately in local state
+            _job.value = _job.value?.copy(status = status)
+            
+            // If providerInfo is provided in socket event, update it too
+            if (providerInfo != null) {
+                try {
+                    val info = com.google.gson.Gson().fromJson(providerInfo.toString(), com.piecejob.core.data.remote.dto.ProviderInfoDto::class.java)
+                    _job.value = _job.value?.copy(providerInfo = info)
+                } catch (e: Exception) {
+                    android.util.Log.e("JobTracking", "Error parsing provider info from socket", e)
+                }
+            }
+
+            refreshJobDetails(jobId)
             
             if (!isSearching(status)) {
                 _nearbyProviders.value = emptyList() 
             }
         }
 
-        socketManager.onJobAccepted { acceptedJobId, providerId ->
-            if (acceptedJobId == _job.value?.id) {
+        socketManager.onJobAccepted { acceptedJobId, providerId, providerInfo ->
+            if (acceptedJobId == jobId) {
                 android.util.Log.d("ForensicLog", "JOB_ACCEPTED_EVENT | Refreshing details...")
-                refreshJobDetails(acceptedJobId)
+                
+                // Update local state for instant transition
+                _job.value = _job.value?.copy(status = "ACCEPTED", providerId = providerId)
+                if (providerInfo != null) {
+                    try {
+                        val info = com.google.gson.Gson().fromJson(providerInfo.toString(), com.piecejob.core.data.remote.dto.ProviderInfoDto::class.java)
+                        _job.value = _job.value?.copy(providerInfo = info)
+                    } catch (e: Exception) {
+                        android.util.Log.e("JobTracking", "Error parsing provider info from socket", e)
+                    }
+                }
+
+                refreshJobDetails(jobId)
             }
         }
     }
@@ -142,7 +179,7 @@ class JobTrackingViewModel @Inject constructor(
             if (response.success && response.data != null) {
                 _job.value = response.data
                 // If assigned but no route yet, fetch one
-                if (!isSearching(response.data.status) && _routePoints.value.isEmpty()) {
+                if (!isSearching(response.data.status)) {
                     fetchRoutePolyline()
                 }
             }
@@ -156,15 +193,27 @@ class JobTrackingViewModel @Inject constructor(
         
         viewModelScope.launch {
             try {
-                // For now, we will draw a line but in a real app we'd call Directions API
-                // To satisfy "Follow Roads", we will implement a basic version or mock it
-                // if the API key is available.
                 val origin = "${providerLoc.first},${providerLoc.second}"
                 val destination = "${dest[1]},${dest[0]}"
                 val apiKey = com.piecejob.BuildConfig.GOOGLE_MAPS_API_KEY
                 
-                // MOCKing road-following by just adding current provider location to a list
-                // Real implementation would use Retrofit to call maps.googleapis.com/maps/api/directions/json
+                if (apiKey.isNotBlank()) {
+                    val response = googleMapsApi.getDirections(origin, destination, apiKey)
+                    if (response.status == "OK" && response.routes.isNotEmpty()) {
+                        val route = response.routes[0]
+                        val points = route.overviewPolyline.points
+                        _routePoints.value = PolylineUtil.decode(points)
+                        
+                        // Update ETA and distance from road data
+                        if (route.legs.isNotEmpty()) {
+                            val leg = route.legs[0]
+                            _distance.value = leg.distance.text
+                            _eta.value = leg.duration.text
+                        }
+                        
+                        android.util.Log.d("JobTracking", "Successfully fetched road-snapped route, ETA: ${_eta.value}")
+                    }
+                }
             } catch (e: Exception) {
                 android.util.Log.e("JobTracking", "Error fetching route: ${e.message}")
             }

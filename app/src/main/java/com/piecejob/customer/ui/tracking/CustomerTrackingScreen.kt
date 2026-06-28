@@ -1,6 +1,9 @@
 package com.piecejob.customer.ui.tracking
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -36,6 +39,11 @@ fun CustomerTrackingScreen(
     val nearbyProviders by viewModel.nearbyProviders.collectAsState()
     val providerLocation by viewModel.providerLocation.collectAsState()
     val providerHeading by viewModel.providerHeading.collectAsState()
+    val animatedHeading by animateFloatAsState(
+        targetValue = providerHeading,
+        animationSpec = tween(durationMillis = 1000, easing = LinearEasing),
+        label = "HeadingAnimation"
+    )
     val routePoints by viewModel.routePoints.collectAsState()
     val eta by viewModel.eta.collectAsState()
     val distance by viewModel.distance.collectAsState()
@@ -133,7 +141,7 @@ fun CustomerTrackingScreen(
                 Marker(
                     state = MarkerState(position = LatLng(loc.first, loc.second)),
                     title = "Your Professional",
-                    rotation = providerHeading,
+                    rotation = animatedHeading,
                     icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_AZURE)
                 )
                 

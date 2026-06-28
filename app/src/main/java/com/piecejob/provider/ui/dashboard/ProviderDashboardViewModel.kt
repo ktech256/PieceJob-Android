@@ -83,7 +83,7 @@ class ProviderDashboardViewModel @Inject constructor(
     }
 
     private fun observeSocket() {
-        socketManager.onStatusUpdated { status ->
+        socketManager.onStatusUpdated { status, _ ->
             _activeJob.value?.let { currentJob ->
                 _activeJob.value = currentJob.copy(status = status)
             }

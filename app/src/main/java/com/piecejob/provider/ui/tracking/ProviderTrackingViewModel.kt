@@ -200,7 +200,7 @@ class ProviderTrackingViewModel @Inject constructor(
     }
 
     private fun observeStatusUpdates() {
-        socketManager.onStatusUpdated { status ->
+        socketManager.onStatusUpdated { status, _ ->
             _job.value = _job.value?.copy(status = status)
             if (status == "STARTED") {
                 _showStartReminder.value = false

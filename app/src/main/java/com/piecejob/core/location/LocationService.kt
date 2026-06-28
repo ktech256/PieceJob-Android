@@ -96,7 +96,7 @@ class LocationService : Service() {
 
         // 2. Update Socket Location
         activeJobId?.let { jobId ->
-            socketManager.updateLocation(jobId, location.latitude, location.longitude)
+            socketManager.updateLocation(jobId, location.latitude, location.longitude, location.bearing)
         }
 
         // 3. SOS Updates
