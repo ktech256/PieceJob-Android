@@ -2,7 +2,9 @@ package com.piecejob.provider.ui.tracking
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -34,6 +36,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.google.android.libraries.navigation.*
 import com.google.android.gms.maps.GoogleMap
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun ProviderTrackingScreen(
@@ -52,6 +56,8 @@ fun ProviderTrackingScreen(
     val distance by viewModel.distance.collectAsState()
     val showReminder by viewModel.showStartReminder.collectAsState()
     val error by viewModel.error.collectAsState()
+
+    var showCancelDialog by remember { mutableStateOf(false) }
 
     var navigator by remember { mutableStateOf<Navigator?>(null) }
     var sdkEtaText by remember { mutableStateOf("") }
@@ -135,13 +141,38 @@ fun ProviderTrackingScreen(
     }
 
     LaunchedEffect(job?.status) {
-        if (job?.status == "COMPLETED") {
-            onNavigateToRating(jobId)
+        if (job?.status == "COMPLETED" || job?.status == "CANCELLED") {
+            delay(2000)
+            if (job?.status == "COMPLETED") {
+                onNavigateToRating(jobId)
+            } else {
+                onBack()
+            }
         }
     }
 
     val customerLatLng = remember(job) {
         job?.location?.coordinates?.let { LatLng(it[1], it[0]) } ?: LatLng(0.0, 0.0)
+    }
+
+    if (showCancelDialog) {
+        AlertDialog(
+            onDismissRequest = { showCancelDialog = false },
+            title = { Text("Cancel Job?", fontWeight = FontWeight.Black) },
+            text = { Text("Are you sure you want to cancel this job? This may affect your performance rating.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showCancelDialog = false
+                        viewModel.cancelJob()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                ) { Text("YES, CANCEL") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCancelDialog = false }) { Text("NO, KEEP IT") }
+            }
+        )
     }
 
     if (showReminder) {
@@ -210,8 +241,17 @@ fun ProviderTrackingScreen(
                     Icon(Icons.Default.Navigation, contentDescription = null, tint = Color(0xFF1976D2))
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text(text = "ETA: ${sdkEtaText.ifBlank { eta }}", fontWeight = FontWeight.Black, fontSize = 16.sp)
-                        Text(text = "Distance: ${sdkDistanceText.ifBlank { distance }}", color = Color.Gray, fontSize = 12.sp)
+                        val isArrivedOrStarted = job?.status == "ARRIVED" || job?.status == "STARTED"
+                        Text(
+                            text = if (isArrivedOrStarted) "You have arrived" else "ETA: ${sdkEtaText.ifBlank { eta }}", 
+                            fontWeight = FontWeight.Black, 
+                            fontSize = 16.sp
+                        )
+                        Text(
+                            text = if (isArrivedOrStarted) "Customer is waiting" else "Distance: ${sdkDistanceText.ifBlank { distance }}", 
+                            color = Color.Gray, 
+                            fontSize = 12.sp
+                        )
                     }
                 }
             }
@@ -292,11 +332,23 @@ fun ProviderTrackingScreen(
                                     viewModel.completeJob() 
                                 },
                                 modifier = Modifier.fillMaxWidth().height(60.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
                                 shape = RoundedCornerShape(16.dp)
                             ) {
                                 Text("COMPLETE WORK", fontWeight = FontWeight.Black)
                             }
+                        }
+                    }
+
+                    if (currentJob.status != "COMPLETED" && currentJob.status != "CANCELLED") {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedButton(
+                            onClick = { showCancelDialog = true },
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            border = BorderStroke(1.dp, Color.LightGray),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text("CANCEL JOB", color = Color.Gray, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

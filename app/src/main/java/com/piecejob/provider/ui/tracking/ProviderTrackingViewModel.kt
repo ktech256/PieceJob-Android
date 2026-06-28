@@ -182,6 +182,19 @@ class ProviderTrackingViewModel @Inject constructor(
         }
     }
 
+    fun cancelJob() {
+        viewModelScope.launch {
+            val jobId = _job.value?.id ?: return@launch
+            val res = jobRepository.cancelJob(jobId)
+            if (res.success) {
+                _job.value = _job.value?.copy(status = "CANCELLED")
+                LocationService.activeJobId = null
+            } else {
+                _error.value = res.message ?: "Failed to cancel job"
+            }
+        }
+    }
+
     private fun observeStatusUpdates() {
         socketManager.onStatusUpdated { status ->
             _job.value = _job.value?.copy(status = status)

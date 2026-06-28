@@ -39,6 +39,8 @@ fun CustomerTrackingScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
+    var showCancelDialog by remember { mutableStateOf(false) }
+
     val customerLatLng = remember(job) {
         job?.location?.coordinates?.let { LatLng(it[1], it[0]) } ?: LatLng(0.0, 0.0)
     }
@@ -67,6 +69,33 @@ fun CustomerTrackingScreen(
 
     LaunchedEffect(jobId) {
         viewModel.initTracking(jobId)
+    }
+
+    LaunchedEffect(job?.status) {
+        if (job?.status == "CANCELLED" || job?.status == "COMPLETED") {
+            delay(2000)
+            onBack()
+        }
+    }
+
+    if (showCancelDialog) {
+        AlertDialog(
+            onDismissRequest = { showCancelDialog = false },
+            title = { Text("Cancel Request?", fontWeight = FontWeight.Black) },
+            text = { Text("Are you sure you want to cancel this request? This action cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showCancelDialog = false
+                        viewModel.cancelJob()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                ) { Text("YES, CANCEL") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCancelDialog = false }) { Text("NO, KEEP IT") }
+            }
+        )
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -132,13 +161,15 @@ fun CustomerTrackingScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val providerName = job?.providerInfo?.firstName ?: "Provider"
                     val statusText = when (job?.status) {
-                        "BROADCASTED", "BROADCASTING" -> "Searching for Provider..."
-                        "ACCEPTED" -> "Provider Accepted!"
-                        "EN_ROUTE" -> "Provider En Route"
-                        "ARRIVED" -> "Provider Arrived"
-                        "STARTED" -> "Job in Progress"
-                        "COMPLETED" -> "Job Completed"
+                        "BROADCASTED", "BROADCASTING" -> "Broadcasting request..."
+                        "ACCEPTED" -> "$providerName has accepted!"
+                        "EN_ROUTE" -> "$providerName is on the way"
+                        "ARRIVED" -> "$providerName has arrived"
+                        "STARTED" -> "$providerName has started work"
+                        "COMPLETED" -> "Job Completed!"
+                        "CANCELLED" -> "Job Cancelled"
                         else -> "Connecting..."
                     }
                     
@@ -181,15 +212,23 @@ fun CustomerTrackingScreen(
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     
-                    if (job?.status != "COMPLETED" && job?.status != "STARTED") {
+                    if (job?.status != "COMPLETED" && job?.status != "STARTED" && job?.status != "CANCELLED") {
                         Button(
-                            onClick = { viewModel.cancelJob(); onBack() },
+                            onClick = { showCancelDialog = true },
                             modifier = Modifier.fillMaxWidth().height(56.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5)),
                             shape = RoundedCornerShape(16.dp)
                         ) {
                             Text(text = "Cancel Request", color = Color.DarkGray, fontWeight = FontWeight.Black)
                         }
+                    } else if (job?.status == "STARTED") {
+                        Text(
+                            text = "Job is in progress and cannot be cancelled.",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
                     }
                 }
             }
@@ -298,7 +337,13 @@ fun AssignedProviderPanel(
                 color = Color(0xFFF5F5F5)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(text = "ETA: 8 mins", fontWeight = FontWeight.Black, color = Color.Black)
+                    val etaDisplay = when (job?.status) {
+                        "ARRIVED", "STARTED", "IN_PROGRESS" -> "Provider has arrived"
+                        "COMPLETED" -> "Job Completed"
+                        "CANCELLED" -> "Job Cancelled"
+                        else -> "ETA: 8 mins" // Default or calculate from live location
+                    }
+                    Text(text = etaDisplay, fontWeight = FontWeight.Black, color = Color.Black)
                 }
             }
         }
