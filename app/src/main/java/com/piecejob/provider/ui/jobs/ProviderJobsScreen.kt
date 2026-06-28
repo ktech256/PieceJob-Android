@@ -51,12 +51,12 @@ fun ProviderJobsScreen(
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
-            if (isLoading) {
+            if (isLoading && availableJobs.isEmpty() && activeJobs.isEmpty()) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 when (selectedTabIndex) {
-                    0 -> JobsList(availableJobs) { viewModel.acceptJob(it) }
-                    1 -> JobsList(activeJobs) { onNavigateToTracking(it) }
+                    0 -> JobsList(availableJobs, isLoading) { viewModel.acceptJob(it) }
+                    1 -> JobsList(activeJobs, isLoading) { onNavigateToTracking(it) }
                     else -> EmptyState(tabs[selectedTabIndex])
                 }
             }
@@ -65,7 +65,7 @@ fun ProviderJobsScreen(
 }
 
 @Composable
-fun JobsList(jobs: List<JobDto>, onAction: (String) -> Unit) {
+fun JobsList(jobs: List<JobDto>, isLoading: Boolean, onAction: (String) -> Unit) {
     if (jobs.isEmpty()) {
         EmptyState("Jobs")
     } else {
@@ -75,14 +75,14 @@ fun JobsList(jobs: List<JobDto>, onAction: (String) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(jobs) { job ->
-                JobCard(job, onAction)
+                JobCard(job, isLoading, onAction)
             }
         }
     }
 }
 
 @Composable
-fun JobCard(job: JobDto, onAction: (String) -> Unit) {
+fun JobCard(job: JobDto, isLoading: Boolean, onAction: (String) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -103,9 +103,14 @@ fun JobCard(job: JobDto, onAction: (String) -> Unit) {
                 Button(
                     onClick = { onAction(job.id) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !isLoading
                 ) {
-                    Text("ACCEPT JOB")
+                    if (isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
+                    } else {
+                        Text("ACCEPT JOB")
+                    }
                 }
             } else {
                 OutlinedButton(

@@ -51,6 +51,7 @@ fun ProviderMainScreen(
 ) {
     val navController = rememberNavController()
     val activeJobRequest by viewModel.notificationState.activeJobRequest.collectAsState()
+    val isAccepting by viewModel.notificationState.isAccepting.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { jobId ->
@@ -132,6 +133,7 @@ fun ProviderMainScreen(
                 activeJobRequest?.let { job ->
                     JobRequestBanner(
                         job = job,
+                        isAccepting = isAccepting,
                         onAccept = { viewModel.acceptJob(it) },
                         onDecline = { viewModel.declineJob(it) }
                     )

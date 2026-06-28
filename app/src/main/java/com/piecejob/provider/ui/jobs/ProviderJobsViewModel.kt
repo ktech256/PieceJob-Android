@@ -56,10 +56,13 @@ class ProviderJobsViewModel @Inject constructor(
 
     fun acceptJob(jobId: String) {
         viewModelScope.launch {
+            _isLoading.value = true
             val response = jobRepository.acceptJob(jobId)
             if (response.success) {
                 loadJobs()
                 _navigationEvent.emit(jobId)
+            } else {
+                _isLoading.value = false
             }
         }
     }

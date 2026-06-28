@@ -50,11 +50,14 @@ class ProviderMainViewModel @Inject constructor(
 
     fun acceptJob(jobId: String) {
         viewModelScope.launch {
+            notificationState.setAccepting(true)
             val res = jobRepository.acceptJob(jobId)
             if (res.success) {
                 notificationState.dismissJobRequest()
                 alertManager.stop()
                 _navigationEvent.emit(jobId)
+            } else {
+                notificationState.setAccepting(false)
             }
         }
     }

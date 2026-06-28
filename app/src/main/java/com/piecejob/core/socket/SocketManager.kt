@@ -18,6 +18,7 @@ class SocketManager @Inject constructor(
 ) {
     private var socket: Socket? = null
     private val TAG = "SocketManager"
+    private var currentActiveJobId: String? = null
 
     private val _statusEventFlow = MutableSharedFlow<StatusEvent>(extraBufferCapacity = 10)
     val statusEventFlow: SharedFlow<StatusEvent> = _statusEventFlow
@@ -36,8 +37,10 @@ class SocketManager @Inject constructor(
             
             socket?.on(Socket.EVENT_CONNECT) {
                 Log.d(TAG, "Socket connected")
-                // Join user room on every connect/reconnect for global observing
+                // 1. Join User Room (Global)
                 sessionManager.getUserId()?.let { joinUser(it) }
+                // 2. Re-join Active Job Room if session exists
+                currentActiveJobId?.let { joinJob(it) }
             }
             
             socket?.on(Socket.EVENT_DISCONNECT) {
@@ -48,14 +51,27 @@ class SocketManager @Inject constructor(
                 Log.e(TAG, "Socket connect error: ${args[0]}")
             }
 
-            // Global Status Listener (survives clearListeners)
+            // PERMANENT GLOBAL LISTENERS (Don't use .off() on these)
             socket?.on("status_updated") { args ->
-                val data = args[0] as JSONObject
-                val jobId = data.optString("jobId")
-                val status = data.optString("status")
-                if (jobId.isNotEmpty() && status.isNotEmpty()) {
-                    Log.d("FORENSIC", "TRACKING_SCREEN_SOCKET_RECEIVED | status_updated | $status")
-                    _statusEventFlow.tryEmit(StatusEvent(jobId, status))
+                try {
+                    val data = args[0] as JSONObject
+                    val jobId = data.getString("jobId")
+                    val status = data.getString("status")
+                    Log.d("FORENSIC", "GLOBAL_SOCKET_RECEIVED | status_updated | Job: $jobId | Status: $status")
+                    _statusEventFlow.tryEmit(StatusEvent(jobId, status, data.optJSONObject("providerInfo")))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in status_updated listener", e)
+                }
+            }
+
+            socket?.on("JOB_ACCEPTED") { args ->
+                try {
+                    val data = args[0] as JSONObject
+                    val jobId = data.getString("jobId")
+                    Log.d("FORENSIC", "GLOBAL_SOCKET_RECEIVED | JOB_ACCEPTED | Job: $jobId")
+                    _statusEventFlow.tryEmit(StatusEvent(jobId, "ACCEPTED", data.optJSONObject("providerInfo")))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in JOB_ACCEPTED listener", e)
                 }
             }
 
@@ -66,8 +82,14 @@ class SocketManager @Inject constructor(
     }
 
     fun joinJob(jobId: String) {
+        currentActiveJobId = jobId
         socket?.emit("join_job", jobId)
         Log.d("FORENSIC", "JOIN_ROOM_REQUESTED | Room: job_$jobId")
+    }
+
+    fun leaveJob(jobId: String) {
+        if (currentActiveJobId == jobId) currentActiveJobId = null
+        // Server handles leaving room on emit or disconnect
     }
 
     fun joinUser(userId: String) {
@@ -156,24 +178,6 @@ class SocketManager @Inject constructor(
         }
     }
 
-    fun onStatusUpdated(callback: (String, String, JSONObject?) -> Unit) {
-        socket?.on("status_updated") { args ->
-            val data = args[0] as JSONObject
-            val jobId = data.getString("jobId")
-            val status = data.getString("status")
-            callback(jobId, status, data.optJSONObject("providerInfo"))
-        }
-    }
-
-    fun onJobAccepted(callback: (String, String, JSONObject?) -> Unit) {
-        socket?.on("JOB_ACCEPTED") { args ->
-            val data = args[0] as JSONObject
-            val status = data.getString("status")
-            Log.d("FORENSIC", "CUSTOMER_SOCKET_RECEIVED | Event: JOB_ACCEPTED | Status: $status")
-            callback(data.getString("jobId"), data.getString("providerId"), data.optJSONObject("providerInfo"))
-        }
-    }
-
     fun onNewBroadcast(callback: (JSONObject) -> Unit) {
         socket?.on("NEW_JOB_BROADCAST") { args ->
             try {
@@ -192,10 +196,9 @@ class SocketManager @Inject constructor(
     }
 
     fun clearListeners() {
+        // We only clear ephemeral listeners, NOT global status listeners
         socket?.off("location_updated")
         socket?.off("route_updated")
-        socket?.off("status_updated")
-        socket?.off("JOB_ACCEPTED")
         socket?.off("NEW_JOB_BROADCAST")
         socket?.off("new_message")
     }
@@ -207,4 +210,4 @@ class SocketManager @Inject constructor(
     }
 }
 
-data class StatusEvent(val jobId: String, val status: String)
+data class StatusEvent(val jobId: String, val status: String, val providerInfo: JSONObject? = null)

@@ -192,6 +192,7 @@ fun ProviderDashboardScreen(
                     )
                     ActiveJobCard(
                         job = activeJob!!,
+                        isLoading = isLoading,
                         onStart = { viewModel.startJob(it) },
                         onComplete = { viewModel.completeJob(it) },
                         onArrive = { viewModel.markArrival(it) },
@@ -413,7 +414,7 @@ fun ShadowBanNotice() {
 }
 
 @Composable
-fun ActiveJobCard(job: JobDto, onArrive: (String) -> Unit, onStart: (String) -> Unit, onComplete: (String) -> Unit, onClick: () -> Unit) {
+fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, onStart: (String) -> Unit, onComplete: (String) -> Unit, onClick: () -> Unit) {
     val isCompleted = job.status == "COMPLETED"
     Card(
         modifier = Modifier
@@ -470,27 +471,40 @@ fun ActiveJobCard(job: JobDto, onArrive: (String) -> Unit, onStart: (String) -> 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 // Main Control Button
                 Box(modifier = Modifier.weight(1f)) {
+                    val isActionLoading = isLoading
                     when (job.status) {
                         "ACCEPTED" -> Button(
                             onClick = { onArrive(job.id) },
                             modifier = Modifier.fillMaxWidth(),
+                            enabled = !isActionLoading,
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
-                        ) { Text("MARK ARRIVED", fontWeight = FontWeight.Bold) }
+                        ) { 
+                            if (isActionLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
+                            else Text("MARK ARRIVED", fontWeight = FontWeight.Bold) 
+                        }
                         
                         "ARRIVED" -> Button(
                             onClick = { onStart(job.id) },
                             modifier = Modifier.fillMaxWidth(),
+                            enabled = !isActionLoading,
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                        ) { Text("START WORK", fontWeight = FontWeight.Bold) }
+                        ) { 
+                            if (isActionLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
+                            else Text("START WORK", fontWeight = FontWeight.Bold) 
+                        }
                         
                         "STARTED", "IN_PROGRESS" -> Button(
                             onClick = { onComplete(job.id) },
                             modifier = Modifier.fillMaxWidth(),
+                            enabled = !isActionLoading,
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
-                        ) { Text("COMPLETE WORK", fontWeight = FontWeight.Bold) }
+                        ) { 
+                            if (isActionLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
+                            else Text("COMPLETE WORK", fontWeight = FontWeight.Bold) 
+                        }
 
                         "COMPLETED" -> Button(
                             onClick = onClick,

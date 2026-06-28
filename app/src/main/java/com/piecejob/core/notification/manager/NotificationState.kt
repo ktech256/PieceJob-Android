@@ -20,11 +20,20 @@ class NotificationState @Inject constructor() {
     private val _activeJobRequest = MutableStateFlow<IncomingJob?>(null)
     val activeJobRequest: StateFlow<IncomingJob?> = _activeJobRequest
 
+    private val _isAccepting = MutableStateFlow(false)
+    val isAccepting: StateFlow<Boolean> = _isAccepting
+
     fun showJobRequest(job: IncomingJob) {
         _activeJobRequest.value = job
+        _isAccepting.value = false
+    }
+
+    fun setAccepting(accepting: Boolean) {
+        _isAccepting.value = accepting
     }
 
     fun dismissJobRequest() {
         _activeJobRequest.value = null
+        _isAccepting.value = false
     }
 }

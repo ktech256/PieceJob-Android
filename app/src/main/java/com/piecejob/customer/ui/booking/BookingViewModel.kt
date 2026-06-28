@@ -101,11 +101,13 @@ class BookingViewModel @Inject constructor(
         socketManager.connect("https://piecejob-backend.onrender.com")
         sessionManager.getUserId()?.let { socketManager.joinUser(it) }
         
-        socketManager.onStatusUpdated { jobId, status, _ ->
-            if (status == "BROADCASTED" && _currentStep.value == BookingStep.PAYMENT_WEBVIEW) {
-                android.util.Log.d("TowMechSecurity", "SOCKET_SIGNAL: Payment confirmed via Webhook. Navigating to Matching.")
-                refreshCreatedJob()
-                _currentStep.value = BookingStep.TRACKING
+        viewModelScope.launch {
+            socketManager.statusEventFlow.collect { event ->
+                if (event.status == "BROADCASTED" && _currentStep.value == BookingStep.PAYMENT_WEBVIEW) {
+                    android.util.Log.d("TowMechSecurity", "SOCKET_SIGNAL: Payment confirmed via Webhook. Navigating to Matching.")
+                    refreshCreatedJob()
+                    _currentStep.value = BookingStep.TRACKING
+                }
             }
         }
     }

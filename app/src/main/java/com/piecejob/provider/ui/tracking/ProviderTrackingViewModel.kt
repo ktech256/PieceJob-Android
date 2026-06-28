@@ -186,6 +186,7 @@ class ProviderTrackingViewModel @Inject constructor(
                 _job.value = res.data
                 _error.value = null
                 LocationService.activeJobId = null
+                socketManager.leaveJob(jobId)
             } else {
                 val errorMsg = res.message ?: res.error?.message ?: "Failed to complete job"
                 _error.value = errorMsg
@@ -208,13 +209,15 @@ class ProviderTrackingViewModel @Inject constructor(
     }
 
     private fun observeStatusUpdates() {
-        socketManager.onStatusUpdated { incomingJobId, status, _ ->
-            if (incomingJobId == _job.value?.id) {
-                _job.value = _job.value?.copy(status = status)
-                if (status == "STARTED") {
-                    _showStartReminder.value = false
-                    autoStartTimer?.cancel()
-                    reminderTimer?.cancel()
+        viewModelScope.launch {
+            socketManager.statusEventFlow.collect { event ->
+                if (event.jobId == _job.value?.id) {
+                    _job.value = _job.value?.copy(status = event.status)
+                    if (event.status == "STARTED") {
+                        _showStartReminder.value = false
+                        autoStartTimer?.cancel()
+                        reminderTimer?.cancel()
+                    }
                 }
             }
         }
@@ -242,5 +245,6 @@ class ProviderTrackingViewModel @Inject constructor(
         trackingJob?.cancel()
         reminderTimer?.cancel()
         autoStartTimer?.cancel()
+        _job.value?.id?.let { socketManager.leaveJob(it) }
     }
 }

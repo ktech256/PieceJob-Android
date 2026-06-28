@@ -130,67 +130,38 @@ class JobTrackingViewModel @Inject constructor(
             _routePoints.value = points
         }
 
-        socketManager.onStatusUpdated { incomingJobId, status, providerInfo ->
-            Log.d("FORENSIC", "TRACKING_SCREEN_SOCKET_RECEIVED | Status: $status | Job: $incomingJobId")
-            
-            if (incomingJobId != jobId) {
-                Log.w("FORENSIC", "TRACKING_SOCKET_IGNORED | Event for different job: $incomingJobId")
-                return@onStatusUpdated
-            }
-
-            // 1. Update local state IMMEDIATELY for responsiveness
-            val currentJob = _job.value
-            if (currentJob != null) {
-                // Only progress status, never regress (except to CANCELLED)
-                val currentPrio = statusPriority[currentJob.status] ?: 0
-                val newPrio = statusPriority[status] ?: 0
-                
-                if (newPrio >= currentPrio || newPrio == -1) {
-                    var updatedJob = currentJob.copy(status = status)
+        viewModelScope.launch {
+            socketManager.statusEventFlow.collect { event ->
+                if (event.jobId == jobId) {
+                    Log.d("FORENSIC", "TRACKING_VIEWMODEL_UPDATED | Status: ${event.status}")
                     
-                    if (providerInfo != null) {
-                        try {
-                            val info = com.google.gson.Gson().fromJson(providerInfo.toString(), com.piecejob.core.data.remote.dto.ProviderInfoDto::class.java)
-                            updatedJob = updatedJob.copy(providerInfo = info)
-                        } catch (e: Exception) {
-                            Log.e("JobTracking", "Error parsing provider info from socket", e)
+                    val currentJob = _job.value
+                    if (currentJob != null) {
+                        val currentPrio = statusPriority[currentJob.status] ?: 0
+                        val newPrio = statusPriority[event.status] ?: 0
+                        
+                        if (newPrio >= currentPrio || newPrio == -1) {
+                            var updatedJob = currentJob.copy(status = event.status)
+                            
+                            event.providerInfo?.let { providerInfo ->
+                                try {
+                                    val info = com.google.gson.Gson().fromJson(providerInfo.toString(), com.piecejob.core.data.remote.dto.ProviderInfoDto::class.java)
+                                    updatedJob = updatedJob.copy(providerInfo = info)
+                                } catch (e: Exception) {
+                                    Log.e("JobTracking", "Error parsing provider info from socket", e)
+                                }
+                            }
+                            _job.value = updatedJob
+                            Log.d("FORENSIC", "TRACKING_STATE_UPDATED | New Status: ${event.status}")
                         }
                     }
-                    _job.value = updatedJob
-                    Log.d("FORENSIC", "TRACKING_STATE_UPDATED | Status: $status")
-                }
-            } else {
-                Log.w("FORENSIC", "TRACKING_VIEWMODEL_UPDATED | Job is null, using refresh")
-            }
 
-            // 2. Trigger background refresh to sync full details
-            refreshJobDetails(jobId)
-            
-            if (!isSearching(status)) {
-                _nearbyProviders.value = emptyList() 
-            }
-        }
-
-        socketManager.onJobAccepted { acceptedJobId, providerId, providerInfo ->
-            if (acceptedJobId == jobId) {
-                Log.d("FORENSIC", "CUSTOMER_SOCKET_RECEIVED | Event: JOB_ACCEPTED")
-                
-                val currentJob = _job.value
-                if (currentJob != null) {
-                    var updatedJob = currentJob.copy(status = "ACCEPTED", providerId = providerId)
-                    if (providerInfo != null) {
-                        try {
-                            val info = com.google.gson.Gson().fromJson(providerInfo.toString(), com.piecejob.core.data.remote.dto.ProviderInfoDto::class.java)
-                            updatedJob = updatedJob.copy(providerInfo = info)
-                        } catch (e: Exception) {
-                            Log.e("JobTracking", "Error parsing provider info from socket", e)
-                        }
+                    refreshJobDetails(jobId)
+                    
+                    if (!isSearching(event.status)) {
+                        _nearbyProviders.value = emptyList() 
                     }
-                    _job.value = updatedJob
-                    Log.d("FORENSIC", "STATEFLOW_UPDATED | Status: ACCEPTED")
                 }
-
-                refreshJobDetails(jobId)
             }
         }
     }
@@ -314,5 +285,10 @@ class JobTrackingViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        _job.value?.id?.let { socketManager.leaveJob(it) }
     }
 }

@@ -57,9 +57,11 @@ class CustomerDashboardViewModel @Inject constructor(
         socketManager.connect("https://piecejob-backend.onrender.com")
         sessionManager.getUserId()?.let { socketManager.joinUser(it) }
         
-        socketManager.onStatusUpdated { jobId, status, _ ->
-            Log.d("FORENSIC", "DASHBOARD_SOCKET_RECEIVED | Status: $status | Job: $jobId")
-            loadActiveJob()
+        viewModelScope.launch {
+            socketManager.statusEventFlow.collect { event ->
+                Log.d("FORENSIC", "DASHBOARD_SOCKET_RECEIVED | Status: ${event.status} | Job: ${event.jobId}")
+                loadActiveJob()
+            }
         }
     }
 

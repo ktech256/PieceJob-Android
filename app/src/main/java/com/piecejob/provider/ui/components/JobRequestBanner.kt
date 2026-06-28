@@ -26,6 +26,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun JobRequestBanner(
     job: IncomingJob,
+    isAccepting: Boolean,
     onAccept: (String) -> Unit,
     onDecline: (String) -> Unit
 ) {
@@ -101,6 +102,7 @@ fun JobRequestBanner(
                 Button(
                     onClick = { onDecline(job.jobId) },
                     modifier = Modifier.weight(1f).height(56.dp),
+                    enabled = !isAccepting,
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.05f)),
                     shape = RoundedCornerShape(16.dp)
                 ) {
@@ -110,10 +112,15 @@ fun JobRequestBanner(
                 Button(
                     onClick = { onAccept(job.jobId) },
                     modifier = Modifier.weight(2f).height(56.dp),
+                    enabled = !isAccepting,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("ACCEPT JOB", color = Color.White, fontWeight = FontWeight.Black)
+                    if (isAccepting) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text("ACCEPT JOB", color = Color.White, fontWeight = FontWeight.Black)
+                    }
                 }
             }
         }
