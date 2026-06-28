@@ -72,7 +72,7 @@ class JobTrackingViewModel @Inject constructor(
         }
 
         socketManager.onStatusUpdated { status ->
-            android.util.Log.d("JobTracking", "Job status update: $status")
+            android.util.Log.d("ForensicLog", "JOB_STATUS_EVENT | Status: $status")
             _job.value = _job.value?.copy(status = status)
             if (!isSearching(status)) {
                 _nearbyProviders.value = emptyList() // Clear nearby when assigned
@@ -81,7 +81,7 @@ class JobTrackingViewModel @Inject constructor(
 
         socketManager.onJobAccepted { acceptedJobId, providerId ->
             if (acceptedJobId == jobId) {
-                android.util.Log.d("JobTracking", "Job accepted by provider: $providerId")
+                android.util.Log.d("ForensicLog", "JOB_ACCEPTED_EVENT | Provider: $providerId")
                 refreshJobDetails(jobId)
             }
         }
@@ -121,7 +121,10 @@ class JobTrackingViewModel @Inject constructor(
             viewModelScope.launch {
                 val res = jobRepository.cancelJob(it.id)
                 if (res.success) {
-                    // Navigate back or show cancelled state
+                    android.util.Log.d("ForensicLog", "CUSTOMER_CANCEL_SUCCESS | Job: ${it.id}")
+                    _job.value = _job.value?.copy(status = "CANCELLED")
+                } else {
+                    android.util.Log.e("ForensicLog", "CUSTOMER_CANCEL_FAILED | Job: ${it.id} | Error: ${res.message}")
                 }
             }
         }

@@ -164,16 +164,18 @@ fun CustomerTrackingScreen(
                     val providerName = job?.providerInfo?.firstName ?: "Provider"
                     val statusText = when (job?.status) {
                         "BROADCASTED", "BROADCASTING" -> "Broadcasting request..."
-                        "ACCEPTED" -> "$providerName has accepted!"
+                        "ACCEPTED" -> "$providerName accepted your request!"
                         "EN_ROUTE" -> "$providerName is on the way"
                         "ARRIVED" -> "$providerName has arrived"
-                        "STARTED" -> "$providerName has started work"
+                        "STARTED" -> "$providerName started the job"
                         "COMPLETED" -> "Job Completed!"
                         "CANCELLED" -> "Job Cancelled"
                         else -> "Connecting..."
                     }
                     
-                    android.util.Log.d("ForensicLog", "JOB_STATE_CHANGED | Job: $jobId | New Status: ${job?.status}")
+                    if (job?.status != null) {
+                        android.util.Log.d("ForensicLog", "UI_STATUS_UPDATE | Status: ${job?.status} | Text: $statusText")
+                    }
                     
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = statusText, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
@@ -200,7 +202,14 @@ fun CustomerTrackingScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 24.dp)
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    if (providerLocation == null) {
+                    val isAssigned = job?.status != null && 
+                                   job?.status != "BROADCASTED" && 
+                                   job?.status != "BROADCASTING" && 
+                                   job?.status != "PAYMENT_PENDING" && 
+                                   job?.status != "BOOKING_FEE_PAID" && 
+                                   job?.status != "DRAFT"
+
+                    if (!isAssigned) {
                         // Searching UI
                         SearchingPanel(job?.serviceCode ?: "Service", nearbyProviders.size)
                     } else {

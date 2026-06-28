@@ -147,7 +147,7 @@ interface PieceJobApi {
     @POST("jobs/{jobId}/pay-booking-fee")
     suspend fun payBookingFee(@Path("jobId") jobId: String): ApiResponse<PayBookingFeeResponse>
 
-    @PATCH("jobs/{jobId}/cancel")
+    @POST("jobs/{jobId}/cancel")
     suspend fun cancelJob(@Path("jobId") jobId: String): ApiResponse<Unit>
 
     @GET("providers/jobs/broadcasted")

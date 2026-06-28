@@ -76,7 +76,13 @@ fun ProviderTrackingScreen(
         NavigationView(context).apply { 
             // Forensic: Ensure NavigationView is initialized on UI thread with Activity context
             try {
-                onCreate(null)
+                val activity = context.getActivity()
+                if (activity != null) {
+                    onCreate(null)
+                    android.util.Log.d("ForensicLog", "TRACKING_MAP | NavigationView onCreate SUCCESS")
+                } else {
+                    android.util.Log.e("ForensicLog", "TRACKING_MAP | FAILED: No Activity context for NavigationView")
+                }
             } catch (e: Exception) {
                 android.util.Log.e("ForensicLog", "TRACKING_CRASH | NavigationView.onCreate Error: ${e.message}", e)
             }
@@ -113,29 +119,34 @@ fun ProviderTrackingScreen(
                 override fun onNavigatorReady(nav: Navigator) {
                     android.util.Log.d("ForensicLog", "TRACKING_INIT | Navigator READY. Setting up guidance...")
                     navigator = nav
-                    nav.setAudioGuidance(Navigator.AudioGuidance.VOICE_ALERTS_AND_GUIDANCE)
                     
-                    // Automatic camera following
-                    navigationView.getMapAsync { map ->
-                        android.util.Log.d("ForensicLog", "TRACKING_INIT | Map READY. Setting camera follow...")
-                        map.followMyLocation(GoogleMap.CameraPerspective.TILTED)
-                    }
-
-                    scope.launch {
-                        while (isActive) {
-                            val tad = nav.currentTimeAndDistance
-                            if (tad != null) {
-                                val mins = (tad.seconds / 60).toInt()
-                                sdkEtaText = if (mins < 1) "1 min" else "$mins mins"
-                                val km = tad.meters / 1000.0
-                                sdkDistanceText = if (km < 1.0) "${tad.meters.toInt()} m" else String.format("%.1f km", km)
-                                
-                                if (sdkEtaText.isNotBlank()) {
-                                    android.util.Log.d("ForensicLog", "ETA_UPDATED | ETA: $sdkEtaText | Dist: $sdkDistanceText")
-                                }
-                            }
-                            delay(2000)
+                    try {
+                        nav.setAudioGuidance(Navigator.AudioGuidance.VOICE_ALERTS_AND_GUIDANCE)
+                        
+                        // Automatic camera following with tilted perspective
+                        navigationView.getMapAsync { map ->
+                            android.util.Log.d("ForensicLog", "TRACKING_INIT | Map READY. Setting camera follow...")
+                            map.followMyLocation(GoogleMap.CameraPerspective.TILTED)
                         }
+
+                        scope.launch {
+                            while (isActive) {
+                                val tad = nav.currentTimeAndDistance
+                                if (tad != null) {
+                                    val mins = (tad.seconds / 60).toInt()
+                                    sdkEtaText = if (mins < 1) "1 min" else "$mins mins"
+                                    val km = tad.meters / 1000.0
+                                    sdkDistanceText = if (km < 1.0) "${tad.meters.toInt()} m" else String.format("%.1f km", km)
+                                    
+                                    if (sdkEtaText.isNotBlank()) {
+                                        android.util.Log.d("ForensicLog", "ETA_UPDATED | ETA: $sdkEtaText | Dist: $sdkDistanceText")
+                                    }
+                                }
+                                delay(2000)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("ForensicLog", "TRACKING_CRASH | Navigator Ready Logic Error: ${e.message}", e)
                     }
                 }
                 override fun onError(errorCode: Int) { 

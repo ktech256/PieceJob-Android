@@ -1,6 +1,7 @@
 package com.piecejob
 
 import android.app.Application
+import com.google.android.gms.maps.MapsInitializer
 import com.google.android.libraries.places.api.Places
 import com.google.firebase.FirebaseApp
 import dagger.hilt.android.HiltAndroidApp
@@ -10,6 +11,14 @@ class PieceJobApp : Application() {
     override fun onCreate() {
         android.util.Log.e("PIECEJOB_STARTUP", "Application started")
         super.onCreate()
+
+        // FORENSIC: Maps/Navigation Initialization
+        try {
+            MapsInitializer.initialize(this)
+            android.util.Log.d("MAPS_DEBUG", "MapsInitializer initialized")
+        } catch (e: Exception) {
+            android.util.Log.e("MAPS_DEBUG", "MapsInitializer failed: ${e.message}")
+        }
         
         // FORENSIC: Firebase Initialization Audit
         try {
