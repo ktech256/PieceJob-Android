@@ -36,6 +36,7 @@ fun CustomerTrackingScreen(
     val nearbyProviders by viewModel.nearbyProviders.collectAsState()
     val providerLocation by viewModel.providerLocation.collectAsState()
     val providerHeading by viewModel.providerHeading.collectAsState()
+    val routePoints by viewModel.routePoints.collectAsState()
     val eta by viewModel.eta.collectAsState()
     val distance by viewModel.distance.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -136,12 +137,21 @@ fun CustomerTrackingScreen(
                     icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_AZURE)
                 )
                 
-                // Draw Route Polyline
-                Polyline(
-                    points = listOf(customerLatLng, LatLng(loc.first, loc.second)),
-                    color = Color(0xFFD32F2F),
-                    width = 8f
-                )
+                // Draw Route Polyline (Trail of where provider has been on roads)
+                if (routePoints.isNotEmpty()) {
+                    Polyline(
+                        points = routePoints + customerLatLng,
+                        color = Color(0xFFD32F2F),
+                        width = 8f
+                    )
+                } else {
+                    // Fallback line
+                    Polyline(
+                        points = listOf(customerLatLng, LatLng(loc.first, loc.second)),
+                        color = Color(0xFFD32F2F).copy(alpha = 0.5f),
+                        width = 4f
+                    )
+                }
             }
         }
 

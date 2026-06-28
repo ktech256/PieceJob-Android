@@ -210,6 +210,10 @@ class ProviderTrackingViewModel @Inject constructor(
         }
     }
 
+    fun updateStatus(status: String) {
+        _job.value = _job.value?.copy(status = status)
+    }
+
     private fun calculateDistance(c1: LatLng, c2: LatLng): Double {
         val R = 6371e3
         val lat1 = c1.latitude * PI / 180

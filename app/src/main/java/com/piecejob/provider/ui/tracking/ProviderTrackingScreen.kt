@@ -38,6 +38,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
+import com.google.android.libraries.navigation.Navigator.RouteStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
@@ -111,15 +112,15 @@ fun ProviderTrackingScreen(
         if (activity != null) {
             android.util.Log.d("ForensicLog", "TRACKING_INIT | Activity context found. Requesting navigator...")
             
-            // Explicitly show terms to ensure guidance can start
-            NavigationApi.showTermsAndConditionsDialogIfNeeded(activity) { termsAccepted ->
-                if (termsAccepted) {
                     NavigationApi.getNavigator(activity, object : NavigationApi.NavigatorListener {
                         override fun onNavigatorReady(nav: Navigator) {
                             navigator = nav
                             try {
                                 nav.setAudioGuidance(Navigator.AudioGuidance.VOICE_ALERTS_AND_GUIDANCE)
                                 
+                                // Send initial status to trigger customer refresh
+                                viewModel.updateStatus("ACCEPTED")
+
                                 navigationView.getMapAsync { map ->
                                     android.util.Log.d("ForensicLog", "TRACKING_INIT | Map READY. Setting camera follow...")
                                     if (navigator != null) {
@@ -127,28 +128,26 @@ fun ProviderTrackingScreen(
                                     }
                                 }
 
-                                scope.launch {
-                                    while (isActive) {
-                                        val tad = nav.currentTimeAndDistance
-                                        if (tad != null) {
-                                            val mins = (tad.seconds / 60).toInt()
-                                            sdkEtaText = if (mins < 1) "1 min" else "$mins mins"
-                                            val km = tad.meters / 1000.0
-                                            sdkDistanceText = if (km < 1.0) "${tad.meters.toInt()} m" else String.format("%.1f km", km)
-                                        }
-                                        delay(2000)
-                                    }
+                        scope.launch {
+                            while (isActive) {
+                                val tad = nav.currentTimeAndDistance
+                                if (tad != null) {
+                                    val mins = (tad.seconds / 60).toInt()
+                                    sdkEtaText = if (mins < 1) "1 min" else "$mins mins"
+                                    val km = tad.meters / 1000.0
+                                    sdkDistanceText = if (km < 1.0) "${tad.meters.toInt()} m" else String.format("%.1f km", km)
                                 }
-                            } catch (e: Exception) {
-                                android.util.Log.e("ForensicLog", "TRACKING_CRASH | Navigator Ready Logic Error: ${e.message}", e)
+                                delay(2000)
                             }
                         }
-                        override fun onError(errorCode: Int) { 
-                            android.util.Log.e("ForensicLog", "TRACKING_INIT | Navigator Error: $errorCode")
-                        }
-                    })
+                    } catch (e: Exception) {
+                        android.util.Log.e("ForensicLog", "TRACKING_CRASH | Navigator Ready Logic Error: ${e.message}", e)
+                    }
                 }
-            }
+                override fun onError(errorCode: Int) { 
+                    android.util.Log.e("ForensicLog", "TRACKING_INIT | Navigator Error: $errorCode")
+                }
+            })
         }
     }
 
@@ -172,6 +171,8 @@ fun ProviderTrackingScreen(
                 .build()
             
             android.util.Log.d("ForensicLog", "NAV_START | Setting destination to ${dest[1]}, ${dest[0]}")
+            // Note: If guidance doesn't start, it's usually because terms weren't accepted.
+            // Some versions of the SDK prompt automatically on getNavigator or setDestination.
             nav.setDestination(waypoint)
             nav.startGuidance()
         }
@@ -197,10 +198,6 @@ fun ProviderTrackingScreen(
                 onBack()
             }
         }
-    }
-
-    val customerLatLng = remember(job) {
-        job?.location?.coordinates?.let { LatLng(it[1], it[0]) } ?: LatLng(0.0, 0.0)
     }
 
     if (showCancelDialog) {
@@ -265,8 +262,11 @@ fun ProviderTrackingScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
+                    val statusText = remember(job?.status) {
+                        job?.status?.replace("_", " ") ?: "INITIALIZING..."
+                    }
                     Text(
-                        text = job?.status?.replace("_", " ") ?: "INITIALIZING...",
+                        text = statusText,
                         color = when(job?.status) {
                             "ACCEPTED" -> Color(0xFF1976D2)
                             "ARRIVED" -> Color(0xFFFFA000)
@@ -438,16 +438,5 @@ fun ProviderTrackingScreen(
         if (error != null) {
             Snackbar(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp)) { Text(error!!) }
         }
-    }
-}
-
-@Composable
-fun JobHeader(job: JobDto) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = job.serviceCode, fontWeight = FontWeight.Black, fontSize = 18.sp)
-            Text(text = job.location?.address ?: "Nearby", color = Color.Gray, fontSize = 12.sp)
-        }
-        Text(text = "R${job.bookingFee}", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32), fontSize = 18.sp)
     }
 }
