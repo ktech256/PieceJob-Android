@@ -374,13 +374,20 @@ fun AssignedProviderPanel(
                         if (now - lastClickTime < 1000) return@FilledIconButton
                         lastClickTime = now
 
-                        android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | isTerminalState: $isTerminalState")
+                        android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | isTerminalState: $isTerminalState | Job: ${job.id}")
                         if (!isTerminalState) {
-                            job.providerInfo?.let { info ->
-                                android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | Navigating to CallScreen")
-                                onCallOpen(job.providerId!!, "${info.firstName} ${info.lastName}", info.phoneNumber ?: "", info.profilePicture)
-                            } ?: run {
-                                android.util.Log.e("FORENSIC", "CALL_BUTTON_CLICKED | providerInfo is NULL")
+                            val info = job.providerInfo
+                            val providerId = job.providerId
+                            
+                            if (providerId != null) {
+                                val name = info?.let { "${it.firstName} ${it.lastName}" } ?: "Professional"
+                                val phone = info?.phoneNumber ?: ""
+                                val photo = info?.profilePicture
+                                
+                                android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | Navigating to CallScreen. To: $name")
+                                onCallOpen(providerId, name, phone, photo)
+                            } else {
+                                android.util.Log.e("FORENSIC", "CALL_BUTTON_CLICKED | providerId is NULL")
                             }
                         }
                     },

@@ -375,13 +375,20 @@ fun ProviderTrackingScreen(
                                             if (now - lastClickTime < 1000) return@FilledIconButton
                                             lastClickTime = now
 
-                                            android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | isTerminalState: $isTerminalState")
+                                            android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | isTerminalState: $isTerminalState | Job: ${job?.id}")
                                             if (!isTerminalState) {
-                                                job?.customerInfo?.let { info ->
-                                                    android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | Navigating to CallScreen")
-                                                    onCallOpen(job!!.customerId, "${info.firstName} ${info.lastName}", info.phoneNumber ?: "", info.profilePicture)
-                                                } ?: run {
-                                                    android.util.Log.e("FORENSIC", "CALL_BUTTON_CLICKED | customerInfo is NULL")
+                                                val info = job?.customerInfo
+                                                val customerId = job?.customerId
+                                                
+                                                if (customerId != null) {
+                                                    val name = info?.let { "${it.firstName} ${it.lastName}" } ?: "Customer"
+                                                    val phone = info?.phoneNumber ?: ""
+                                                    val photo = info?.profilePicture
+                                                    
+                                                    android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | Navigating to CallScreen. To: $name")
+                                                    onCallOpen(customerId, name, phone, photo)
+                                                } else {
+                                                    android.util.Log.e("FORENSIC", "CALL_BUTTON_CLICKED | customerId is NULL")
                                                 }
                                             }
                                         },

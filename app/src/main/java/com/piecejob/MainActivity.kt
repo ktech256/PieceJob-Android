@@ -27,6 +27,7 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 import com.piecejob.core.data.local.SessionManager
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -45,6 +46,8 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var sessionManager: SessionManager
 
+    private val incomingIntent = MutableStateFlow<Intent?>(null)
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -56,10 +59,14 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        incomingIntent.value = intent
+        android.util.Log.d("FORENSIC", "MAIN_ACTIVITY_ON_NEW_INTENT | Type: ${intent.getStringExtra("type")}")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        incomingIntent.value = intent
+        android.util.Log.d("FORENSIC", "MAIN_ACTIVITY_ON_CREATE | Type: ${intent.getStringExtra("type")}")
         enableEdgeToEdge()
 
         // Call background/lockscreen support
@@ -90,13 +97,15 @@ class MainActivity : AppCompatActivity() {
         setContent {
             PieceJobTheme(isProvider = isProvider) {
                 val navController = rememberNavController()
+                val currentIntent by incomingIntent.collectAsState()
 
                 // Handle Notification Deep Links & Incoming Calls
-                LaunchedEffect(intent) {
+                LaunchedEffect(currentIntent) {
+                    val intent = currentIntent ?: return@LaunchedEffect
                     val type = intent.getStringExtra("type")
                     val jobId = intent.getStringExtra("jobId")
                     
-                    android.util.Log.d("FORENSIC", "MAIN_ACTIVITY_INTENT | Type: $type | Job: $jobId")
+                    android.util.Log.d("FORENSIC", "MAIN_ACTIVITY_INTENT_PROCESS | Type: $type | Job: $jobId")
 
                     if (type == "VERIFICATION_UPDATE") {
                         navController.navigate("verification_docs") {
@@ -108,7 +117,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     } else if (type == "NEW_JOB_BROADCAST" && jobId != null) {
                         android.util.Log.d("FCM_NAV", "Tapped broadcast notification for $jobId")
-                        navController.navigate(Screen.ProviderHome.route) // Or specific broadcast UI if needed
+                        navController.navigate(Screen.ProviderHome.route)
                     } else if (type == "INCOMING_CALL") {
                         val callerId = intent.getStringExtra("callerId")
                         val callId = intent.getStringExtra("callId")
@@ -117,12 +126,16 @@ class MainActivity : AppCompatActivity() {
                         val callerPhoto = intent.getStringExtra("callerPhoto")
                         
                         if (jobId != null && callerId != null && callId != null) {
-                            android.util.Log.d("FORENSIC", "INCOMING_CALL_INTENT | Navigating to IncomingCall screen")
-                            navController.navigate(Screen.IncomingCall.passArgs(jobId, callerId, callId, callerName ?: "", callerPhone ?: "", callerPhoto)) {
+                            android.util.Log.d("FORENSIC", "INCOMING_CALL_INTENT | Navigating to IncomingCall screen. From: $callerName")
+                            navController.navigate(Screen.IncomingCall.passArgs(jobId, callerId, callId, callerName ?: "Someone", callerPhone ?: "", callerPhoto)) {
                                 launchSingleTop = true
                             }
+                        } else {
+                            android.util.Log.e("FORENSIC", "INCOMING_CALL_INTENT | Missing required args. JobId=$jobId, callerId=$callerId, callId=$callId")
                         }
                     }
+                    
+                    incomingIntent.value = null
                 }
 
                 // GLOBAL SOCKET CONNECTION & FCM SYNC

@@ -76,26 +76,30 @@ class CallViewModel @Inject constructor(
     }
 
     fun initiateCall(jobId: String, receiverId: String) {
-        Log.d("FORENSIC", "CALL_VIEWMODEL | initiateCall triggered. isCallActive: ${callManager.isCallActive.value}")
+        Log.d("FORENSIC", "CALL_VIEWMODEL | initiateCall triggered. Job: $jobId | To: $receiverId")
         if (callManager.isCallActive.value) {
-            Log.w("FORENSIC", "CALL_VIEWMODEL | initiateCall aborted: call already active")
+            Log.w("FORENSIC", "CALL_VIEWMODEL | initiateCall ignored - call already active")
             return
         }
-        callManager.setCallActive(true)
+        callManager.setCallActive(true) // This sets status to "Calling..."
         callManager.activeJobId = jobId
         callManager.targetUserId = receiverId
         
-        Log.d("FORENSIC", "CALL_SIGNAL_SENT | Job: $jobId | To: $receiverId")
-        // Use a scope that isn't tied to the ViewModel to ensure the call initiation and media connection finish
-        // even if the user navigates away or the screen recomposes.
+        Log.d("FORENSIC", "CALL_SIGNAL_OUTGOING | Signal logic starting")
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             val res = repository.logCallInitiation(jobId, receiverId)
             if (res.success && res.data != null) {
+                Log.d("FORENSIC", "CALL_RECORD_CREATED | ID: ${res.data.callId}")
                 callManager.currentCallId = res.data.callId
-                Log.d("FORENSIC", "CALL_RECORD_CREATED | ID: ${callManager.currentCallId}")
+                
+                Log.d("FORENSIC", "CALL_TOKEN_FETCH | Requesting LiveKit token")
                 val tokenRes = repository.getLiveKitToken(jobId)
                 if (tokenRes.success && tokenRes.data != null) {
+                    Log.d("FORENSIC", "CALL_TOKEN_ACQUIRED | Length: ${tokenRes.data.token.length}")
                     callManager.connect(tokenRes.data.token)
+                } else {
+                    Log.e("FORENSIC", "CALL_TOKEN_FAILED | Error: ${tokenRes.message}")
+                    endCallLocal("Failed")
                 }
             } else {
                 Log.e("FORENSIC", "CALL_INIT_FAILED | Error: ${res.message}")
@@ -107,26 +111,28 @@ class CallViewModel @Inject constructor(
 
     fun acceptIncomingCall(jobId: String, callId: String, callerId: String) {
         if (callManager.isCallActive.value && callManager.activeJobId == jobId) {
-             Log.d("FORENSIC", "CALL_VIEWMODEL | Already in this call.")
+             Log.d("FORENSIC", "CALL_VIEWMODEL | acceptIncomingCall: already in this call")
              return
         }
         
-        Log.d("FORENSIC", "CALL_VIEWMODEL | Accepting Call: $callId for Job: $jobId")
-        callManager.setCallActive(true)
+        Log.d("FORENSIC", "CALL_VIEWMODEL | acceptIncomingCall (Answer pressed) | ID: $callId")
+        callManager.setCallActive(true) // Status -> Calling... (will be updated to Connecting... in connect)
         callManager.currentCallId = callId
         callManager.activeJobId = jobId
         callManager.targetUserId = callerId
         
+        Log.d("FORENSIC", "CALL_SIGNAL_ANSWER | Sending ACCEPTED signal")
         socketManager.sendCallSignal(jobId, callerId, "ACCEPTED")
         
-        // Use a persistent scope because IncomingCallScreen is about to be popped/cleared
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            Log.d("FORENSIC", "CALL_TOKEN_FETCH | Requesting token for receiver")
             val tokenRes = repository.getLiveKitToken(jobId)
             if (tokenRes.success && tokenRes.data != null) {
-                Log.d("FORENSIC", "CALL_VIEWMODEL | Receiver LiveKit Token Acquired. Connecting...")
+                Log.d("FORENSIC", "CALL_TOKEN_ACQUIRED | Length: ${tokenRes.data.token.length}")
                 callManager.connect(tokenRes.data.token)
             } else {
-                Log.e("FORENSIC", "CALL_VIEWMODEL | Receiver failed to get token: ${tokenRes.message}")
+                Log.e("FORENSIC", "CALL_TOKEN_FAILED | Error: ${tokenRes.message}")
+                endCallLocal("Failed")
             }
         }
     }
