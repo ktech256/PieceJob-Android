@@ -54,12 +54,16 @@ class CallManager @Inject constructor(
         _isCallActive.value = active
     }
 
+    private val _isRemoteJoined = MutableStateFlow(false)
+    val isRemoteJoined: StateFlow<Boolean> = _isRemoteJoined.asStateFlow()
+
     fun connect(token: String) {
         scope.launch {
             if (_room != null) {
                 Log.d("FORENSIC", "CALL_MANAGER | Disconnecting existing room before new connection")
                 _room?.disconnect()
                 _room = null
+                _isRemoteJoined.value = false
             }
             
             Log.d("FORENSIC", "CALL_MANAGER | Connecting to LiveKit. URL: $url | Token Len: ${token.length}")
@@ -74,7 +78,15 @@ class CallManager @Inject constructor(
                     when (event) {
                         is RoomEvent.Connected -> {
                             Log.d("FORENSIC", "CALL_MANAGER | LiveKit Connected Event Received")
-                            _connectionStatus.value = "Connected"
+                            // Check if remote participants are already present (case where caller joins late or receiver joins early)
+                            if (currentRoom.remoteParticipants.isNotEmpty()) {
+                                Log.d("FORENSIC", "CALL_MANAGER | Remote participant already present")
+                                _isRemoteJoined.value = true
+                                _connectionStatus.value = "Connected"
+                            } else {
+                                _connectionStatus.value = "Calling..."
+                            }
+                            
                             launch {
                                 val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
                                     application,
@@ -103,17 +115,25 @@ class CallManager @Inject constructor(
                         }
                         is RoomEvent.Reconnected -> {
                             Log.d("FORENSIC", "CALL_MANAGER | LiveKit Reconnected")
-                            _connectionStatus.value = "Connected"
+                            if (_isRemoteJoined.value) {
+                                _connectionStatus.value = "Connected"
+                            } else {
+                                _connectionStatus.value = "Calling..."
+                            }
                         }
                         is RoomEvent.ParticipantConnected -> {
                             Log.d("FORENSIC", "CALL_MANAGER | Remote Participant Connected: ${event.participant.identity}")
+                            _isRemoteJoined.value = true
+                            _connectionStatus.value = "Connected"
+                        }
+                        is RoomEvent.ParticipantDisconnected -> {
+                            Log.d("FORENSIC", "CALL_MANAGER | Remote Participant Disconnected: ${event.participant.identity}")
+                            _isRemoteJoined.value = false
+                            _connectionStatus.value = "Calling..."
                         }
                         is RoomEvent.TrackSubscribed -> {
                             val track = event.track
                             Log.d("FORENSIC", "CALL_MANAGER | Track Subscribed: ${track.sid} | Type: ${track.kind} | Participant: ${event.participant?.identity}")
-                            if (track is RemoteAudioTrack) {
-                                Log.d("FORENSIC", "CALL_MANAGER | Remote Audio Track detected. Auto-playing should be handled by LiveKit.")
-                            }
                         }
                         is RoomEvent.FailedToConnect -> {
                             Log.e("FORENSIC", "CALL_MANAGER | LiveKit Connection Failed: ${event.error}")
@@ -129,7 +149,6 @@ class CallManager @Inject constructor(
                 _connectionStatus.value = "Connecting..."
                 currentRoom.connect(url, token)
                 Log.d("FORENSIC", "CALL_MANAGER | currentRoom.connect call finished successfully")
-                _connectionStatus.value = "Connected"
             } catch (e: Exception) {
                 Log.e("FORENSIC", "CALL_MANAGER | Connection Exception", e)
                 _connectionStatus.value = "Error: ${e.message}"
@@ -198,6 +217,7 @@ class CallManager @Inject constructor(
         _isCallActive.value = false
         _isMuted.value = false
         _isSpeakerOn.value = false
+        _isRemoteJoined.value = false
         if (!isError) {
             _connectionStatus.value = "Idle"
         }

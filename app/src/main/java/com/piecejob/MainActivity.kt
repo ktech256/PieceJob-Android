@@ -121,6 +121,7 @@ class MainActivity : AppCompatActivity() {
                     socketManager.statusEventFlow.collect { event ->
                         android.util.Log.d("FORENSIC", "GLOBAL_NAV_OBSERVER | Received: ${event.status}")
                         if (event.status == "COMPLETED") {
+                            callManager.disconnect()
                             navController.navigate(Screen.Rating.passJobId(event.jobId)) {
                                 launchSingleTop = true
                             }

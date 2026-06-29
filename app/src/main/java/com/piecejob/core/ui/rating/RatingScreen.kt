@@ -22,6 +22,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.piecejob.BuildConfig
 
+import androidx.activity.compose.BackHandler
+
 @Composable
 fun RatingScreen(
     jobId: String,
@@ -35,6 +37,11 @@ fun RatingScreen(
 
     var rating by remember { mutableIntStateOf(0) }
     var comment by remember { mutableStateOf("") }
+
+    // Prevent going back to tracking screen
+    BackHandler {
+        onSuccess()
+    }
 
     LaunchedEffect(jobId) {
         viewModel.loadJob(jobId)
@@ -160,6 +167,16 @@ fun RatingScreen(
             } else {
                 Text("SUBMIT RATING", fontWeight = FontWeight.Black)
             }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextButton(
+            onClick = { onSuccess() },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isSubmitting
+        ) {
+            Text("NOT NOW, MAYBE LATER", color = Color.Gray, fontWeight = FontWeight.Bold)
         }
     }
 }

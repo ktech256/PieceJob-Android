@@ -97,10 +97,11 @@ fun CustomerTrackingScreen(
 
     LaunchedEffect(job?.status) {
         if (job?.status == "CANCELLED") {
-            delay(2000)
+            android.util.Log.d("FORENSIC", "TRACKING_EXIT | Job Cancelled. Returning to dashboard.")
+            delay(1000)
             onBack()
         } else if (job?.status == "COMPLETED") {
-            delay(2000)
+            android.util.Log.d("FORENSIC", "TRACKING_EXIT | Job Completed. Moving to rating.")
             onNavigateToRating(jobId)
         }
     }
@@ -125,13 +126,22 @@ fun CustomerTrackingScreen(
         )
     }
 
+    val isTerminalState = job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED"
+
     Box(modifier = Modifier.fillMaxSize()) {
         // MAP
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = true),
-            properties = MapProperties(isMyLocationEnabled = true)
+            uiSettings = MapUiSettings(
+                zoomControlsEnabled = false, 
+                myLocationButtonEnabled = !isTerminalState,
+                scrollGesturesEnabled = !isTerminalState,
+                zoomGesturesEnabled = !isTerminalState,
+                tiltGesturesEnabled = !isTerminalState,
+                rotationGesturesEnabled = !isTerminalState
+            ),
+            properties = MapProperties(isMyLocationEnabled = !isTerminalState)
         ) {
             // Customer Marker
             Marker(
@@ -255,9 +265,11 @@ fun CustomerTrackingScreen(
                     if (!isAssigned) {
                         SearchingPanel(job?.serviceCode ?: "Service", nearbyProviders.size)
                     } else {
+                        val isTerminalState = job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED"
                         AssignedProviderPanel(
                             job = job!!,
                             eta = eta,
+                            isTerminalState = isTerminalState,
                             onChatOpen = onChatOpen,
                             onCallOpen = onCallOpen,
                             onSosTrigger = onSosTrigger
@@ -320,6 +332,7 @@ fun SearchingPanel(serviceName: String, nearbyCount: Int) {
 fun AssignedProviderPanel(
     job: com.piecejob.core.data.remote.dto.JobDto,
     eta: String,
+    isTerminalState: Boolean,
     onChatOpen: (String) -> Unit,
     onCallOpen: (String, String, String, String?) -> Unit,
     onSosTrigger: () -> Unit
@@ -356,22 +369,30 @@ fun AssignedProviderPanel(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledIconButton(
                     onClick = { 
-                        job.providerInfo?.let { info ->
-                            onCallOpen(job.providerId!!, "${info.firstName} ${info.lastName}", info.phoneNumber ?: "", info.profilePicture)
+                        if (!isTerminalState) {
+                            job.providerInfo?.let { info ->
+                                onCallOpen(job.providerId!!, "${info.firstName} ${info.lastName}", info.phoneNumber ?: "", info.profilePicture)
+                            }
                         }
                     },
                     modifier = Modifier.size(48.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFE8F5E9))
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = if (isTerminalState) Color.LightGray else Color(0xFFE8F5E9)
+                    ),
+                    enabled = !isTerminalState
                 ) {
-                    Icon(Icons.Default.Phone, contentDescription = "Call", tint = Color(0xFF2E7D32))
+                    Icon(Icons.Default.Phone, contentDescription = "Call", tint = if (isTerminalState) Color.Gray else Color(0xFF2E7D32))
                 }
                 
                 FilledIconButton(
-                    onClick = { job?.providerId?.let { onChatOpen(it) } },
+                    onClick = { if (!isTerminalState) { job?.providerId?.let { onChatOpen(it) } } },
                     modifier = Modifier.size(48.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFE3F2FD))
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = if (isTerminalState) Color.LightGray else Color(0xFFE3F2FD)
+                    ),
+                    enabled = !isTerminalState
                 ) {
-                    Icon(Icons.Default.Email, contentDescription = "Message", tint = Color(0xFF1976D2))
+                    Icon(Icons.Default.Email, contentDescription = "Message", tint = if (isTerminalState) Color.Gray else Color(0xFF1976D2))
                 }
             }
         }

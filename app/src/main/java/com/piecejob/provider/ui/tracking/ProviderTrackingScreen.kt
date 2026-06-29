@@ -193,10 +193,12 @@ fun ProviderTrackingScreen(
             android.util.Log.d("ForensicLog", "JOB_STATE_CHANGED | Job: $jobId | New Status: ${job?.status}")
         }
         if (job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED") {
-            delay(2000)
             if (job?.status == "COMPLETED") {
+                android.util.Log.d("ForensicLog", "TRACKING_EXIT | Job Completed. Moving to rating.")
                 onNavigateToRating(jobId)
             } else {
+                android.util.Log.d("ForensicLog", "TRACKING_EXIT | Job Cancelled. Returning.")
+                delay(1000)
                 onBack()
             }
         }
@@ -337,6 +339,7 @@ fun ProviderTrackingScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 24.dp)
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
+                    val isTerminalState = job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED"
                     job?.let { currentJob ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
@@ -367,22 +370,30 @@ fun ProviderTrackingScreen(
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     FilledIconButton(
                                         onClick = { 
-                                            job?.customerInfo?.let { info ->
-                                                onCallOpen(job!!.customerId, "${info.firstName} ${info.lastName}", info.phoneNumber ?: "", info.profilePicture)
+                                            if (!isTerminalState) {
+                                                job?.customerInfo?.let { info ->
+                                                    onCallOpen(job!!.customerId, "${info.firstName} ${info.lastName}", info.phoneNumber ?: "", info.profilePicture)
+                                                }
                                             }
                                         },
                                         modifier = Modifier.size(44.dp),
-                                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFE8F5E9))
+                                        colors = IconButtonDefaults.filledIconButtonColors(
+                                            containerColor = if (isTerminalState) Color.LightGray else Color(0xFFE8F5E9)
+                                        ),
+                                        enabled = !isTerminalState
                                     ) {
-                                        Icon(Icons.Default.Phone, contentDescription = "Call", tint = Color(0xFF2E7D32))
+                                        Icon(Icons.Default.Phone, contentDescription = "Call", tint = if (isTerminalState) Color.Gray else Color(0xFF2E7D32))
                                     }
                                     
                                     FilledIconButton(
-                                        onClick = { onChatOpen(currentJob.customerId) },
+                                        onClick = { if (!isTerminalState) onChatOpen(currentJob.customerId) },
                                         modifier = Modifier.size(44.dp),
-                                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFE3F2FD))
+                                        colors = IconButtonDefaults.filledIconButtonColors(
+                                            containerColor = if (isTerminalState) Color.LightGray else Color(0xFFE3F2FD)
+                                        ),
+                                        enabled = !isTerminalState
                                     ) {
-                                        Icon(Icons.Default.Email, contentDescription = "Message", tint = Color(0xFF1976D2))
+                                        Icon(Icons.Default.Email, contentDescription = "Message", tint = if (isTerminalState) Color.Gray else Color(0xFF1976D2))
                                     }
                                 }
                             }

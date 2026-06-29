@@ -79,6 +79,11 @@ class ProviderTrackingViewModel @Inject constructor(
         trackingJob?.cancel()
         trackingJob = viewModelScope.launch {
             LocationService.currentLocation.collect { loc ->
+                if (_job.value?.status == "COMPLETED" || _job.value?.status == "CANCELLED") {
+                    trackingJob?.cancel()
+                    return@collect
+                }
+
                 if (loc != null) {
                     val currentLatLng = LatLng(loc.latitude, loc.longitude)
                     _providerLocation.value = currentLatLng

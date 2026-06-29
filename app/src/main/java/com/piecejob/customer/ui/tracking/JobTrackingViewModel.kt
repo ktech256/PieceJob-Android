@@ -110,6 +110,8 @@ class JobTrackingViewModel @Inject constructor(
 
     private fun setupSocketListeners(jobId: String) {
         socketManager.onLocationUpdated { lat, lng, heading ->
+            if (_job.value?.status == "COMPLETED" || _job.value?.status == "CANCELLED") return@onLocationUpdated
+
             android.util.Log.d("JobTracking", "Provider location update: $lat, $lng, heading: $heading")
             _providerLocation.value = lat to lng
             _providerHeading.value = heading

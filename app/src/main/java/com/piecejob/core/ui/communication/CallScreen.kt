@@ -101,6 +101,9 @@ fun CallScreen(
             Text(
                 text = when (connectionStatus) {
                     "Connected" -> "On Call... ${formatTime(secondsElapsed)}"
+                    "Calling..." -> "Calling..."
+                    "Connecting..." -> "Connecting..."
+                    "Disconnected" -> "Call Ended"
                     else -> connectionStatus
                 },
                 color = if (connectionStatus == "Connected") Color(0xFF4CAF50) else Color.Gray,
