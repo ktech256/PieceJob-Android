@@ -29,7 +29,7 @@ class CallManager @Inject constructor(
     
     private val room: Room? get() = _room
     private var _room: Room? = null
-    private val url = "https://piecejob-125so6f8.livekit.cloud"
+    private val url = "wss://piecejob-125so6f8.livekit.cloud"
 
     private val _isCallActive = MutableStateFlow(false)
     val isCallActive: StateFlow<Boolean> = _isCallActive.asStateFlow()
@@ -49,6 +49,7 @@ class CallManager @Inject constructor(
 
     private val audioManager = application.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var originalMode: Int = AudioManager.MODE_NORMAL
+    private var focusRequest: AudioFocusRequest? = null
 
     fun setCallActive(active: Boolean) {
         _isCallActive.value = active
@@ -62,9 +63,9 @@ class CallManager @Inject constructor(
             if (_room != null) {
                 Log.d("FORENSIC", "CALL_MANAGER | Disconnecting existing room before new connection")
                 _room?.disconnect()
-                _room = null
-                _isRemoteJoined.value = false
             }
+            _room = null
+            _isRemoteJoined.value = false
             
             Log.d("FORENSIC", "CALL_MANAGER | Connecting to LiveKit. URL: $url | Token Len: ${token.length}")
             val currentRoom = LiveKit.create(application)
@@ -77,10 +78,8 @@ class CallManager @Inject constructor(
                     Log.d("FORENSIC", "CALL_MANAGER | RoomEvent: ${event.javaClass.simpleName}")
                     when (event) {
                         is RoomEvent.Connected -> {
-                            Log.d("FORENSIC", "CALL_MANAGER | LiveKit Connected Event Received")
-                            // Check if remote participants are already present (case where caller joins late or receiver joins early)
+                            Log.d("FORENSIC", "CALL_MANAGER | LiveKit Connected Event Received. Remote participants: ${currentRoom.remoteParticipants.size}")
                             if (currentRoom.remoteParticipants.isNotEmpty()) {
-                                Log.d("FORENSIC", "CALL_MANAGER | Remote participant already present")
                                 _isRemoteJoined.value = true
                                 _connectionStatus.value = "Connected"
                             } else {
@@ -115,7 +114,8 @@ class CallManager @Inject constructor(
                         }
                         is RoomEvent.Reconnected -> {
                             Log.d("FORENSIC", "CALL_MANAGER | LiveKit Reconnected")
-                            if (_isRemoteJoined.value) {
+                            if (currentRoom.remoteParticipants.isNotEmpty()) {
+                                _isRemoteJoined.value = true
                                 _connectionStatus.value = "Connected"
                             } else {
                                 _connectionStatus.value = "Calling..."
@@ -128,8 +128,10 @@ class CallManager @Inject constructor(
                         }
                         is RoomEvent.ParticipantDisconnected -> {
                             Log.d("FORENSIC", "CALL_MANAGER | Remote Participant Disconnected: ${event.participant.identity}")
-                            _isRemoteJoined.value = false
-                            _connectionStatus.value = "Calling..."
+                            if (currentRoom.remoteParticipants.isEmpty()) {
+                                _isRemoteJoined.value = false
+                                _connectionStatus.value = "Calling..."
+                            }
                         }
                         is RoomEvent.TrackSubscribed -> {
                             val track = event.track
@@ -148,7 +150,7 @@ class CallManager @Inject constructor(
             try {
                 _connectionStatus.value = "Connecting..."
                 currentRoom.connect(url, token)
-                Log.d("FORENSIC", "CALL_MANAGER | currentRoom.connect call finished successfully")
+                Log.d("FORENSIC", "CALL_MANAGER | currentRoom.connect suspend call returned")
             } catch (e: Exception) {
                 Log.e("FORENSIC", "CALL_MANAGER | Connection Exception", e)
                 _connectionStatus.value = "Error: ${e.message}"
@@ -173,17 +175,32 @@ class CallManager @Inject constructor(
                     .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                     .build()
-                val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                     .setAudioAttributes(playbackAttributes)
                     .setAcceptsDelayedFocusGain(true)
                     .build()
-                audioManager.requestAudioFocus(focusRequest)
+                focusRequest = request
+                audioManager.requestAudioFocus(request)
             } else {
                 @Suppress("DEPRECATION")
                 audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
             }
         } catch (e: Exception) {
             Log.e("FORENSIC", "CALL_MANAGER | Focus request failed", e)
+        }
+    }
+
+    private fun releaseAudioFocus() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+                focusRequest = null
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager.abandonAudioFocus(null)
+            }
+        } catch (e: Exception) {
+            Log.e("FORENSIC", "CALL_MANAGER | Focus release failed", e)
         }
     }
 
@@ -227,5 +244,6 @@ class CallManager @Inject constructor(
         
         audioManager.mode = originalMode
         audioManager.isSpeakerphoneOn = false
+        releaseAudioFocus()
     }
 }

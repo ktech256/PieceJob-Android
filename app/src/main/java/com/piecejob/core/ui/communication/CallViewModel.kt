@@ -11,8 +11,8 @@ import com.piecejob.core.communication.CallManager
 import com.piecejob.core.data.repository.CallRepository
 import com.piecejob.core.socket.SocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -50,18 +50,21 @@ class CallViewModel @Inject constructor(
                 val signal = json.optString("signal")
                 val jobId = json.optString("jobId")
                 
+                Log.d("FORENSIC", "CALL_SIGNAL_OBSERVER | Received: $signal for Job: $jobId")
+                
                 if (jobId == callManager.activeJobId) {
                     when (signal) {
                         "ACCEPTED" -> {
                             Log.d("FORENSIC", "CALL_SIGNAL_RECEIVED | Remote Accepted")
+                            // No action needed, LiveKit will handle the participant connection
                         }
                         "REJECTED" -> {
                             Log.d("FORENSIC", "CALL_SIGNAL_RECEIVED | Remote Rejected")
-                            endCall("REJECTED", 0)
+                            endCallLocal("REJECTED")
                         }
                         "BUSY" -> {
                             Log.d("FORENSIC", "CALL_SIGNAL_RECEIVED | Remote Busy")
-                            endCall("BUSY", 0)
+                            endCallLocal("BUSY")
                         }
                         "ENDED" -> {
                             Log.d("FORENSIC", "CALL_SIGNAL_RECEIVED | Remote Ended")
@@ -80,47 +83,54 @@ class CallViewModel @Inject constructor(
         callManager.targetUserId = receiverId
         
         Log.d("FORENSIC", "CALL_SIGNAL_SENT | Job: $jobId | To: $receiverId")
-        viewModelScope.launch {
+        // Use a scope that isn't tied to the ViewModel to ensure the call initiation and media connection finish
+        // even if the user navigates away or the screen recomposes.
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             val res = repository.logCallInitiation(jobId, receiverId)
             if (res.success && res.data != null) {
                 callManager.currentCallId = res.data.callId
                 Log.d("FORENSIC", "CALL_RECORD_CREATED | ID: ${callManager.currentCallId}")
-                connectToLiveKit(jobId)
-                startTimeoutCounter()
+                val tokenRes = repository.getLiveKitToken(jobId)
+                if (tokenRes.success && tokenRes.data != null) {
+                    callManager.connect(tokenRes.data.token)
+                }
             } else {
                 Log.e("FORENSIC", "CALL_INIT_FAILED | Error: ${res.message}")
                 callManager.setCallActive(false)
             }
         }
+        startTimeoutCounter()
     }
 
     fun acceptIncomingCall(jobId: String, callId: String, callerId: String) {
-        if (callManager.isCallActive.value) return
+        if (callManager.isCallActive.value && callManager.activeJobId == jobId) {
+             Log.d("FORENSIC", "CALL_VIEWMODEL | Already in this call.")
+             return
+        }
+        
+        Log.d("FORENSIC", "CALL_VIEWMODEL | Accepting Call: $callId for Job: $jobId")
         callManager.setCallActive(true)
         callManager.currentCallId = callId
         callManager.activeJobId = jobId
         callManager.targetUserId = callerId
         
         socketManager.sendCallSignal(jobId, callerId, "ACCEPTED")
-        connectToLiveKit(jobId)
+        
+        // Use a persistent scope because IncomingCallScreen is about to be popped/cleared
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            val tokenRes = repository.getLiveKitToken(jobId)
+            if (tokenRes.success && tokenRes.data != null) {
+                Log.d("FORENSIC", "CALL_VIEWMODEL | Receiver LiveKit Token Acquired. Connecting...")
+                callManager.connect(tokenRes.data.token)
+            } else {
+                Log.e("FORENSIC", "CALL_VIEWMODEL | Receiver failed to get token: ${tokenRes.message}")
+            }
+        }
     }
 
     fun rejectIncomingCall(jobId: String, callerId: String) {
         socketManager.sendCallSignal(jobId, callerId, "REJECTED")
         endCall("REJECTED", 0)
-    }
-
-    private fun connectToLiveKit(jobId: String) {
-        Log.d("FORENSIC", "CALL_VIEWMODEL | Fetching LiveKit Token for Job: $jobId")
-        viewModelScope.launch {
-            val tokenRes = repository.getLiveKitToken(jobId)
-            if (tokenRes.success && tokenRes.data != null) {
-                Log.d("FORENSIC", "CALL_VIEWMODEL | LiveKit Token Acquired. Length: ${tokenRes.data.token.length}")
-                callManager.connect(tokenRes.data.token)
-            } else {
-                Log.e("FORENSIC", "CALL_VIEWMODEL | Failed to get LiveKit Token: ${tokenRes.message}")
-            }
-        }
     }
 
     fun startRinging(context: android.content.Context) {
@@ -177,10 +187,11 @@ class CallViewModel @Inject constructor(
             }
         }
 
-        viewModelScope.launch {
-            val callId = callManager.currentCallId
-            callManager.disconnect()
-            
+        val callId = callManager.currentCallId
+        callManager.disconnect()
+        
+        // Persistent scope for DB update
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             if (callId != null) {
                 Log.d("FORENSIC", "CALL_ENDED | Status: $status | Duration: $duration")
                 repository.updateCallStatus(callId, status, duration)

@@ -35,7 +35,15 @@ fun IncomingCallScreen(
 ) {
     val context = LocalContext.current
     val connectionStatus by viewModel.connectionStatus.collectAsState()
+    val isCallActive by viewModel.isCallActive.collectAsState()
     
+    LaunchedEffect(isCallActive) {
+        if (!isCallActive && connectionStatus == "Idle") {
+             android.util.Log.d("FORENSIC", "INCOMING_CALL | Call cancelled by remote. Closing.")
+             onReject()
+        }
+    }
+
     LaunchedEffect(callId) {
         viewModel.setCallId(callId)
         viewModel.startRinging(context)

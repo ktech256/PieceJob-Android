@@ -40,6 +40,13 @@ fun CallScreen(
     val isSpeakerOn by viewModel.isSpeakerOn.collectAsState()
     var secondsElapsed by remember { mutableIntStateOf(0) }
 
+    LaunchedEffect(isCallActive) {
+        if (!isCallActive) {
+            android.util.Log.d("FORENSIC", "CALL_SCREEN | Call ended. Navigating back.")
+            onBack()
+        }
+    }
+
     LaunchedEffect(Unit) {
         if (!isCallActive) {
             viewModel.initiateCall(jobId, receiverId)
