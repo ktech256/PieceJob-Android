@@ -375,21 +375,20 @@ fun ProviderTrackingScreen(
                                             if (now - lastClickTime < 1000) return@FilledIconButton
                                             lastClickTime = now
 
-                                            android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | isTerminalState: $isTerminalState | Job: ${job?.id}")
-                                            if (!isTerminalState) {
-                                                val info = job?.customerInfo
-                                                val customerId = job?.customerId
+                                            val targetId = job?.customerId
+                                            val info = job?.customerInfo
+
+                                            android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | Target: $targetId | Terminal: $isTerminalState")
+                                            
+                                            if (!isTerminalState && targetId != null) {
+                                                val name = info?.let { "${it.firstName} ${it.lastName}" } ?: "Customer"
+                                                val phone = info?.phoneNumber ?: ""
+                                                val photo = info?.profilePicture
                                                 
-                                                if (customerId != null) {
-                                                    val name = info?.let { "${it.firstName} ${it.lastName}" } ?: "Customer"
-                                                    val phone = info?.phoneNumber ?: ""
-                                                    val photo = info?.profilePicture
-                                                    
-                                                    android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | Navigating to CallScreen. To: $name")
-                                                    onCallOpen(customerId, name, phone, photo)
-                                                } else {
-                                                    android.util.Log.e("FORENSIC", "CALL_BUTTON_CLICKED | customerId is NULL")
-                                                }
+                                                android.util.Log.d("FORENSIC", "CALL_NAVIGATING | To: $name")
+                                                onCallOpen(targetId, name, phone, photo)
+                                            } else if (targetId == null) {
+                                                android.util.Log.e("FORENSIC", "CALL_FAILED | No customer ID available")
                                             }
                                         },
                                         modifier = Modifier.size(44.dp),

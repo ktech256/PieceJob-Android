@@ -137,6 +137,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
                 enableLights(true)
                 enableVibration(true)
                 setSound(null, null) 
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -150,8 +151,8 @@ class PieceJobMessagingService : FirebaseMessagingService() {
             .setAutoCancel(true)
             .setOngoing(true)
             .setVibrate(longArrayOf(0, 500, 200, 500))
+            .setFullScreenIntent(pendingIntent, true) // Primary way to show UI from background
             .setContentIntent(pendingIntent)
-            .setFullScreenIntent(pendingIntent, true)
 
         notificationManager.notify(callId.hashCode(), builder.build())
     }

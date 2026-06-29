@@ -56,6 +56,7 @@ class CallViewModel @Inject constructor(
                     when (signal) {
                         "ACCEPTED" -> {
                             Log.d("FORENSIC", "CALL_SIGNAL_RECEIVED | Remote Accepted")
+                            // LiveKit Connected event in CallManager will handle the UI state transition to Connected
                         }
                         "REJECTED" -> {
                             Log.d("FORENSIC", "CALL_SIGNAL_RECEIVED | Remote Rejected")
@@ -76,47 +77,48 @@ class CallViewModel @Inject constructor(
     }
 
     fun initiateCall(jobId: String, receiverId: String) {
-        Log.d("FORENSIC", "CALL_VIEWMODEL | initiateCall triggered. Job: $jobId | To: $receiverId")
-        if (callManager.isCallActive.value) {
-            Log.w("FORENSIC", "CALL_VIEWMODEL | initiateCall ignored - call already active")
+        Log.d("FORENSIC", "CALL_INIT_CLICKED | Job: $jobId | To: $receiverId")
+        if (callManager.isCallActive.value && callManager.activeJobId == jobId) {
+            Log.w("FORENSIC", "CALL_INIT_IGNORED | Already active in this job")
             return
         }
-        callManager.setCallActive(true) // This sets status to "Calling..."
+
+        // WhatsApp Style: Immediate UI State Transition
+        callManager.setCallActive(true) // Status -> Calling...
         callManager.activeJobId = jobId
         callManager.targetUserId = receiverId
         
-        Log.d("FORENSIC", "CALL_SIGNAL_OUTGOING | Signal logic starting")
+        // Persistent logic flow (survives screen rotation/navigation)
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            Log.d("FORENSIC", "CALL_BACKEND_INIT | Creating session on server")
             val res = repository.logCallInitiation(jobId, receiverId)
+            
             if (res.success && res.data != null) {
-                Log.d("FORENSIC", "CALL_RECORD_CREATED | ID: ${res.data.callId}")
-                callManager.currentCallId = res.data.callId
+                val callId = res.data.callId
+                Log.d("FORENSIC", "CALL_SESSION_CREATED | ID: $callId")
+                callManager.currentCallId = callId
                 
-                Log.d("FORENSIC", "CALL_TOKEN_FETCH | Requesting LiveKit token")
+                Log.d("FORENSIC", "CALL_TOKEN_FETCH | Fetching LiveKit token")
                 val tokenRes = repository.getLiveKitToken(jobId)
                 if (tokenRes.success && tokenRes.data != null) {
-                    Log.d("FORENSIC", "CALL_TOKEN_ACQUIRED | Length: ${tokenRes.data.token.length}")
+                    Log.d("FORENSIC", "CALL_MEDIA_JOIN | Joining LiveKit room")
                     callManager.connect(tokenRes.data.token)
                 } else {
-                    Log.e("FORENSIC", "CALL_TOKEN_FAILED | Error: ${tokenRes.message}")
+                    Log.e("FORENSIC", "CALL_TOKEN_FAILED | ${tokenRes.message}")
                     endCallLocal("Failed")
                 }
             } else {
-                Log.e("FORENSIC", "CALL_INIT_FAILED | Error: ${res.message}")
-                callManager.setCallActive(false)
+                Log.e("FORENSIC", "CALL_BACKEND_FAILED | ${res.message}")
+                endCallLocal("Failed")
             }
         }
         startTimeoutCounter()
     }
 
     fun acceptIncomingCall(jobId: String, callId: String, callerId: String) {
-        if (callManager.isCallActive.value && callManager.activeJobId == jobId) {
-             Log.d("FORENSIC", "CALL_VIEWMODEL | acceptIncomingCall: already in this call")
-             return
-        }
+        Log.d("FORENSIC", "CALL_ACCEPT_CLICKED | Job: $jobId | Call: $callId")
         
-        Log.d("FORENSIC", "CALL_VIEWMODEL | acceptIncomingCall (Answer pressed) | ID: $callId")
-        callManager.setCallActive(true) // Status -> Calling... (will be updated to Connecting... in connect)
+        callManager.setCallActive(true) // Status -> Calling...
         callManager.currentCallId = callId
         callManager.activeJobId = jobId
         callManager.targetUserId = callerId
@@ -125,35 +127,38 @@ class CallViewModel @Inject constructor(
         socketManager.sendCallSignal(jobId, callerId, "ACCEPTED")
         
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            Log.d("FORENSIC", "CALL_TOKEN_FETCH | Requesting token for receiver")
+            Log.d("FORENSIC", "CALL_TOKEN_FETCH | Fetching LiveKit token for receiver")
             val tokenRes = repository.getLiveKitToken(jobId)
             if (tokenRes.success && tokenRes.data != null) {
-                Log.d("FORENSIC", "CALL_TOKEN_ACQUIRED | Length: ${tokenRes.data.token.length}")
+                Log.d("FORENSIC", "CALL_MEDIA_JOIN | Connecting to LiveKit")
                 callManager.connect(tokenRes.data.token)
             } else {
-                Log.e("FORENSIC", "CALL_TOKEN_FAILED | Error: ${tokenRes.message}")
+                Log.e("FORENSIC", "CALL_TOKEN_FAILED | ${tokenRes.message}")
                 endCallLocal("Failed")
             }
         }
     }
 
     fun rejectIncomingCall(jobId: String, callerId: String) {
+        Log.d("FORENSIC", "CALL_REJECT_CLICKED | Job: $jobId")
         socketManager.sendCallSignal(jobId, callerId, "REJECTED")
-        endCall("REJECTED", 0)
+        endCallLocal("Declined")
     }
 
     fun startRinging(context: android.content.Context) {
         try {
+            Log.d("FORENSIC", "CALL_UI | Starting ringing sound")
             val notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
             mediaPlayer = MediaPlayer.create(context, notification)
             mediaPlayer?.isLooping = true
             mediaPlayer?.start()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("FORENSIC", "CALL_RING_ERROR", e)
         }
     }
 
     fun stopRinging() {
+        Log.d("FORENSIC", "CALL_UI | Stopping ringing sound")
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
@@ -161,11 +166,12 @@ class CallViewModel @Inject constructor(
 
     private fun startTimeoutCounter() {
         timer?.cancel()
-        timer = object : CountDownTimer(30000, 1000) {
+        timer = object : CountDownTimer(35000, 1000) {
             override fun onTick(millisUntilFinished: Long) {}
             override fun onFinish() {
-                if (callManager.currentCallId != null && callManager.connectionStatus.value != "Connected") {
-                    endCall("MISSED", 0)
+                if (callManager.isCallActive.value && callManager.connectionStatus.value != "Connected") {
+                    Log.d("FORENSIC", "CALL_TIMEOUT | No answer after 35s")
+                    endCall("Missed", 0)
                 }
             }
         }.start()
@@ -180,29 +186,31 @@ class CallViewModel @Inject constructor(
     }
 
     private fun endCallLocal(status: String) {
+        Log.d("FORENSIC", "CALL_LOCAL_END | Status: $status")
         stopRinging()
         timer?.cancel()
         callManager.disconnect(status)
     }
 
     fun endCall(status: String, duration: Int) {
+        Log.d("FORENSIC", "CALL_USER_END | Requesting termination. Final duration: $duration")
         timer?.cancel()
         stopRinging()
         
-        // Signal remote
-        callManager.activeJobId?.let { jId ->
-            callManager.targetUserId?.let { uId ->
-                socketManager.sendCallSignal(jId, uId, "ENDED")
-            }
+        val jId = callManager.activeJobId
+        val uId = callManager.targetUserId
+        val callId = callManager.currentCallId
+
+        if (jId != null && uId != null) {
+            Log.d("FORENSIC", "CALL_SIGNAL_END | Notifying other participant")
+            socketManager.sendCallSignal(jId, uId, "ENDED")
         }
 
-        val callId = callManager.currentCallId
         callManager.disconnect("Ended")
         
-        // Persistent scope for DB update
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             if (callId != null) {
-                Log.d("FORENSIC", "CALL_ENDED | Status: $status | Duration: $duration")
+                Log.d("FORENSIC", "CALL_DB_SYNC | Updating status: $status")
                 repository.updateCallStatus(callId, status, duration)
             }
         }

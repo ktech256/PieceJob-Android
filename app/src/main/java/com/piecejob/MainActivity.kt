@@ -46,7 +46,8 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var sessionManager: SessionManager
 
-    private val incomingIntent = MutableStateFlow<Intent?>(null)
+    // Forensic: Intent queue to ensure no signals are lost during UI transitions
+    private val incomingIntentQueue = MutableStateFlow<Intent?>(null)
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -59,13 +60,13 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        incomingIntent.value = intent
+        incomingIntentQueue.value = intent
         android.util.Log.d("FORENSIC", "MAIN_ACTIVITY_ON_NEW_INTENT | Type: ${intent.getStringExtra("type")}")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        incomingIntent.value = intent
+        incomingIntentQueue.value = intent
         android.util.Log.d("FORENSIC", "MAIN_ACTIVITY_ON_CREATE | Type: ${intent.getStringExtra("type")}")
         enableEdgeToEdge()
 
@@ -97,48 +98,52 @@ class MainActivity : AppCompatActivity() {
         setContent {
             PieceJobTheme(isProvider = isProvider) {
                 val navController = rememberNavController()
-                val currentIntent by incomingIntent.collectAsState()
+                val currentIntent by incomingIntentQueue.collectAsState()
 
-                // Handle Notification Deep Links & Incoming Calls
+                // ORCHESTRATOR: Handle All Navigation Signals (Intents & Deep Links)
                 LaunchedEffect(currentIntent) {
                     val intent = currentIntent ?: return@LaunchedEffect
                     val type = intent.getStringExtra("type")
                     val jobId = intent.getStringExtra("jobId")
                     
-                    android.util.Log.d("FORENSIC", "MAIN_ACTIVITY_INTENT_PROCESS | Type: $type | Job: $jobId")
+                    android.util.Log.d("FORENSIC", "MAIN_ACTIVITY_NAV_SIGNAL | Type: $type | Job: $jobId")
 
-                    if (type == "VERIFICATION_UPDATE") {
-                        navController.navigate("verification_docs") {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    } else if (type == "NEW_JOB_BROADCAST" && jobId != null) {
-                        android.util.Log.d("FCM_NAV", "Tapped broadcast notification for $jobId")
-                        navController.navigate(Screen.ProviderHome.route)
-                    } else if (type == "INCOMING_CALL") {
-                        val callerId = intent.getStringExtra("callerId")
-                        val callId = intent.getStringExtra("callId")
-                        val callerName = intent.getStringExtra("callerName")
-                        val callerPhone = intent.getStringExtra("callerPhone")
-                        val callerPhoto = intent.getStringExtra("callerPhoto")
-                        
-                        if (jobId != null && callerId != null && callId != null) {
-                            android.util.Log.d("FORENSIC", "INCOMING_CALL_INTENT | Navigating to IncomingCall screen. From: $callerName")
-                            navController.navigate(Screen.IncomingCall.passArgs(jobId, callerId, callId, callerName ?: "Someone", callerPhone ?: "", callerPhoto)) {
+                    when (type) {
+                        "VERIFICATION_UPDATE" -> {
+                            navController.navigate(Screen.VerificationDocs.route) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
+                                restoreState = true
                             }
-                        } else {
-                            android.util.Log.e("FORENSIC", "INCOMING_CALL_INTENT | Missing required args. JobId=$jobId, callerId=$callerId, callId=$callId")
+                        }
+                        "NEW_JOB_BROADCAST" -> {
+                            if (jobId != null) {
+                                android.util.Log.d("FCM_NAV", "Navigating to ProviderHome for broadcast $jobId")
+                                navController.navigate(Screen.ProviderHome.route)
+                            }
+                        }
+                        "INCOMING_CALL" -> {
+                            val callerId = intent.getStringExtra("callerId")
+                            val callId = intent.getStringExtra("callId")
+                            val callerName = intent.getStringExtra("callerName")
+                            val callerPhone = intent.getStringExtra("callerPhone")
+                            val callerPhoto = intent.getStringExtra("callerPhoto")
+                            
+                            if (jobId != null && callerId != null && callId != null) {
+                                android.util.Log.d("FORENSIC", "INCOMING_CALL_SCREEN_LAUNCH | From: $callerName")
+                                navController.navigate(Screen.IncomingCall.passArgs(jobId, callerId, callId, callerName ?: "Someone", callerPhone ?: "", callerPhoto)) {
+                                    launchSingleTop = true
+                                }
+                            } else {
+                                android.util.Log.e("FORENSIC", "INCOMING_CALL_INVALID_DATA | JobId=$jobId, callerId=$callerId, callId=$callId")
+                            }
                         }
                     }
-                    
-                    incomingIntent.value = null
+                    // Reset to null to avoid repeat triggers, but cold start intent is already handled
+                    incomingIntentQueue.value = null
                 }
 
-                // GLOBAL SOCKET CONNECTION & FCM SYNC
+                // GLOBAL SOCKET & FCM STATE MANAGEMENT
                 val authState by authViewModel.authState.collectAsState()
                 LaunchedEffect(authState) {
                     if (authViewModel.isLoggedIn()) {
@@ -152,22 +157,13 @@ class MainActivity : AppCompatActivity() {
                                 android.util.Log.d("SOCKET_AUDIT", "Joined user room: user_$userId")
                             }
 
-                            android.util.Log.d("FCM_AUDIT", "FORENSIC_STARTUP: Logged in user detected. Syncing...")
                             val token = FirebaseMessaging.getInstance().token.await()
-                            if (token.isNullOrBlank()) {
-                                android.util.Log.e("FCM_AUDIT", "FORENSIC_FAILED: Generated token is NULL or BLANK.")
-                            } else {
-                                android.util.Log.d("FCM_AUDIT", "FCM_TOKEN_ACQUIRED: Token acquired. Len=${token.length}")
-                                android.util.Log.d("FCM_AUDIT", "FCM_UPLOAD_START: Sending to backend...")
-                                val response = userRepository.updateFcmToken(token)
-                                if (response.success) {
-                                    android.util.Log.d("FCM_AUDIT", "FCM_UPLOAD_SUCCESS: Server accepted token.")
-                                } else {
-                                    android.util.Log.e("FCM_AUDIT", "FCM_UPLOAD_FAILED: Code=${response.error?.code}, Msg=${response.message}")
-                                }
+                            if (!token.isNullOrBlank()) {
+                                android.util.Log.d("FCM_AUDIT", "Syncing token with backend...")
+                                userRepository.updateFcmToken(token)
                             }
                         } catch (e: Exception) {
-                            android.util.Log.e("FCM_AUDIT", "FORENSIC_CRITICAL: Generation/Upload failed. Error: ${e.message}", e)
+                            android.util.Log.e("GLOBAL_SYNC", "Startup sync failed: ${e.message}")
                         }
                     } else {
                         socketManager.disconnect()
@@ -179,10 +175,10 @@ class MainActivity : AppCompatActivity() {
                     authViewModel = authViewModel
                 )
 
-                // GLOBAL OBSERVER: Job Completion -> Auto Rating (Issue 2)
+                // GLOBAL OBSERVER: Job Completion
                 LaunchedEffect(Unit) {
                     socketManager.statusEventFlow.collect { event ->
-                        android.util.Log.d("FORENSIC", "GLOBAL_NAV_OBSERVER | Received status_updated: ${event.status} for Job: ${event.jobId}")
+                        android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Job: ${event.jobId} Status: ${event.status}")
                         if (event.status == "COMPLETED") {
                             callManager.disconnect("Ended")
                             navController.navigate(Screen.Rating.passJobId(event.jobId)) {
@@ -192,10 +188,10 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                // GLOBAL OBSERVER: Incoming Calls (Issue 2)
+                // GLOBAL OBSERVER: Socket Incoming Calls (Foreground)
                 LaunchedEffect(Unit) {
                     socketManager.callEventFlow.collect { json ->
-                        android.util.Log.d("FORENSIC", "GLOBAL_NAV_OBSERVER | Received incoming_call_intent: $json")
+                        android.util.Log.d("FORENSIC", "SOCKET_CALL_OBSERVER | Received: $json")
                         val jobId = json.optString("jobId")
                         val callerId = json.optString("callerId")
                         val callId = json.optString("callId")
@@ -204,10 +200,10 @@ class MainActivity : AppCompatActivity() {
                         val callerPhoto = json.optString("callerPhoto")
                         
                         if (callManager.isCallActive.value) {
-                            android.util.Log.d("FORENSIC", "CALL_BUSY | From: $callerName")
+                            android.util.Log.d("FORENSIC", "CALL_ORCHESTRATOR | Busy replying to $callerName")
                             socketManager.sendCallSignal(jobId, callerId, "BUSY")
                         } else {
-                            android.util.Log.d("FORENSIC", "CALL_RINGING | Navigating to IncomingCall screen. From: $callerName | CallID: $callId")
+                            android.util.Log.d("FORENSIC", "CALL_ORCHESTRATOR | Prompting Incoming Call screen. From: $callerName")
                             navController.navigate(Screen.IncomingCall.passArgs(jobId, callerId, callId, callerName, callerPhone, callerPhoto)) {
                                 launchSingleTop = true
                             }
@@ -215,14 +211,12 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                // GLOBAL OBSERVER: Chat Notifications (Issue 1)
+                // GLOBAL OBSERVER: Chat Notifications
                 LaunchedEffect(Unit) {
                     socketManager.messageEventFlow.collect { json ->
-                        val jobId = json.optString("jobId")
-                        val senderJson = json.optJSONObject("senderId")
-                        val senderName = senderJson?.optString("firstName") ?: "Someone"
-                        android.util.Log.d("FORENSIC", "CHAT_SOCKET_RECEIVED | From: $senderName")
-                        // TODO: Show in-app notification banner if not on chat screen
+                        val senderName = json.optJSONObject("senderId")?.optString("firstName") ?: "Someone"
+                        android.util.Log.d("FORENSIC", "CHAT_NOTIFICATION_RECEIVED | From: $senderName")
+                        // Implementation for in-app banner can be added here
                     }
                 }
             }

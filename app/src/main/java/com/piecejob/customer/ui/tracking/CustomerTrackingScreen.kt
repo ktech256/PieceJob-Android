@@ -374,21 +374,20 @@ fun AssignedProviderPanel(
                         if (now - lastClickTime < 1000) return@FilledIconButton
                         lastClickTime = now
 
-                        android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | isTerminalState: $isTerminalState | Job: ${job.id}")
-                        if (!isTerminalState) {
-                            val info = job.providerInfo
-                            val providerId = job.providerId
+                        val targetId = job.providerId
+                        val info = job.providerInfo
+                        
+                        android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | Target: $targetId | Terminal: $isTerminalState")
+                        
+                        if (!isTerminalState && targetId != null) {
+                            val name = info?.let { "${it.firstName} ${it.lastName}" } ?: "Professional"
+                            val phone = info?.phoneNumber ?: ""
+                            val photo = info?.profilePicture
                             
-                            if (providerId != null) {
-                                val name = info?.let { "${it.firstName} ${it.lastName}" } ?: "Professional"
-                                val phone = info?.phoneNumber ?: ""
-                                val photo = info?.profilePicture
-                                
-                                android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | Navigating to CallScreen. To: $name")
-                                onCallOpen(providerId, name, phone, photo)
-                            } else {
-                                android.util.Log.e("FORENSIC", "CALL_BUTTON_CLICKED | providerId is NULL")
-                            }
+                            android.util.Log.d("FORENSIC", "CALL_NAVIGATING | To: $name")
+                            onCallOpen(targetId, name, phone, photo)
+                        } else if (targetId == null) {
+                            android.util.Log.e("FORENSIC", "CALL_FAILED | No provider ID available")
                         }
                     },
                     modifier = Modifier.size(48.dp),
