@@ -36,7 +36,7 @@ fun CallScreen(
     var secondsElapsed by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
-        android.util.Log.d("FORENSIC", "CALL_STARTED | Job: $jobId")
+        android.util.Log.d("FORENSIC", "CALL_STARTED | Job: $jobId | To: $receiverId")
         viewModel.initiateCall(jobId, receiverId)
     }
 

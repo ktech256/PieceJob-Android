@@ -407,17 +407,20 @@ fun NavGraph(
             arguments = listOf(
                 navArgument("jobId") { type = NavType.StringType },
                 navArgument("callerId") { type = NavType.StringType },
+                navArgument("callId") { type = NavType.StringType },
                 navArgument("callerName") { type = NavType.StringType },
                 navArgument("callerPhone") { type = NavType.StringType }
             )
         ) { backStackEntry ->
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
             val callerId = backStackEntry.arguments?.getString("callerId") ?: ""
+            val callId = backStackEntry.arguments?.getString("callId") ?: ""
             val callerName = backStackEntry.arguments?.getString("callerName") ?: ""
             val callerPhone = backStackEntry.arguments?.getString("callerPhone") ?: ""
             IncomingCallScreen(
                 jobId = jobId,
                 callerId = callerId,
+                callId = callId,
                 callerName = callerName,
                 callerPhone = callerPhone,
                 onAccept = {

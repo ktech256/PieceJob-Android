@@ -56,13 +56,14 @@ class ChatViewModel @Inject constructor(
 
     fun sendMessage(receiverId: String, text: String) {
         val jobId = currentJobId ?: return
-        Log.d("FORENSIC", "CHAT_SEND_TRIGGERED | To: $receiverId | Text: $text")
+        val tag = if (com.piecejob.BuildConfig.FLAVOR == "provider") "PROVIDER_CHAT_SEND" else "CUSTOMER_CHAT_SEND"
+        Log.d("FORENSIC", "$tag | To: $receiverId | Text: $text")
+        
         viewModelScope.launch {
             val request = SendMessageRequest(jobId, receiverId, text)
             val res = repository.sendMessage(request)
             if (res.success) {
                 Log.d("FORENSIC", "CHAT_DATABASE_SAVE | Success")
-                // Socket will broadcast the message back to us as well
             } else {
                 Log.e("FORENSIC", "CHAT_DATABASE_SAVE | Failed: ${res.message}")
             }

@@ -128,10 +128,11 @@ class MainActivity : AppCompatActivity() {
                     socketManager.callEventFlow.collect { json ->
                         val jobId = json.optString("jobId")
                         val callerId = json.optString("callerId")
+                        val callId = json.optString("callId")
                         val callerName = json.optString("callerName")
                         val callerPhone = json.optString("callerPhone")
-                        android.util.Log.d("FORENSIC", "CALL_RINGING | From: $callerName")
-                        navController.navigate(Screen.IncomingCall.passArgs(jobId, callerId, callerName, callerPhone)) {
+                        android.util.Log.d("FORENSIC", "CALL_RINGING | From: $callerName | CallID: $callId")
+                        navController.navigate(Screen.IncomingCall.passArgs(jobId, callerId, callId, callerName, callerPhone)) {
                             launchSingleTop = true
                         }
                     }

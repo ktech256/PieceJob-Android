@@ -25,6 +25,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun IncomingCallScreen(
     jobId: String,
     callerId: String,
+    callId: String,
     callerName: String,
     callerPhone: String,
     viewModel: CallViewModel = hiltViewModel(),
@@ -33,6 +34,10 @@ fun IncomingCallScreen(
 ) {
     val context = LocalContext.current
     
+    LaunchedEffect(callId) {
+        viewModel.setCallId(callId)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -81,6 +86,8 @@ fun IncomingCallScreen(
             ) {
                 FloatingActionButton(
                     onClick = {
+                        android.util.Log.d("FORENSIC", "CALL_ACCEPTED | Job: $jobId")
+                        viewModel.endCall("ANSWERED", 0) 
                         val intent = Intent(Intent.ACTION_DIAL).apply {
                             data = Uri.parse("tel:$callerPhone")
                         }
@@ -97,6 +104,8 @@ fun IncomingCallScreen(
 
                 FloatingActionButton(
                     onClick = {
+                        android.util.Log.d("FORENSIC", "CALL_REJECTED | Job: $jobId")
+                        viewModel.endCall("REJECTED", 0)
                         onReject()
                     },
                     containerColor = Color(0xFFD32F2F),
