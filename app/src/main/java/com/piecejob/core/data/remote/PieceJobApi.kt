@@ -298,6 +298,9 @@ interface PieceJobApi {
     @PATCH("calls/{callId}/status")
     suspend fun updateCallStatus(@Path("callId") callId: String, @Body request: UpdateCallStatusRequest): ApiResponse<Unit>
 
+    @GET("livekit/token")
+    suspend fun getLiveKitToken(@Query("jobId") jobId: String): ApiResponse<LiveKitTokenDto>
+
     // =========================
     // ✅ ANALYTICS ROUTES
     // =========================

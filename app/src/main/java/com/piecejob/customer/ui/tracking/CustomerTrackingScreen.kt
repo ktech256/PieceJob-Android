@@ -32,7 +32,7 @@ fun CustomerTrackingScreen(
     jobId: String,
     viewModel: JobTrackingViewModel = hiltViewModel(),
     onChatOpen: (String) -> Unit,
-    onCallOpen: (String, String, String) -> Unit,
+    onCallOpen: (String, String, String, String?) -> Unit,
     onSosTrigger: () -> Unit,
     onNavigateToRating: (String) -> Unit,
     onBack: () -> Unit
@@ -321,7 +321,7 @@ fun AssignedProviderPanel(
     job: com.piecejob.core.data.remote.dto.JobDto,
     eta: String,
     onChatOpen: (String) -> Unit,
-    onCallOpen: (String, String, String) -> Unit,
+    onCallOpen: (String, String, String, String?) -> Unit,
     onSosTrigger: () -> Unit
 ) {
     Column {
@@ -356,8 +356,8 @@ fun AssignedProviderPanel(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledIconButton(
                     onClick = { 
-                        job?.providerInfo?.let { info ->
-                            onCallOpen(job!!.providerId!!, "${info.firstName} ${info.lastName}", info.phoneNumber ?: "")
+                        job.providerInfo?.let { info ->
+                            onCallOpen(job.providerId!!, "${info.firstName} ${info.lastName}", info.phoneNumber ?: "", info.profilePicture)
                         }
                     },
                     modifier = Modifier.size(48.dp),

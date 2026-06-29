@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.messaging.FirebaseMessaging
+import com.piecejob.core.communication.CallManager
 import com.piecejob.core.data.repository.UserRepository
 import com.piecejob.core.socket.SocketManager
 import com.piecejob.core.ui.auth.AuthViewModel
@@ -35,6 +36,9 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var socketManager: SocketManager
 
+    @Inject
+    lateinit var callManager: CallManager
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -50,7 +54,8 @@ class MainActivity : AppCompatActivity() {
         // Request Critical Permissions for Real Life Testing
         val permissions = mutableListOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.RECORD_AUDIO
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
@@ -131,9 +136,16 @@ class MainActivity : AppCompatActivity() {
                         val callId = json.optString("callId")
                         val callerName = json.optString("callerName")
                         val callerPhone = json.optString("callerPhone")
-                        android.util.Log.d("FORENSIC", "CALL_RINGING | From: $callerName | CallID: $callId")
-                        navController.navigate(Screen.IncomingCall.passArgs(jobId, callerId, callId, callerName, callerPhone)) {
-                            launchSingleTop = true
+                        val callerPhoto = json.optString("callerPhoto")
+                        
+                        if (callManager.isCallActive.value) {
+                            android.util.Log.d("FORENSIC", "CALL_BUSY | From: $callerName")
+                            socketManager.sendCallSignal(jobId, callerId, "BUSY")
+                        } else {
+                            android.util.Log.d("FORENSIC", "CALL_RINGING | From: $callerName | CallID: $callId")
+                            navController.navigate(Screen.IncomingCall.passArgs(jobId, callerId, callId, callerName, callerPhone, callerPhoto)) {
+                                launchSingleTop = true
+                            }
                         }
                     }
                 }

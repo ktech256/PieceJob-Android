@@ -285,8 +285,8 @@ fun NavGraph(
                 onChatOpen = { otherUserId ->
                     navController.navigate(Screen.Chat.passArgs(jobId, otherUserId))
                 },
-                onCallOpen = { receiverId, name, phone ->
-                    navController.navigate(Screen.Call.passArgs(jobId, receiverId, name, phone))
+                onCallOpen = { receiverId, name, phone, photo ->
+                    navController.navigate(Screen.Call.passArgs(jobId, receiverId, name, phone, photo))
                 },
                 onSosTrigger = { },
                 onNavigateToRating = {
@@ -308,8 +308,8 @@ fun NavGraph(
                 onChatOpen = { otherUserId ->
                     navController.navigate(Screen.Chat.passArgs(jobId, otherUserId))
                 },
-                onCallOpen = { receiverId, name, phone ->
-                    navController.navigate(Screen.Call.passArgs(jobId, receiverId, name, phone))
+                onCallOpen = { receiverId, name, phone, photo ->
+                    navController.navigate(Screen.Call.passArgs(jobId, receiverId, name, phone, photo))
                 },
                 onBack = { navController.popBackStack() },
                 onNavigateToRating = {
@@ -386,18 +386,21 @@ fun NavGraph(
                 navArgument("jobId") { type = NavType.StringType },
                 navArgument("receiverId") { type = NavType.StringType },
                 navArgument("receiverName") { type = NavType.StringType },
-                navArgument("receiverPhone") { type = NavType.StringType }
+                navArgument("receiverPhone") { type = NavType.StringType },
+                navArgument("receiverPhoto") { type = NavType.StringType }
             )
         ) { backStackEntry ->
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
             val receiverId = backStackEntry.arguments?.getString("receiverId") ?: ""
             val receiverName = backStackEntry.arguments?.getString("receiverName") ?: ""
             val receiverPhone = backStackEntry.arguments?.getString("receiverPhone") ?: ""
+            val receiverPhoto = backStackEntry.arguments?.getString("receiverPhoto").let { if (it == "none") null else it }
             CallScreen(
                 jobId = jobId,
                 receiverId = receiverId,
                 receiverName = receiverName,
                 receiverPhone = receiverPhone,
+                receiverPhoto = receiverPhoto,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -409,7 +412,8 @@ fun NavGraph(
                 navArgument("callerId") { type = NavType.StringType },
                 navArgument("callId") { type = NavType.StringType },
                 navArgument("callerName") { type = NavType.StringType },
-                navArgument("callerPhone") { type = NavType.StringType }
+                navArgument("callerPhone") { type = NavType.StringType },
+                navArgument("callerPhoto") { type = NavType.StringType }
             )
         ) { backStackEntry ->
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
@@ -417,14 +421,18 @@ fun NavGraph(
             val callId = backStackEntry.arguments?.getString("callId") ?: ""
             val callerName = backStackEntry.arguments?.getString("callerName") ?: ""
             val callerPhone = backStackEntry.arguments?.getString("callerPhone") ?: ""
+            val callerPhoto = backStackEntry.arguments?.getString("callerPhoto").let { if (it == "none") null else it }
             IncomingCallScreen(
                 jobId = jobId,
                 callerId = callerId,
                 callId = callId,
                 callerName = callerName,
                 callerPhone = callerPhone,
+                callerPhoto = callerPhoto,
                 onAccept = {
-                    navController.popBackStack()
+                    navController.navigate(Screen.Call.passArgs(jobId, callerId, callerName, callerPhone, callerPhoto)) {
+                        popUpTo(Screen.IncomingCall.route) { inclusive = true }
+                    }
                 },
                 onReject = {
                     navController.popBackStack()

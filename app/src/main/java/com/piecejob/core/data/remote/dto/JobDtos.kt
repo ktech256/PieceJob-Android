@@ -124,3 +124,7 @@ data class CallDto(
     val endTime: String?,
     val duration: Int?
 )
+
+data class LiveKitTokenDto(
+    val token: String
+)

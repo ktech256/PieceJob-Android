@@ -101,6 +101,9 @@ dependencies {
     // Socket.io
     implementation(libs.socket.io)
 
+    // LiveKit
+    implementation(libs.livekit.android)
+
     // Image Loading
     implementation("io.coil-kt:coil-compose:2.6.0")
 

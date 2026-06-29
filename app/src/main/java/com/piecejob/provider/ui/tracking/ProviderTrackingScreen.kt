@@ -54,7 +54,7 @@ fun ProviderTrackingScreen(
     jobId: String,
     viewModel: ProviderTrackingViewModel = hiltViewModel(),
     onChatOpen: (String) -> Unit,
-    onCallOpen: (String, String, String) -> Unit,
+    onCallOpen: (String, String, String, String?) -> Unit,
     onBack: () -> Unit,
     onNavigateToRating: (String) -> Unit
 ) {
@@ -368,7 +368,7 @@ fun ProviderTrackingScreen(
                                     FilledIconButton(
                                         onClick = { 
                                             job?.customerInfo?.let { info ->
-                                                onCallOpen(job!!.customerId, "${info.firstName} ${info.lastName}", info.phoneNumber ?: "")
+                                                onCallOpen(job!!.customerId, "${info.firstName} ${info.lastName}", info.phoneNumber ?: "", info.profilePicture)
                                             }
                                         },
                                         modifier = Modifier.size(44.dp),

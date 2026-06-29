@@ -29,6 +29,9 @@ class SocketManager @Inject constructor(
     private val _callEventFlow = MutableSharedFlow<JSONObject>(extraBufferCapacity = 10)
     val callEventFlow: SharedFlow<JSONObject> = _callEventFlow
 
+    private val _callSignalFlow = MutableSharedFlow<JSONObject>(extraBufferCapacity = 10)
+    val callSignalFlow: SharedFlow<JSONObject> = _callSignalFlow
+
     fun connect(baseUrl: String) {
         if (socket?.connected() == true) return
 
@@ -98,6 +101,16 @@ class SocketManager @Inject constructor(
                     _callEventFlow.tryEmit(data)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error in incoming_call_intent listener", e)
+                }
+            }
+
+            socket?.on("call_signal_received") { args ->
+                try {
+                    val data = args[0] as JSONObject
+                    Log.d("FORENSIC", "CALL_SIGNAL_RECEIVED | Signal: ${data.optString("signal")}")
+                    _callSignalFlow.tryEmit(data)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in call_signal_received listener", e)
                 }
             }
 
@@ -180,6 +193,16 @@ class SocketManager @Inject constructor(
             put("coordinates", coords)
         }
         socket?.emit("sos_gps_ping", data)
+    }
+
+    fun sendCallSignal(jobId: String, receiverId: String, signal: String) {
+        val data = JSONObject().apply {
+            put("jobId", jobId)
+            put("receiverId", receiverId)
+            put("signal", signal)
+            put("senderId", sessionManager.getUserId())
+        }
+        socket?.emit("call_signal", data)
     }
 
     fun onLocationUpdated(callback: (Double, Double, Float) -> Unit) {

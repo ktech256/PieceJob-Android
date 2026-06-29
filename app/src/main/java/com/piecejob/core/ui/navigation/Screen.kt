@@ -104,12 +104,12 @@ sealed class Screen(val route: String) {
     object Chat : Screen("chat/{jobId}/{otherUserId}") {
         fun passArgs(jobId: String, otherUserId: String) = "chat/$jobId/$otherUserId"
     }
-    object Call : Screen("call/{jobId}/{receiverId}/{receiverName}/{receiverPhone}") {
-        fun passArgs(jobId: String, receiverId: String, receiverName: String, receiverPhone: String) = 
-            "call/$jobId/$receiverId/$receiverName/$receiverPhone"
+    object Call : Screen("call/{jobId}/{receiverId}/{receiverName}/{receiverPhone}/{receiverPhoto}") {
+        fun passArgs(jobId: String, receiverId: String, receiverName: String, receiverPhone: String, receiverPhoto: String?) = 
+            "call/$jobId/$receiverId/$receiverName/$receiverPhone/${android.net.Uri.encode(receiverPhoto ?: "none")}"
     }
-    object IncomingCall : Screen("incoming_call/{jobId}/{callerId}/{callId}/{callerName}/{callerPhone}") {
-        fun passArgs(jobId: String, callerId: String, callId: String, callerName: String, callerPhone: String) = 
-            "incoming_call/$jobId/$callerId/$callId/$callerName/$callerPhone"
+    object IncomingCall : Screen("incoming_call/{jobId}/{callerId}/{callId}/{callerName}/{callerPhone}/{callerPhoto}") {
+        fun passArgs(jobId: String, callerId: String, callId: String, callerName: String, callerPhone: String, callerPhoto: String?) = 
+            "incoming_call/$jobId/$callerId/$callId/$callerName/$callerPhone/${android.net.Uri.encode(callerPhoto ?: "none")}"
     }
 }

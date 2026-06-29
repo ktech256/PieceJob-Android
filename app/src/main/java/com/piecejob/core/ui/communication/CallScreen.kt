@@ -1,31 +1,28 @@
 package com.piecejob.core.ui.communication
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallEnd
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
-
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MicOff
-import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material.icons.filled.VolumeOff
 
 @Composable
 fun CallScreen(
@@ -33,22 +30,24 @@ fun CallScreen(
     receiverId: String,
     receiverName: String,
     receiverPhone: String,
+    receiverPhoto: String?,
     viewModel: CallViewModel = hiltViewModel(),
     onBack: () -> Unit
 ) {
-    val context = LocalContext.current
-    var callStarted by remember { mutableStateOf(false) }
-    var secondsElapsed by remember { mutableIntStateOf(0) }
+    val connectionStatus by viewModel.connectionStatus.collectAsState()
+    val isCallActive by viewModel.isCallActive.collectAsState()
     val isMuted by viewModel.isMuted.collectAsState()
     val isSpeakerOn by viewModel.isSpeakerOn.collectAsState()
+    var secondsElapsed by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
-        android.util.Log.d("FORENSIC", "CALL_STARTED | Job: $jobId | To: $receiverId")
-        viewModel.initiateCall(jobId, receiverId)
+        if (!isCallActive) {
+            viewModel.initiateCall(jobId, receiverId)
+        }
     }
 
-    LaunchedEffect(callStarted) {
-        if (callStarted) {
+    LaunchedEffect(connectionStatus) {
+        if (connectionStatus == "Connected") {
             while (true) {
                 delay(1000)
                 secondsElapsed++
@@ -73,12 +72,21 @@ fun CallScreen(
                     .background(Color.Gray.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(64.dp)
-                )
+                if (receiverPhoto != null) {
+                    AsyncImage(
+                        model = receiverPhoto,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(64.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -91,76 +99,50 @@ fun CallScreen(
             )
 
             Text(
-                text = if (callStarted) "On Call... ${formatTime(secondsElapsed)}" else "Connecting securely...",
-                color = Color.Gray,
-                fontSize = 16.sp
+                text = when (connectionStatus) {
+                    "Connected" -> "On Call... ${formatTime(secondsElapsed)}"
+                    else -> connectionStatus
+                },
+                color = if (connectionStatus == "Connected") Color(0xFF4CAF50) else Color.Gray,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
             )
 
             Spacer(modifier = Modifier.height(64.dp))
 
-            // VoIP Controls (Mocked for dialer handoff)
-            if (callStarted) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+            // VoIP Controls
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                IconButton(
+                    onClick = { viewModel.toggleMute() },
+                    modifier = Modifier.size(64.dp).background(if (isMuted) Color.White else Color.White.copy(alpha = 0.1f), CircleShape)
                 ) {
-                    IconButton(
-                        onClick = { viewModel.toggleMute() },
-                        modifier = Modifier.size(56.dp).background(if (isMuted) Color.White else Color.White.copy(alpha = 0.1f), CircleShape)
-                    ) {
-                        Icon(if (isMuted) Icons.Default.MicOff else Icons.Default.Mic, contentDescription = "Mute", tint = if (isMuted) Color.Black else Color.White)
-                    }
+                    Icon(if (isMuted) Icons.Default.MicOff else Icons.Default.Mic, contentDescription = "Mute", tint = if (isMuted) Color.Black else Color.White)
+                }
 
-                    IconButton(
-                        onClick = { viewModel.toggleSpeaker() },
-                        modifier = Modifier.size(56.dp).background(if (isSpeakerOn) Color.White else Color.White.copy(alpha = 0.1f), CircleShape)
-                    ) {
-                        Icon(if (isSpeakerOn) Icons.Default.VolumeUp else Icons.Default.VolumeOff, contentDescription = "Speaker", tint = if (isSpeakerOn) Color.Black else Color.White)
-                    }
+                IconButton(
+                    onClick = { viewModel.toggleSpeaker() },
+                    modifier = Modifier.size(64.dp).background(if (isSpeakerOn) Color.White else Color.White.copy(alpha = 0.1f), CircleShape)
+                ) {
+                    Icon(if (isSpeakerOn) Icons.Default.VolumeUp else Icons.Default.VolumeOff, contentDescription = "Speaker", tint = if (isSpeakerOn) Color.Black else Color.White)
                 }
             }
 
-            Spacer(modifier = Modifier.height(64.dp))
+            Spacer(modifier = Modifier.height(80.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+            FloatingActionButton(
+                onClick = {
+                    viewModel.endCall("ANSWERED", secondsElapsed)
+                    onBack()
+                },
+                containerColor = Color(0xFFD32F2F),
+                contentColor = Color.White,
+                shape = CircleShape,
+                modifier = Modifier.size(72.dp)
             ) {
-                if (!callStarted) {
-                    FloatingActionButton(
-                        onClick = {
-                            callStarted = true
-                            // Open system dialer as the actual calling mechanism
-                            val intent = Intent(Intent.ACTION_DIAL).apply {
-                                data = Uri.parse("tel:$receiverPhone")
-                            }
-                            context.startActivity(intent)
-                        },
-                        containerColor = Color(0xFF4CAF50),
-                        contentColor = Color.White,
-                        shape = CircleShape,
-                        modifier = Modifier.size(72.dp)
-                    ) {
-                        Icon(Icons.Default.Call, contentDescription = "Start Call", modifier = Modifier.size(32.dp))
-                    }
-                }
-
-                FloatingActionButton(
-                    onClick = {
-                        if (callStarted) {
-                            viewModel.endCall("ANSWERED", secondsElapsed)
-                        } else {
-                            viewModel.endCall("CANCELLED", 0)
-                        }
-                        onBack()
-                    },
-                    containerColor = Color(0xFFD32F2F),
-                    contentColor = Color.White,
-                    shape = CircleShape,
-                    modifier = Modifier.size(72.dp)
-                ) {
-                    Icon(Icons.Default.CallEnd, contentDescription = "End Call", modifier = Modifier.size(32.dp))
-                }
+                Icon(Icons.Default.CallEnd, contentDescription = "End Call", modifier = Modifier.size(32.dp))
             }
         }
     }

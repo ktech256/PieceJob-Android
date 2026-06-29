@@ -1,7 +1,5 @@
 package com.piecejob.core.ui.communication
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -15,11 +13,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 
 @Composable
 fun IncomingCallScreen(
@@ -28,11 +28,13 @@ fun IncomingCallScreen(
     callId: String,
     callerName: String,
     callerPhone: String,
+    callerPhoto: String?,
     viewModel: CallViewModel = hiltViewModel(),
     onAccept: () -> Unit,
     onReject: () -> Unit
 ) {
     val context = LocalContext.current
+    val connectionStatus by viewModel.connectionStatus.collectAsState()
     
     LaunchedEffect(callId) {
         viewModel.setCallId(callId)
@@ -62,12 +64,21 @@ fun IncomingCallScreen(
                     .background(Color.Gray.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(64.dp)
-                )
+                if (callerPhoto != null) {
+                    AsyncImage(
+                        model = callerPhoto,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(64.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -80,7 +91,7 @@ fun IncomingCallScreen(
             )
 
             Text(
-                text = "Incoming PieceJob Call...",
+                text = if (connectionStatus == "Connected") "Connected" else "Incoming PieceJob Call...",
                 color = Color.Gray,
                 fontSize = 16.sp
             )
@@ -91,30 +102,30 @@ fun IncomingCallScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                FloatingActionButton(
-                    onClick = {
-                        android.util.Log.d("FORENSIC", "CALL_ACCEPTED | Job: $jobId")
-                        viewModel.stopRinging()
-                        viewModel.endCall("ANSWERED", 0) 
-                        val intent = Intent(Intent.ACTION_DIAL).apply {
-                            data = Uri.parse("tel:$callerPhone")
-                        }
-                        context.startActivity(intent)
-                        onAccept()
-                    },
-                    containerColor = Color(0xFF4CAF50),
-                    contentColor = Color.White,
-                    shape = CircleShape,
-                    modifier = Modifier.size(72.dp)
-                ) {
-                    Icon(Icons.Default.Call, contentDescription = "Accept Call", modifier = Modifier.size(32.dp))
+                if (connectionStatus != "Connected") {
+                    FloatingActionButton(
+                        onClick = {
+                            viewModel.stopRinging()
+                            viewModel.acceptIncomingCall(jobId, callId, callerId)
+                            onAccept()
+                        },
+                        containerColor = Color(0xFF4CAF50),
+                        contentColor = Color.White,
+                        shape = CircleShape,
+                        modifier = Modifier.size(72.dp)
+                    ) {
+                        Icon(Icons.Default.Call, contentDescription = "Accept Call", modifier = Modifier.size(32.dp))
+                    }
                 }
 
                 FloatingActionButton(
                     onClick = {
-                        android.util.Log.d("FORENSIC", "CALL_REJECTED | Job: $jobId")
                         viewModel.stopRinging()
-                        viewModel.endCall("REJECTED", 0)
+                        if (connectionStatus == "Connected") {
+                            viewModel.endCall("ANSWERED", 0) 
+                        } else {
+                            viewModel.rejectIncomingCall(jobId, callerId)
+                        }
                         onReject()
                     },
                     containerColor = Color(0xFFD32F2F),
@@ -122,7 +133,7 @@ fun IncomingCallScreen(
                     shape = CircleShape,
                     modifier = Modifier.size(72.dp)
                 ) {
-                    Icon(Icons.Default.CallEnd, contentDescription = "Reject Call", modifier = Modifier.size(32.dp))
+                    Icon(Icons.Default.CallEnd, contentDescription = "Reject/End Call", modifier = Modifier.size(32.dp))
                 }
             }
         }

@@ -25,4 +25,12 @@ class CallRepository @Inject constructor(
             ApiResponse(success = false, message = e.message ?: "Unknown error", data = null, error = null)
         }
     }
+
+    suspend fun getLiveKitToken(jobId: String): ApiResponse<LiveKitTokenDto> {
+        return try {
+            api.getLiveKitToken(jobId)
+        } catch (e: Exception) {
+            ApiResponse(success = false, message = e.message ?: "Unknown error", data = null, error = null)
+        }
+    }
 }
