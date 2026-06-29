@@ -111,10 +111,14 @@ class CallViewModel @Inject constructor(
     }
 
     private fun connectToLiveKit(jobId: String) {
+        Log.d("FORENSIC", "CALL_VIEWMODEL | Fetching LiveKit Token for Job: $jobId")
         viewModelScope.launch {
             val tokenRes = repository.getLiveKitToken(jobId)
             if (tokenRes.success && tokenRes.data != null) {
+                Log.d("FORENSIC", "CALL_VIEWMODEL | LiveKit Token Acquired. Length: ${tokenRes.data.token.length}")
                 callManager.connect(tokenRes.data.token)
+            } else {
+                Log.e("FORENSIC", "CALL_VIEWMODEL | Failed to get LiveKit Token: ${tokenRes.message}")
             }
         }
     }
