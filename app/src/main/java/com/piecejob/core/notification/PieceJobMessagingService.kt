@@ -65,6 +65,9 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         if (type == "NEW_JOB_BROADCAST" && jobId != null) {
             Log.d("FCM_AUDIT", "Processing NEW_JOB_BROADCAST for $jobId")
             handleIncomingJob(message.data)
+        } else if (type == "INCOMING_CALL") {
+            Log.d("FCM_AUDIT", "Processing INCOMING_CALL")
+            handleIncomingCall(message.data)
         } else if (type == "BROADCAST_CANCELLED" || type == "JOB_ASSIGNED_ELSEWHERE") {
             Log.d("FCM_AUDIT", "Processing Termination Signal: $type")
             handleBroadcastTermination(jobId)
@@ -99,6 +102,58 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         // 3. Show Heads-Up Notification (For Background/Lockscreen)
         Log.d("FCM_AUDIT", "Triggering Heads-Up Notification")
         showHeadsUpNotification(incomingJob)
+    }
+
+    private fun handleIncomingCall(data: Map<String, String>) {
+        val jobId = data["jobId"] ?: ""
+        val callerId = data["callerId"] ?: ""
+        val callId = data["callId"] ?: ""
+        val callerName = data["callerName"] ?: "Someone"
+        val callerPhone = data["callerPhone"] ?: ""
+        val callerPhoto = data["callerPhoto"] ?: ""
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            putExtra("type", "INCOMING_CALL")
+            putExtra("jobId", jobId)
+            putExtra("callerId", callerId)
+            putExtra("callId", callId)
+            putExtra("callerName", callerName)
+            putExtra("callerPhone", callerPhone)
+            putExtra("callerPhoto", callerPhoto)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this, callId.hashCode(), intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val channelId = "piecejob_calls"
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(channelId, "Calls", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Urgent incoming calls"
+                enableLights(true)
+                enableVibration(true)
+                setSound(null, null) 
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val builder = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("Incoming call")
+            .setContentText("$callerName is calling you...")
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setAutoCancel(true)
+            .setOngoing(true)
+            .setVibrate(longArrayOf(0, 500, 200, 500))
+            .setContentIntent(pendingIntent)
+            .setFullScreenIntent(pendingIntent, true)
+
+        notificationManager.notify(callId.hashCode(), builder.build())
     }
 
     private fun handleBroadcastTermination(jobId: String?) {

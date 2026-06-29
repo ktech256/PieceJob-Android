@@ -56,19 +56,18 @@ class CallViewModel @Inject constructor(
                     when (signal) {
                         "ACCEPTED" -> {
                             Log.d("FORENSIC", "CALL_SIGNAL_RECEIVED | Remote Accepted")
-                            // No action needed, LiveKit will handle the participant connection
                         }
                         "REJECTED" -> {
                             Log.d("FORENSIC", "CALL_SIGNAL_RECEIVED | Remote Rejected")
-                            endCallLocal("REJECTED")
+                            endCallLocal("Declined")
                         }
                         "BUSY" -> {
                             Log.d("FORENSIC", "CALL_SIGNAL_RECEIVED | Remote Busy")
-                            endCallLocal("BUSY")
+                            endCallLocal("Busy")
                         }
                         "ENDED" -> {
                             Log.d("FORENSIC", "CALL_SIGNAL_RECEIVED | Remote Ended")
-                            endCallLocal("ENDED")
+                            endCallLocal("Ended")
                         }
                     }
                 }
@@ -77,7 +76,11 @@ class CallViewModel @Inject constructor(
     }
 
     fun initiateCall(jobId: String, receiverId: String) {
-        if (callManager.isCallActive.value) return
+        Log.d("FORENSIC", "CALL_VIEWMODEL | initiateCall triggered. isCallActive: ${callManager.isCallActive.value}")
+        if (callManager.isCallActive.value) {
+            Log.w("FORENSIC", "CALL_VIEWMODEL | initiateCall aborted: call already active")
+            return
+        }
         callManager.setCallActive(true)
         callManager.activeJobId = jobId
         callManager.targetUserId = receiverId
@@ -173,7 +176,7 @@ class CallViewModel @Inject constructor(
     private fun endCallLocal(status: String) {
         stopRinging()
         timer?.cancel()
-        callManager.disconnect()
+        callManager.disconnect(status)
     }
 
     fun endCall(status: String, duration: Int) {
@@ -188,7 +191,7 @@ class CallViewModel @Inject constructor(
         }
 
         val callId = callManager.currentCallId
-        callManager.disconnect()
+        callManager.disconnect("Ended")
         
         // Persistent scope for DB update
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {

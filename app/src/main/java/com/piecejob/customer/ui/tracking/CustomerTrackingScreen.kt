@@ -367,11 +367,20 @@ fun AssignedProviderPanel(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                var lastClickTime by remember { mutableLongStateOf(0L) }
                 FilledIconButton(
                     onClick = { 
+                        val now = System.currentTimeMillis()
+                        if (now - lastClickTime < 1000) return@FilledIconButton
+                        lastClickTime = now
+
+                        android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | isTerminalState: $isTerminalState")
                         if (!isTerminalState) {
                             job.providerInfo?.let { info ->
+                                android.util.Log.d("FORENSIC", "CALL_BUTTON_CLICKED | Navigating to CallScreen")
                                 onCallOpen(job.providerId!!, "${info.firstName} ${info.lastName}", info.phoneNumber ?: "", info.profilePicture)
+                            } ?: run {
+                                android.util.Log.e("FORENSIC", "CALL_BUTTON_CLICKED | providerInfo is NULL")
                             }
                         }
                     },

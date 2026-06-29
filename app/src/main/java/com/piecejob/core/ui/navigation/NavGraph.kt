@@ -286,7 +286,9 @@ fun NavGraph(
                     navController.navigate(Screen.Chat.passArgs(jobId, otherUserId))
                 },
                 onCallOpen = { receiverId, name, phone, photo ->
-                    navController.navigate(Screen.Call.passArgs(jobId, receiverId, name, phone, photo))
+                    val route = Screen.Call.passArgs(jobId, receiverId, name, phone, photo)
+                    Log.d("FORENSIC", "NAV_GRAPH | Navigating to Call: $route")
+                    navController.navigate(route)
                 },
                 onSosTrigger = { },
                 onNavigateToRating = {
@@ -309,7 +311,9 @@ fun NavGraph(
                     navController.navigate(Screen.Chat.passArgs(jobId, otherUserId))
                 },
                 onCallOpen = { receiverId, name, phone, photo ->
-                    navController.navigate(Screen.Call.passArgs(jobId, receiverId, name, phone, photo))
+                    val route = Screen.Call.passArgs(jobId, receiverId, name, phone, photo)
+                    Log.d("FORENSIC", "NAV_GRAPH | Navigating to Call: $route")
+                    navController.navigate(route)
                 },
                 onBack = { navController.popBackStack() },
                 onNavigateToRating = {

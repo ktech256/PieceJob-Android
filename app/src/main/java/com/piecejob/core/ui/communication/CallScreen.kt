@@ -42,12 +42,13 @@ fun CallScreen(
 
     LaunchedEffect(isCallActive) {
         if (!isCallActive) {
-            android.util.Log.d("FORENSIC", "CALL_SCREEN | Call ended. Navigating back.")
+            android.util.Log.d("FORENSIC", "CALL_SCREEN | Call ended or inactive. Navigating back.")
             onBack()
         }
     }
 
     LaunchedEffect(Unit) {
+        android.util.Log.d("FORENSIC", "CALL_SCREEN | Screen opened. initiateCall called.")
         if (!isCallActive) {
             viewModel.initiateCall(jobId, receiverId)
         }
@@ -107,10 +108,14 @@ fun CallScreen(
 
             Text(
                 text = when (connectionStatus) {
-                    "Connected" -> "On Call... ${formatTime(secondsElapsed)}"
+                    "Connected" -> "Connected ${formatTime(secondsElapsed)}"
                     "Calling..." -> "Calling..."
                     "Connecting..." -> "Connecting..."
-                    "Disconnected" -> "Call Ended"
+                    "Ended" -> "Call Ended"
+                    "Disconnected" -> "Disconnected"
+                    "Failed" -> "Connection Failed"
+                    "Declined" -> "Call Declined"
+                    "Busy" -> "User Busy"
                     else -> connectionStatus
                 },
                 color = if (connectionStatus == "Connected") Color(0xFF4CAF50) else Color.Gray,

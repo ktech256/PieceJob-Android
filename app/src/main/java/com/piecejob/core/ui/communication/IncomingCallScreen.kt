@@ -99,7 +99,14 @@ fun IncomingCallScreen(
             )
 
             Text(
-                text = if (connectionStatus == "Connected") "Connected" else "Incoming PieceJob Call...",
+                text = when (connectionStatus) {
+                    "Connected" -> "Connected"
+                    "Declined" -> "Call Declined"
+                    "Busy" -> "User Busy"
+                    "Ended" -> "Call Ended"
+                    "Failed" -> "Connection Failed"
+                    else -> "Incoming PieceJob Call..."
+                },
                 color = Color.Gray,
                 fontSize = 16.sp
             )
@@ -110,9 +117,10 @@ fun IncomingCallScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                if (connectionStatus != "Connected") {
+                if (connectionStatus != "Connected" && connectionStatus != "Declined" && connectionStatus != "Ended" && connectionStatus != "Busy") {
                     FloatingActionButton(
                         onClick = {
+                            android.util.Log.d("FORENSIC", "INCOMING_CALL | Accept clicked")
                             viewModel.stopRinging()
                             viewModel.acceptIncomingCall(jobId, callId, callerId)
                             onAccept()
@@ -128,6 +136,7 @@ fun IncomingCallScreen(
 
                 FloatingActionButton(
                     onClick = {
+                        android.util.Log.d("FORENSIC", "INCOMING_CALL | Reject/End clicked")
                         viewModel.stopRinging()
                         if (connectionStatus == "Connected") {
                             viewModel.endCall("ANSWERED", 0) 

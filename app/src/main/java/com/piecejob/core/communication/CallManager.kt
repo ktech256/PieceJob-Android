@@ -67,6 +67,9 @@ class CallManager @Inject constructor(
             _room = null
             _isRemoteJoined.value = false
             
+            // Initial UI state
+            _connectionStatus.value = "Calling..."
+            
             Log.d("FORENSIC", "CALL_MANAGER | Connecting to LiveKit. URL: $url | Token Len: ${token.length}")
             val currentRoom = LiveKit.create(application)
             _room = currentRoom
@@ -103,9 +106,7 @@ class CallManager @Inject constructor(
                         }
                         is RoomEvent.Disconnected -> {
                             Log.d("FORENSIC", "CALL_MANAGER | LiveKit Disconnected")
-                            if (_connectionStatus.value != "Idle") {
-                                _connectionStatus.value = "Disconnected"
-                            }
+                            _connectionStatus.value = "Ended"
                             cleanup()
                         }
                         is RoomEvent.Reconnecting -> {
@@ -130,16 +131,21 @@ class CallManager @Inject constructor(
                             Log.d("FORENSIC", "CALL_MANAGER | Remote Participant Disconnected: ${event.participant.identity}")
                             if (currentRoom.remoteParticipants.isEmpty()) {
                                 _isRemoteJoined.value = false
-                                _connectionStatus.value = "Calling..."
+                                _connectionStatus.value = "Ended"
+                                disconnect("Ended")
                             }
                         }
                         is RoomEvent.TrackSubscribed -> {
                             val track = event.track
-                            Log.d("FORENSIC", "CALL_MANAGER | Track Subscribed: ${track.sid} | Type: ${track.kind} | Participant: ${event.participant?.identity}")
+                            Log.d("FORENSIC", "CALL_MANAGER | Audio Subscribed: ${track.sid} | Type: ${track.kind} | Participant: ${event.participant?.identity}")
+                            if (track is RemoteAudioTrack) {
+                                Log.d("FORENSIC", "CALL_MANAGER | Remote Audio Track Subscribed. Status: Connected")
+                                _connectionStatus.value = "Connected"
+                            }
                         }
                         is RoomEvent.FailedToConnect -> {
                             Log.e("FORENSIC", "CALL_MANAGER | LiveKit Connection Failed: ${event.error}")
-                            _connectionStatus.value = "Failed: ${event.error.message}"
+                            _connectionStatus.value = "Failed"
                             cleanup(isError = true)
                         }
                         else -> {}
@@ -153,7 +159,7 @@ class CallManager @Inject constructor(
                 Log.d("FORENSIC", "CALL_MANAGER | currentRoom.connect suspend call returned")
             } catch (e: Exception) {
                 Log.e("FORENSIC", "CALL_MANAGER | Connection Exception", e)
-                _connectionStatus.value = "Error: ${e.message}"
+                _connectionStatus.value = "Failed"
                 cleanup(isError = true)
             }
         }
@@ -163,6 +169,7 @@ class CallManager @Inject constructor(
         Log.d("FORENSIC", "CALL_MANAGER | Setting up Audio Session")
         originalMode = audioManager.mode
         audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+        @Suppress("DEPRECATION")
         audioManager.isSpeakerphoneOn = _isSpeakerOn.value
         
         requestAudioFocus()
@@ -217,32 +224,40 @@ class CallManager @Inject constructor(
         val newSpeaker = !_isSpeakerOn.value
         _isSpeakerOn.value = newSpeaker
         Log.d("FORENSIC", "CALL_MANAGER | Toggle Speaker: $newSpeaker")
+        @Suppress("DEPRECATION")
         audioManager.isSpeakerphoneOn = newSpeaker
     }
 
-    fun disconnect() {
-        Log.d("FORENSIC", "CALL_MANAGER | Disconnecting requested")
+    fun disconnect(terminalStatus: String? = null) {
+        Log.d("FORENSIC", "CALL_MANAGER | Disconnecting requested. Status: $terminalStatus")
         scope.launch {
             _room?.disconnect()
-            cleanup()
+            cleanup(terminalStatus = terminalStatus)
         }
     }
 
-    private fun cleanup(isError: Boolean = false) {
-        Log.d("FORENSIC", "CALL_MANAGER | Cleanup (isError=$isError)")
+    private fun cleanup(isError: Boolean = false, terminalStatus: String? = null) {
+        Log.d("FORENSIC", "CALL_MANAGER | Cleanup (isError=$isError, terminalStatus=$terminalStatus)")
         _room = null
         _isCallActive.value = false
         _isMuted.value = false
         _isSpeakerOn.value = false
         _isRemoteJoined.value = false
-        if (!isError) {
+        
+        if (terminalStatus != null) {
+            _connectionStatus.value = terminalStatus
+        } else if (isError) {
+            _connectionStatus.value = "Failed"
+        } else {
             _connectionStatus.value = "Idle"
         }
+        
         activeJobId = null
         targetUserId = null
         currentCallId = null
         
         audioManager.mode = originalMode
+        @Suppress("DEPRECATION")
         audioManager.isSpeakerphoneOn = false
         releaseAudioFocus()
     }
