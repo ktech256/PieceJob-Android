@@ -22,6 +22,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.delay
 
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.VolumeOff
+
 @Composable
 fun CallScreen(
     jobId: String,
@@ -34,6 +39,8 @@ fun CallScreen(
     val context = LocalContext.current
     var callStarted by remember { mutableStateOf(false) }
     var secondsElapsed by remember { mutableIntStateOf(0) }
+    val isMuted by viewModel.isMuted.collectAsState()
+    val isSpeakerOn by viewModel.isSpeakerOn.collectAsState()
 
     LaunchedEffect(Unit) {
         android.util.Log.d("FORENSIC", "CALL_STARTED | Job: $jobId | To: $receiverId")
@@ -89,7 +96,31 @@ fun CallScreen(
                 fontSize = 16.sp
             )
 
-            Spacer(modifier = Modifier.height(100.dp))
+            Spacer(modifier = Modifier.height(64.dp))
+
+            // VoIP Controls (Mocked for dialer handoff)
+            if (callStarted) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    IconButton(
+                        onClick = { viewModel.toggleMute() },
+                        modifier = Modifier.size(56.dp).background(if (isMuted) Color.White else Color.White.copy(alpha = 0.1f), CircleShape)
+                    ) {
+                        Icon(if (isMuted) Icons.Default.MicOff else Icons.Default.Mic, contentDescription = "Mute", tint = if (isMuted) Color.Black else Color.White)
+                    }
+
+                    IconButton(
+                        onClick = { viewModel.toggleSpeaker() },
+                        modifier = Modifier.size(56.dp).background(if (isSpeakerOn) Color.White else Color.White.copy(alpha = 0.1f), CircleShape)
+                    ) {
+                        Icon(if (isSpeakerOn) Icons.Default.VolumeUp else Icons.Default.VolumeOff, contentDescription = "Speaker", tint = if (isSpeakerOn) Color.Black else Color.White)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(64.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

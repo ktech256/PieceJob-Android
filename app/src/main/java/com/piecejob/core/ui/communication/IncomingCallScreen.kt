@@ -36,6 +36,13 @@ fun IncomingCallScreen(
     
     LaunchedEffect(callId) {
         viewModel.setCallId(callId)
+        viewModel.startRinging(context)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.stopRinging()
+        }
     }
 
     Box(
@@ -87,6 +94,7 @@ fun IncomingCallScreen(
                 FloatingActionButton(
                     onClick = {
                         android.util.Log.d("FORENSIC", "CALL_ACCEPTED | Job: $jobId")
+                        viewModel.stopRinging()
                         viewModel.endCall("ANSWERED", 0) 
                         val intent = Intent(Intent.ACTION_DIAL).apply {
                             data = Uri.parse("tel:$callerPhone")
@@ -105,6 +113,7 @@ fun IncomingCallScreen(
                 FloatingActionButton(
                     onClick = {
                         android.util.Log.d("FORENSIC", "CALL_REJECTED | Job: $jobId")
+                        viewModel.stopRinging()
                         viewModel.endCall("REJECTED", 0)
                         onReject()
                     },
