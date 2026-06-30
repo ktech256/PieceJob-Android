@@ -60,6 +60,12 @@ interface PieceJobApi {
     @GET("users/referrals")
     suspend fun getReferralStats(): ApiResponse<ReferralStatsDto>
 
+    @GET("dashboard/customer")
+    suspend fun getCustomerDashboard(
+        @Query("lat") lat: Double? = null,
+        @Query("lng") lng: Double? = null
+    ): ApiResponse<CustomerDashboardDto>
+
     @GET("users/addresses")
     suspend fun getAddresses(): ApiResponse<List<AddressDto>>
 

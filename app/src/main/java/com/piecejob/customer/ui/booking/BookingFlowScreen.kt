@@ -41,11 +41,19 @@ import com.piecejob.customer.ui.dashboard.ServiceDetailsDialog
 @Composable
 fun BookingFlowScreen(
     viewModel: BookingViewModel = hiltViewModel(),
+    initialServiceCode: String? = null,
+    initialAddress: String? = null,
+    initialLat: Double? = null,
+    initialLng: Double? = null,
     onTrackingStart: (String) -> Unit,
     onBack: () -> Unit
 ) {
     val currentStep by viewModel.currentStep.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.initializeWithArgs(initialServiceCode, initialAddress, initialLat, initialLng)
+    }
 
     BackHandler {
         if (currentStep == BookingStep.ADDRESS_SELECTION) {

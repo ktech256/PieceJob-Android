@@ -189,8 +189,25 @@ fun NavGraph(
         composable(route = Screen.CustomerSupport.route) { SupportScreen(onBack = { navController.popBackStack() }) }
         composable(route = Screen.CustomerAbout.route) { AboutScreen(onBack = { navController.popBackStack() }) }
         
-        composable(route = Screen.BookingFlow.route) {
+        composable(
+            route = Screen.BookingFlow.route,
+            arguments = listOf(
+                navArgument("serviceCode") { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument("address") { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument("lat") { type = NavType.StringType; nullable = true; defaultValue = null }, // NavType doesn't have Double easily, use String
+                navArgument("lng") { type = NavType.StringType; nullable = true; defaultValue = null }
+            )
+        ) { backStackEntry ->
+            val serviceCode = backStackEntry.arguments?.getString("serviceCode")
+            val address = backStackEntry.arguments?.getString("address")
+            val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull()
+            val lng = backStackEntry.arguments?.getString("lng")?.toDoubleOrNull()
+
             com.piecejob.customer.ui.booking.BookingFlowScreen(
+                initialServiceCode = serviceCode,
+                initialAddress = address,
+                initialLat = lat,
+                initialLng = lng,
                 onTrackingStart = { jobId ->
                     navController.navigate(Screen.CustomerTracking.passJobId(jobId)) {
                         popUpTo(Screen.Dashboard.route)

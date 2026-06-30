@@ -1,0 +1,50 @@
+package com.piecejob.core.data.remote.dto
+
+import com.google.gson.annotations.SerializedName
+import com.piecejob.core.data.remote.ServiceDto
+
+data class CustomerDashboardDto(
+    val profile: DashboardProfileDto,
+    val wallet: WalletDto,
+    val activeJob: JobDto?,
+    val promotions: List<PromotionDto>,
+    val latestActivity: List<ActivityDto>,
+    val topRatedNearby: List<TopProviderDto>,
+    val recommendations: List<ServiceDto>
+)
+
+data class DashboardProfileDto(
+    val firstName: String,
+    val lastName: String,
+    val email: String,
+    val photo: String?,
+    val addresses: List<AddressDto>?,
+    val savedLocations: List<SavedLocationDto>?
+)
+
+data class PromotionDto(
+    @SerializedName("_id") val id: String,
+    val title: String,
+    val description: String,
+    val imageUrl: String?,
+    val ctaText: String,
+    val deepLink: String?
+)
+
+data class ActivityDto(
+    val id: String,
+    val type: String,
+    val status: String,
+    val serviceCode: String,
+    val amount: Double,
+    val createdAt: String
+)
+
+data class TopProviderDto(
+    val id: String,
+    val name: String,
+    val photo: String?,
+    val rating: Double,
+    val tier: String,
+    val services: List<String>
+)

@@ -97,8 +97,15 @@ fun CustomerMainScreen(
         ) {
             composable(CustomerBottomBarScreen.Home.route) {
                 CustomerDashboardScreen(
-                    onServiceClick = { service -> onNavigateToSubScreen(Screen.BookingFlow.route) },
+                    onServiceClick = { service -> onNavigateToSubScreen(Screen.BookingFlow.passArgs(serviceCode = service.code)) },
                     onRequestServiceClick = { onNavigateToSubScreen(Screen.BookingFlow.route) },
+                    onNavigateToBookingWithLocation = { location -> 
+                        onNavigateToSubScreen(Screen.BookingFlow.passArgs(
+                            address = location.address, 
+                            lat = location.coordinates[1], 
+                            lng = location.coordinates[0]
+                        )) 
+                    },
                     onProfileClick = { navController.navigate(CustomerBottomBarScreen.Account.route) },
                     onNotificationsClick = { onNavigateToSubScreen(Screen.CustomerNotifications.route) },
                     onSosClick = { onNavigateToSubScreen(Screen.ReportIssue.route) },

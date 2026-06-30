@@ -47,7 +47,22 @@ sealed class Screen(val route: String) {
     object CustomerAbout : Screen("customer_about")
 
     // Booking Flow
-    object BookingFlow : Screen("booking_flow")
+    object BookingFlow : Screen("booking_flow?serviceCode={serviceCode}&address={address}&lat={lat}&lng={lng}") {
+        fun passArgs(serviceCode: String? = null, address: String? = null, lat: Double? = null, lng: Double? = null): String {
+            val builder = StringBuilder("booking_flow")
+            val params = mutableListOf<String>()
+            serviceCode?.let { params.add("serviceCode=$it") }
+            address?.let { params.add("address=${android.net.Uri.encode(it)}") }
+            lat?.let { params.add("lat=$it") }
+            lng?.let { params.add("lng=$it") }
+            
+            if (params.isNotEmpty()) {
+                builder.append("?")
+                builder.append(params.joinToString("&"))
+            }
+            return builder.toString()
+        }
+    }
     object CustomerTracking : Screen("customer_tracking/{jobId}") {
         fun passJobId(jobId: String) = "customer_tracking/$jobId"
     }

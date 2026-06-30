@@ -97,6 +97,40 @@ class BookingViewModel @Inject constructor(
         setupPaymentSocket()
     }
 
+    fun initializeWithArgs(serviceCode: String?, address: String?, lat: Double?, lng: Double?) {
+        if (address != null && lat != null && lng != null) {
+            setAddress(address, listOf(lng, lat))
+            if (serviceCode != null) {
+                // If we have both, we might want to skip steps. 
+                // For now, just set them so they are pre-selected.
+                viewModelScope.launch {
+                    val res = serviceRepository.getServices(lat = lat, lng = lng)
+                    if (res.success && res.data != null) {
+                        val service = res.data.services.find { it.code == serviceCode }
+                        if (service != null) {
+                            selectedService.value = service
+                            _currentStep.value = BookingStep.BOOKING_FEE
+                            fetchPriceEstimate()
+                        } else {
+                            _currentStep.value = BookingStep.CATEGORY_SELECTION
+                        }
+                    }
+                }
+            } else {
+                _currentStep.value = BookingStep.CATEGORY_SELECTION
+            }
+        } else if (serviceCode != null) {
+            // Find service and pre-select, but still need address
+            viewModelScope.launch {
+                val res = serviceRepository.getServices()
+                if (res.success && res.data != null) {
+                    val service = res.data.services.find { it.code == serviceCode }
+                    selectedService.value = service
+                }
+            }
+        }
+    }
+
     private fun setupPaymentSocket() {
         socketManager.connect("https://piecejob-backend.onrender.com")
         sessionManager.getUserId()?.let { socketManager.joinUser(it) }

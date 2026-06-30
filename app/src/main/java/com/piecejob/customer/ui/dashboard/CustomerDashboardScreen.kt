@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Notifications
@@ -33,6 +34,7 @@ fun CustomerDashboardScreen(
     viewModel: CustomerDashboardViewModel = hiltViewModel(),
     onServiceClick: (ServiceDto) -> Unit,
     onRequestServiceClick: () -> Unit,
+    onNavigateToBookingWithLocation: (com.piecejob.core.data.remote.dto.SavedLocationDto) -> Unit,
     onProfileClick: () -> Unit,
     onNotificationsClick: () -> Unit,
     onSosClick: () -> Unit,
@@ -42,9 +44,15 @@ fun CustomerDashboardScreen(
     val categoriesList by viewModel.categories.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val activeJob by viewModel.activeJob.collectAsState()
+    val dashboardData by viewModel.dashboardData.collectAsState()
+    val currentAddress by viewModel.currentAddress.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
+
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearchActive by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        viewModel.loadActiveJob()
+        viewModel.loadDashboard()
     }
 
     var selectedServiceForDetails by remember { mutableStateOf<ServiceDto?>(null) }
@@ -67,16 +75,51 @@ fun CustomerDashboardScreen(
             .background(Color(0xFFF8F9FA))
     ) {
         // SECTION 1: HEADER
-        item { DashboardHeader(onNotificationsClick, onSosClick) }
+        item { DashboardHeader(currentAddress, onNotificationsClick, onSosClick) }
 
         // SECTION 2: WELCOME AREA
-        item { WelcomeCard() }
+        item { 
+            val profile = dashboardData?.profile
+            val wallet = dashboardData?.wallet
+            WelcomeCard(
+                name = profile?.firstName ?: "User",
+                balance = wallet?.balanceMain ?: 0.0,
+                currency = wallet?.currency ?: "R"
+            ) 
+        }
 
         // SECTION 3: GLOBAL SEARCH
-        item { SearchBar() }
+        item { 
+            SearchBar(
+                query = searchQuery,
+                onQueryChange = {
+                    searchQuery = it
+                    viewModel.onSearch(it)
+                },
+                onActiveChange = { isSearchActive = it }
+            ) 
+        }
+
+        if (isSearchActive && searchQuery.isNotEmpty()) {
+            items(searchResults) { result ->
+                SearchResultItem(result) {
+                    isSearchActive = false
+                    searchQuery = ""
+                    when (it) {
+                        is ServiceDto -> onServiceClick(it)
+                        is com.piecejob.core.data.remote.ServiceCategoryDto -> {
+                            // Category click logic (filter or scroll)
+                        }
+                        is com.piecejob.core.data.remote.dto.SavedLocationDto -> {
+                            onNavigateToBookingWithLocation(it)
+                        }
+                    }
+                }
+            }
+        }
 
         // SECTION 4: PROMOTIONAL BANNER CAROUSEL
-        item { PromotionCarousel() }
+        item { PromotionCarousel(dashboardData?.promotions ?: emptyList()) }
 
         // SECTION 5: POPULAR CATEGORIES
         item { PopularCategories(categoriesList) }
@@ -141,13 +184,27 @@ fun CustomerDashboardScreen(
                 contentPadding = PaddingValues(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(3) { RecommendedServiceCard() }
+                val recommendations = dashboardData?.recommendations ?: emptyList()
+                if (recommendations.isEmpty()) {
+                    items(3) { RecommendedServiceCard() }
+                } else {
+                    items(recommendations) { service ->
+                        ServiceCardSmall(service) { selectedServiceForDetails = it }
+                    }
+                }
             }
         }
 
         // SECTION 12: RECENT BOOKINGS
         item { SectionTitle("Latest Activity") }
-        items(2) { RecentBookingItem() }
+        val activityList = dashboardData?.latestActivity ?: emptyList()
+        if (activityList.isEmpty()) {
+            items(2) { RecentBookingItem() }
+        } else {
+            items(activityList) { act ->
+                ActivityItem(act)
+            }
+        }
 
         // SECTION 9: TOP RATED PROVIDERS NEARBY
         item { SectionTitle("Top Rated Nearby") }
@@ -156,7 +213,14 @@ fun CustomerDashboardScreen(
                 contentPadding = PaddingValues(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(3) { ProviderMiniCard() }
+                val providers = dashboardData?.topRatedNearby ?: emptyList()
+                if (providers.isEmpty()) {
+                    items(3) { ProviderMiniCard() }
+                } else {
+                    items(providers) { provider ->
+                        TopProviderCard(provider)
+                    }
+                }
             }
         }
 
@@ -191,7 +255,7 @@ fun CustomerDashboardScreen(
 }
 
 @Composable
-fun DashboardHeader(onNotify: () -> Unit, onSos: () -> Unit) {
+fun DashboardHeader(address: String, onNotify: () -> Unit, onSos: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -199,11 +263,18 @@ fun DashboardHeader(onNotify: () -> Unit, onSos: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text("PieceJob", fontWeight = FontWeight.Black, fontSize = 24.sp, color = Color(0xFFD32F2F))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(12.dp), tint = Color.Gray)
-                Text("Johannesburg, ZA", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                Text(
+                    text = address, 
+                    fontSize = 12.sp, 
+                    color = Color.Gray, 
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -228,7 +299,13 @@ fun DashboardHeader(onNotify: () -> Unit, onSos: () -> Unit) {
 }
 
 @Composable
-fun WelcomeCard() {
+fun WelcomeCard(name: String, balance: Double, currency: String) {
+    val greeting = when (java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)) {
+        in 0..11 -> "Good Morning"
+        in 12..16 -> "Good Afternoon"
+        else -> "Good Evening"
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -238,19 +315,19 @@ fun WelcomeCard() {
     ) {
         Row(modifier = Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Good Morning, User", color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp)
+                Text("$greeting, $name", color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp)
                 Text("Ready to book?", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black)
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text("BALANCE", color = Color.White.copy(alpha = 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                Text("$1,240", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black)
+                Text("$currency ${String.format("%.2f", balance)}", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black)
             }
         }
     }
 }
 
 @Composable
-fun SearchBar() {
+fun SearchBar(query: String, onQueryChange: (String) -> Unit, onActiveChange: (Boolean) -> Unit) {
     OutlinedCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -261,24 +338,107 @@ fun SearchBar() {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray)
             Spacer(modifier = Modifier.width(12.dp))
-            Text("Search cleaning, plumbers, mechanics...", color = Color.Gray, fontSize = 14.sp)
+            BasicTextField(
+                value = query,
+                onValueChange = {
+                    onQueryChange(it)
+                    onActiveChange(true)
+                },
+                modifier = Modifier.weight(1f),
+                decorationBox = { innerTextField ->
+                    if (query.isEmpty()) {
+                        Text("Search cleaning, plumbers, mechanics...", color = Color.Gray, fontSize = 14.sp)
+                    }
+                    innerTextField()
+                }
+            )
+            if (query.isNotEmpty()) {
+                Icon(
+                    Icons.Default.Close, 
+                    contentDescription = null, 
+                    modifier = Modifier.clickable { 
+                        onQueryChange("") 
+                        onActiveChange(false)
+                    }
+                )
+            }
         }
     }
 }
 
 @Composable
-fun PromotionCarousel() {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(130.dp)
-            .padding(horizontal = 24.dp),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFD32F2F))
-    ) {
-        Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-            Text("PJ PLUS EXCLUSIVE\nGet 50% OFF all\ntasks this weekend.", color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp, lineHeight = 24.sp)
-            Icon(Icons.Default.Stars, contentDescription = null, tint = Color.White.copy(alpha = 0.2f), modifier = Modifier.size(100.dp).align(Alignment.CenterEnd))
+fun SearchResultItem(result: Any, onClick: (Any) -> Unit) {
+    val name = when (result) {
+        is ServiceDto -> result.name
+        is com.piecejob.core.data.remote.ServiceCategoryDto -> result.name
+        is com.piecejob.core.data.remote.dto.SavedLocationDto -> result.name
+        else -> "Result"
+    }
+    val type = when (result) {
+        is ServiceDto -> "Service"
+        is com.piecejob.core.data.remote.ServiceCategoryDto -> "Category"
+        is com.piecejob.core.data.remote.dto.SavedLocationDto -> "Saved Location"
+        else -> "Other"
+    }
+    val icon = when (result) {
+        is com.piecejob.core.data.remote.dto.SavedLocationDto -> Icons.Default.Star
+        else -> Icons.Default.Search
+    }
+
+    ListItem(
+        headlineContent = { Text(name, fontWeight = FontWeight.Bold) },
+        supportingContent = { Text(type, fontSize = 12.sp, color = Color.Gray) },
+        leadingContent = { Icon(icon, contentDescription = null, tint = if (result is com.piecejob.core.data.remote.dto.SavedLocationDto) Color(0xFFFFA000) else Color.LightGray) },
+        modifier = Modifier.clickable { onClick(result) }.padding(horizontal = 24.dp)
+    )
+}
+
+@Composable
+fun PromotionCarousel(promotions: List<com.piecejob.core.data.remote.dto.PromotionDto>) {
+    if (promotions.isEmpty()) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(130.dp)
+                .padding(horizontal = 24.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFD32F2F))
+        ) {
+            Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+                Text("PJ PLUS EXCLUSIVE\nGet 50% OFF all\ntasks this weekend.", color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp, lineHeight = 24.sp)
+                Icon(Icons.Default.Stars, contentDescription = null, tint = Color.White.copy(alpha = 0.2f), modifier = Modifier.size(100.dp).align(Alignment.CenterEnd))
+            }
+        }
+    } else {
+        // Simple Carousel (for now first one)
+        val promo = promotions.first()
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(130.dp)
+                .padding(horizontal = 24.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFD32F2F))
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (promo.imageUrl != null) {
+                    coil.compose.AsyncImage(
+                        model = promo.imageUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)))
+                }
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Text(promo.title, color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                    Text(promo.description, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, maxLines = 2)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Surface(color = Color.White, shape = RoundedCornerShape(8.dp)) {
+                        Text(promo.ctaText, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Black)
+                    }
+                }
+            }
         }
     }
 }
@@ -567,6 +727,42 @@ fun CustomerTipsSection() {
             Text("Learn how PieceJob Escrow and Verification keeps you safe on every booking.", fontSize = 12.sp, color = Color.Gray, lineHeight = 18.sp)
         }
     }
+}
+
+@Composable
+fun TopProviderCard(provider: com.piecejob.core.data.remote.dto.TopProviderDto) {
+    Card(modifier = Modifier.width(170.dp), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Box(modifier = Modifier.size(44.dp).clip(CircleShape).background(Color.LightGray)) {
+                if (provider.photo != null) {
+                    coil.compose.AsyncImage(model = provider.photo, contentDescription = null, contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(provider.name, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, maxLines = 1)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(12.dp))
+                Text(" ${String.format("%.1f", provider.rating)} • ${provider.tier}", fontSize = 11.sp, color = Color(0xFFFFA000), fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(provider.services.firstOrNull() ?: "", fontSize = 10.sp, color = Color.Gray, maxLines = 1)
+        }
+    }
+}
+
+@Composable
+fun ActivityItem(act: com.piecejob.core.data.remote.dto.ActivityDto) {
+    ListItem(
+        headlineContent = { Text(act.serviceCode, fontWeight = FontWeight.Bold) },
+        supportingContent = { Text("${act.status} • ${act.createdAt.take(10)}", fontSize = 12.sp, color = Color.Gray) },
+        leadingContent = { 
+            Surface(modifier = Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = Color(0xFFF5F5F5)) {
+                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(20.dp)) }
+            }
+        },
+        trailingContent = { Text("$${String.format("%.2f", act.amount)}", fontWeight = FontWeight.Black, fontSize = 14.sp) },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+    )
 }
 
 @Composable
