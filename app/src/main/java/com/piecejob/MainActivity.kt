@@ -128,10 +128,17 @@ class MainActivity : AppCompatActivity() {
                             val callerName = intent.getStringExtra("callerName")
                             val callerPhone = intent.getStringExtra("callerPhone")
                             val callerPhoto = intent.getStringExtra("callerPhoto")
+                            val autoAccept = intent.getBooleanExtra("autoAccept", false)
                             
+                            // Clear notification
+                            jobId?.hashCode()?.let { id ->
+                                val nm = getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                                nm.cancel(id)
+                            }
+
                             if (jobId != null && callerId != null && callId != null) {
-                                android.util.Log.d("FORENSIC", "INCOMING_CALL_SCREEN_LAUNCH | From: $callerName")
-                                navController.navigate(Screen.IncomingCall.passArgs(jobId, callerId, callId, callerName ?: "Someone", callerPhone ?: "", callerPhoto)) {
+                                android.util.Log.d("FORENSIC", "INCOMING_CALL_SCREEN_LAUNCH | From: $callerName | AutoAccept: $autoAccept")
+                                navController.navigate(Screen.IncomingCall.passArgs(jobId, callerId, callId, callerName ?: "Someone", callerPhone ?: "", callerPhoto, autoAccept)) {
                                     launchSingleTop = true
                                 }
                             } else {
@@ -174,6 +181,20 @@ class MainActivity : AppCompatActivity() {
                     navController = navController,
                     authViewModel = authViewModel
                 )
+
+                // GLOBAL OBSERVER: Call Signals (Sync Actions)
+                LaunchedEffect(Unit) {
+                    socketManager.callSignalFlow.collect { json ->
+                        val signal = json.optString("signal")
+                        val jobId = json.optString("jobId")
+                        if (signal == "ENDED" || signal == "REJECTED" || signal == "BUSY") {
+                            jobId?.hashCode()?.let { id ->
+                                val nm = getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                                nm.cancel(id)
+                            }
+                        }
+                    }
+                }
 
                 // GLOBAL OBSERVER: Job Completion
                 LaunchedEffect(Unit) {

@@ -29,6 +29,7 @@ fun IncomingCallScreen(
     callerName: String,
     callerPhone: String,
     callerPhoto: String?,
+    autoAccept: Boolean = false,
     viewModel: CallViewModel = hiltViewModel(),
     onAccept: () -> Unit,
     onReject: () -> Unit
@@ -36,6 +37,15 @@ fun IncomingCallScreen(
     val context = LocalContext.current
     val connectionStatus by viewModel.connectionStatus.collectAsState()
     val isCallActive by viewModel.isCallActive.collectAsState()
+    
+    LaunchedEffect(autoAccept) {
+        if (autoAccept) {
+            android.util.Log.d("FORENSIC", "INCOMING_CALL | Auto-accepting call from notification")
+            viewModel.stopRinging()
+            viewModel.acceptIncomingCall(jobId, callId, callerId)
+            onAccept()
+        }
+    }
     
     LaunchedEffect(isCallActive) {
         if (!isCallActive && connectionStatus == "Idle") {

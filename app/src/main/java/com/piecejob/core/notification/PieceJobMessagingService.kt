@@ -112,7 +112,39 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         val callerPhone = data["callerPhone"] ?: ""
         val callerPhoto = data["callerPhoto"] ?: ""
 
-        val intent = Intent(this, MainActivity::class.java).apply {
+        // 1. Intent to Open Call Screen (Accept flow)
+        val acceptIntent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            putExtra("type", "INCOMING_CALL")
+            putExtra("jobId", jobId)
+            putExtra("callerId", callerId)
+            putExtra("callId", callId)
+            putExtra("callerName", callerName)
+            putExtra("callerPhone", callerPhone)
+            putExtra("callerPhoto", callerPhoto)
+            putExtra("autoAccept", true)
+        }
+        
+        val acceptPendingIntent = PendingIntent.getActivity(
+            this, jobId.hashCode() + 1, acceptIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // 2. Intent to Reject (Broadcast flow)
+        val rejectIntent = Intent(this, CallNotificationActionReceiver::class.java).apply {
+            action = "ACTION_REJECT_CALL"
+            putExtra("jobId", jobId)
+            putExtra("callerId", callerId)
+            putExtra("callId", callId)
+        }
+        
+        val rejectPendingIntent = PendingIntent.getBroadcast(
+            this, jobId.hashCode() + 2, rejectIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // 3. General Click Intent
+        val contentIntent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("type", "INCOMING_CALL")
             putExtra("jobId", jobId)
@@ -123,8 +155,8 @@ class PieceJobMessagingService : FirebaseMessagingService() {
             putExtra("callerPhoto", callerPhoto)
         }
 
-        val pendingIntent = PendingIntent.getActivity(
-            this, callId.hashCode(), intent,
+        val contentPendingIntent = PendingIntent.getActivity(
+            this, jobId.hashCode(), contentIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -151,10 +183,12 @@ class PieceJobMessagingService : FirebaseMessagingService() {
             .setAutoCancel(true)
             .setOngoing(true)
             .setVibrate(longArrayOf(0, 500, 200, 500))
-            .setFullScreenIntent(pendingIntent, true) // Primary way to show UI from background
-            .setContentIntent(pendingIntent)
+            .setFullScreenIntent(contentPendingIntent, true) 
+            .setContentIntent(contentPendingIntent)
+            .addAction(android.R.drawable.ic_menu_call, "Accept", acceptPendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Reject", rejectPendingIntent)
 
-        notificationManager.notify(callId.hashCode(), builder.build())
+        notificationManager.notify(jobId.hashCode(), builder.build())
     }
 
     private fun handleBroadcastTermination(jobId: String?) {

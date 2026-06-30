@@ -421,7 +421,8 @@ fun NavGraph(
                 navArgument("callId") { type = NavType.StringType },
                 navArgument("callerName") { type = NavType.StringType },
                 navArgument("callerPhone") { type = NavType.StringType },
-                navArgument("callerPhoto") { type = NavType.StringType }
+                navArgument("callerPhoto") { type = NavType.StringType },
+                navArgument("autoAccept") { type = NavType.BoolType; defaultValue = false }
             )
         ) { backStackEntry ->
             val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
@@ -430,6 +431,8 @@ fun NavGraph(
             val callerName = backStackEntry.arguments?.getString("callerName") ?: ""
             val callerPhone = backStackEntry.arguments?.getString("callerPhone") ?: ""
             val callerPhoto = backStackEntry.arguments?.getString("callerPhoto").let { if (it == "none") null else it }
+            val autoAccept = backStackEntry.arguments?.getBoolean("autoAccept") ?: false
+            
             IncomingCallScreen(
                 jobId = jobId,
                 callerId = callerId,
@@ -437,6 +440,7 @@ fun NavGraph(
                 callerName = callerName,
                 callerPhone = callerPhone,
                 callerPhoto = callerPhoto,
+                autoAccept = autoAccept,
                 onAccept = {
                     navController.navigate(Screen.Call.passArgs(jobId, callerId, callerName, callerPhone, callerPhoto)) {
                         popUpTo(Screen.IncomingCall.route) { inclusive = true }

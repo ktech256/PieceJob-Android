@@ -247,6 +247,13 @@ class CallManager @Inject constructor(
 
     private fun cleanup(isError: Boolean = false, terminalStatus: String? = null) {
         Log.d("FORENSIC", "CALL_MANAGER | cleanup(isError=$isError, status=$terminalStatus)")
+        
+        // Dismiss any active call notification
+        activeJobId?.hashCode()?.let { id ->
+            val nm = application.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            nm.cancel(id)
+        }
+
         _room = null
         _isCallActive.value = false
         _isMuted.value = false
