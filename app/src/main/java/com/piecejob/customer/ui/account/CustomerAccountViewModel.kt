@@ -49,8 +49,11 @@ class CustomerAccountViewModel @Inject constructor(
     fun loadProfile() {
         viewModelScope.launch {
             _isLoading.value = true
+            android.util.Log.d("FORENSIC", "VM | loadProfile() triggered")
             val response = userRepository.getProfile()
             if (response.success && response.data != null) {
+                android.util.Log.d("FORENSIC", "VM | Profile Loaded: ${response.data.firstName} ${response.data.lastName}")
+                android.util.Log.d("FORENSIC", "VM | Gender: ${response.data.gender} | DOB: ${response.data.dob}")
                 _user.value = response.data
                 _addresses.value = response.data.addresses ?: emptyList()
                 _savedLocations.value = response.data.savedLocations ?: emptyList()
@@ -58,7 +61,7 @@ class CustomerAccountViewModel @Inject constructor(
                 _emergencyContacts.value = response.data.emergencyContacts ?: emptyList()
                 _subscription.value = response.data.subscription
             } else {
-                _error.value = response.message
+                android.util.Log.e("FORENSIC", "VM | Profile Load Failed: ${response.message}")
             }
             _isLoading.value = false
         }
@@ -80,10 +83,13 @@ class CustomerAccountViewModel @Inject constructor(
     fun addAddress(label: String, address: String, coordinates: List<Double>, isDefault: Boolean) {
         viewModelScope.launch {
             _isLoading.value = true
+            android.util.Log.d("FORENSIC", "VM | addAddress: $label | $address")
             val response = userRepository.addAddress(label, address, coordinates, isDefault)
             if (response.success) {
+                android.util.Log.d("FORENSIC", "VM | Address Added. Count: ${response.data?.size}")
                 _addresses.value = response.data ?: emptyList()
             } else {
+                android.util.Log.e("FORENSIC", "VM | addAddress Failed: ${response.message}")
                 _error.value = response.message
             }
             _isLoading.value = false

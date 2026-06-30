@@ -1,5 +1,7 @@
 package com.piecejob.core.data.remote.dto
 
+import com.google.gson.annotations.SerializedName
+
 data class OtpRequest(val phoneNumber: String)
 data class OtpVerifyRequest(val phoneNumber: String, val otp: String)
 data class LoginRequest(
@@ -47,6 +49,7 @@ data class ReferralUserDto(
 )
 
 data class UserDto(
+    @SerializedName("_id", alternate = ["id"])
     val id: String,
     val firstName: String,
     val lastName: String,
@@ -77,6 +80,7 @@ data class UserDto(
 )
 
 data class AddressDto(
+    @SerializedName("_id", alternate = ["id"])
     val _id: String? = null,
     val label: String,
     val address: String,
@@ -87,6 +91,7 @@ data class AddressDto(
 )
 
 data class SavedLocationDto(
+    @SerializedName("_id", alternate = ["id"])
     val _id: String? = null,
     val name: String,
     val address: String,
@@ -110,6 +115,7 @@ data class SubscriptionDto(
 )
 
 data class UserCardDto(
+    @SerializedName("_id", alternate = ["id"])
     val _id: String? = null,
     val brand: String,
     val last4: String,
@@ -214,5 +220,6 @@ data class EmergencyContactDto(
     val name: String,
     val phone: String,
     val relationship: String,
+    @SerializedName("_id", alternate = ["id"])
     val _id: String? = null
 )

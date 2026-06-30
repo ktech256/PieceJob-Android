@@ -29,8 +29,15 @@ class UserRepository @Inject constructor(
 
     suspend fun getProfile(): ApiResponse<UserDto> {
         return try {
-            api.getProfile()
+            android.util.Log.d("FORENSIC", "REPO | getProfile() calling API")
+            val response = api.getProfile()
+            android.util.Log.d("FORENSIC", "REPO | getProfile() response success: ${response.success}")
+            if (response.data == null) {
+                android.util.Log.e("FORENSIC", "REPO | getProfile() DATA IS NULL! Check JSON keys.")
+            }
+            response
         } catch (e: Exception) {
+            android.util.Log.e("FORENSIC", "REPO | getProfile() CRASH: ${e.message}")
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
     }
