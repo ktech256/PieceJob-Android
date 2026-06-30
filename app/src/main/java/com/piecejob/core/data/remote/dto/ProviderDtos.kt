@@ -74,7 +74,6 @@ data class BankDetailsDto(
 )
 
 data class PayoutPreferencesDto(val frequency: String, val method: String)
-data class EmergencyContactDto(val name: String, val phone: String, val relationship: String)
 data class UpdateServicesRequest(val serviceCodes: List<String>)
 data class UpdateServicesResponse(
     val approved: List<String>,

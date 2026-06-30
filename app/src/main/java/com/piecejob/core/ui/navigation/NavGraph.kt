@@ -21,6 +21,7 @@ import com.piecejob.provider.ui.verification.*
 import com.piecejob.customer.ui.main.CustomerMainScreen
 import com.piecejob.customer.ui.main.CustomerPlaceholderScreen
 import com.piecejob.provider.ui.onboarding.DocumentUploadScreen
+import com.piecejob.customer.ui.account.*
 import com.piecejob.customer.ui.dashboard.CustomerDashboardScreen
 import com.piecejob.core.ui.chat.ChatScreen
 import com.piecejob.core.ui.analytics.ProviderAnalyticsScreen
@@ -168,25 +169,25 @@ fun NavGraph(
         }
 
         // Customer Sub-screens
-        composable(route = Screen.CustomerPersonalDetails.route) { CustomerPlaceholderScreen("Personal Details") { navController.popBackStack() } }
-        composable(route = Screen.CustomerAddresses.route) { CustomerPlaceholderScreen("Addresses") { navController.popBackStack() } }
-        composable(route = Screen.CustomerSavedLocations.route) { CustomerPlaceholderScreen("Saved Locations") { navController.popBackStack() } }
-        composable(route = Screen.CustomerPaymentMethods.route) { CustomerPlaceholderScreen("Payment Methods") { navController.popBackStack() } }
-        composable(route = Screen.CustomerWalletHub.route) { CustomerPlaceholderScreen("Wallet Hub") { navController.popBackStack() } }
-        composable(route = Screen.CustomerInvoices.route) { CustomerPlaceholderScreen("Invoices") { navController.popBackStack() } }
-        composable(route = Screen.CustomerStatements.route) { CustomerPlaceholderScreen("Statements") { navController.popBackStack() } }
-        composable(route = Screen.CustomerNotifications.route) { CustomerPlaceholderScreen("Notifications") { navController.popBackStack() } }
-        composable(route = Screen.CustomerReferrals.route) { CustomerPlaceholderScreen("Referrals") { navController.popBackStack() } }
-        composable(route = Screen.CustomerRewards.route) { CustomerPlaceholderScreen("Rewards") { navController.popBackStack() } }
-        composable(route = Screen.CustomerPlus.route) { CustomerPlaceholderScreen("PieceJob Plus") { navController.popBackStack() } }
-        composable(route = Screen.CustomerSosSettings.route) { CustomerPlaceholderScreen("SOS Settings") { navController.popBackStack() } }
-        composable(route = Screen.CustomerEmergencyContacts.route) { CustomerPlaceholderScreen("Emergency Contacts") { navController.popBackStack() } }
-        composable(route = Screen.CustomerPrivacy.route) { CustomerPlaceholderScreen("Privacy") { navController.popBackStack() } }
-        composable(route = Screen.CustomerSecurity.route) { CustomerPlaceholderScreen("Security") { navController.popBackStack() } }
-        composable(route = Screen.CustomerLanguage.route) { CustomerPlaceholderScreen("Language") { navController.popBackStack() } }
-        composable(route = Screen.CustomerCountry.route) { CustomerPlaceholderScreen("Country") { navController.popBackStack() } }
-        composable(route = Screen.CustomerSupport.route) { CustomerPlaceholderScreen("Support") { navController.popBackStack() } }
-        composable(route = Screen.CustomerAbout.route) { CustomerPlaceholderScreen("About") { navController.popBackStack() } }
+        composable(route = Screen.CustomerPersonalDetails.route) { PersonalDetailsScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerAddresses.route) { AddressesScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerSavedLocations.route) { SavedLocationsScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerPaymentMethods.route) { PaymentMethodsScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerWalletHub.route) { CustomerWalletScreen() }
+        composable(route = Screen.CustomerInvoices.route) { CustomerWalletScreen() } // Wallet screen handles invoices in tabs
+        composable(route = Screen.CustomerStatements.route) { StatementsScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerNotifications.route) { NotificationsScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerReferrals.route) { ReferralsScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerRewards.route) { RewardsScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerPlus.route) { PieceJobPlusScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerSosSettings.route) { SosSettingsScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerEmergencyContacts.route) { EmergencyContactsScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerPrivacy.route) { PrivacySettingsScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerSecurity.route) { SecurityScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerLanguage.route) { LanguageSelectionScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerCountry.route) { CountrySelectionScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerSupport.route) { SupportScreen(onBack = { navController.popBackStack() }) }
+        composable(route = Screen.CustomerAbout.route) { AboutScreen(onBack = { navController.popBackStack() }) }
         
         composable(route = Screen.BookingFlow.route) {
             com.piecejob.customer.ui.booking.BookingFlowScreen(

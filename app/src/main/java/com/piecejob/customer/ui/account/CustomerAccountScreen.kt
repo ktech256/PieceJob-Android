@@ -20,17 +20,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.piecejob.core.ui.navigation.Screen
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 @Composable
 fun CustomerAccountScreen(
     onLogout: () -> Unit,
-    onNavigate: (Screen) -> Unit
+    onNavigate: (Screen) -> Unit,
+    viewModel: CustomerAccountViewModel = hiltViewModel()
 ) {
+    val user by viewModel.user.collectAsState()
+    
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
         item {
-            AccountHeader()
+            AccountHeader(
+                name = "${user?.firstName ?: ""} ${user?.lastName ?: ""}".trim().ifEmpty { "Customer" },
+                email = user?.email ?: "",
+                photo = user?.profilePhoto,
+                country = user?.countryCode ?: "ZA"
+            )
         }
 
         val sections = listOf(
@@ -110,7 +120,7 @@ fun CustomerAccountScreen(
 }
 
 @Composable
-fun AccountHeader() {
+fun AccountHeader(name: String, email: String, photo: String?, country: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -125,13 +135,22 @@ fun AccountHeader() {
                 .background(Color.LightGray),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(60.dp), tint = Color.White)
+            if (photo != null) {
+                coil.compose.AsyncImage(
+                    model = photo,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else {
+                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(60.dp), tint = Color.White)
+            }
         }
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        Text(text = "Customer Name", fontSize = 20.sp, fontWeight = FontWeight.Black)
-        Text(text = "customer@example.com", fontSize = 14.sp, color = Color.Gray)
+        Text(text = name, fontSize = 20.sp, fontWeight = FontWeight.Black)
+        Text(text = email, fontSize = 14.sp, color = Color.Gray)
         
         Spacer(modifier = Modifier.height(12.dp))
         
@@ -141,7 +160,12 @@ fun AccountHeader() {
                 shape = CircleShape
             ) {
                 Text(
-                    text = "South Africa 🇿🇦", 
+                    text = when(country) {
+                        "ZA" -> "South Africa 🇿🇦"
+                        "NG" -> "Nigeria 🇳🇬"
+                        "KE" -> "Kenya 🇰🇪"
+                        else -> country
+                    },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = MaterialTheme.colorScheme.primary,
                     fontSize = 10.sp,

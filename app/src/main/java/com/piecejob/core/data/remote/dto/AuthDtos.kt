@@ -65,7 +65,54 @@ data class UserDto(
     val idOrPassportNumber: String? = null,
     val province: String? = null,
     val emergencyContact: EmergencyContactDto? = null,
-    val pendingAddress: PendingAddressDto? = null
+    val emergencyContacts: List<EmergencyContactDto>? = null,
+    val pendingAddress: PendingAddressDto? = null,
+    val addresses: List<AddressDto>? = null,
+    val savedLocations: List<SavedLocationDto>? = null,
+    val paymentMethods: List<UserCardDto>? = null,
+    val language: String? = null,
+    val country: String? = null,
+    val privacySettings: PrivacySettingsDto? = null,
+    val subscription: SubscriptionDto? = null
+)
+
+data class AddressDto(
+    val _id: String? = null,
+    val label: String,
+    val address: String,
+    val coordinates: List<Double>,
+    val isDefault: Boolean
+)
+
+data class SavedLocationDto(
+    val _id: String? = null,
+    val name: String,
+    val address: String,
+    val coordinates: List<Double>
+)
+
+data class PrivacySettingsDto(
+    val profileVisibility: String,
+    val shareLocation: Boolean,
+    val dataSharing: Boolean,
+    val marketingPreferences: Boolean
+)
+
+data class SubscriptionDto(
+    val plan: String,
+    val status: String,
+    val startDate: String,
+    val expiryDate: String
+)
+
+data class UserCardDto(
+    val _id: String? = null,
+    val brand: String,
+    val last4: String,
+    val expMonth: Int,
+    val expYear: Int,
+    val token: String,
+    val isDefault: Boolean
 )
 
 data class PendingAddressDto(
@@ -157,4 +204,11 @@ data class NotificationDto(
     val status: String,
     val createdAt: String,
     val payload: Map<String, String>? = null
+)
+
+data class EmergencyContactDto(
+    val name: String,
+    val phone: String,
+    val relationship: String,
+    val _id: String? = null
 )

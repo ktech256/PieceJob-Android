@@ -51,11 +51,74 @@ interface PieceJobApi {
     @GET("users/profile")
     suspend fun getProfile(): ApiResponse<UserDto>
 
+    @PUT("users/profile")
+    suspend fun updateProfile(@Body request: UpdateProfileRequest): ApiResponse<UserDto>
+
     @PATCH("users/fcm-token")
     suspend fun updateFcmToken(@Body request: FcmTokenRequest): ApiResponse<Unit>
 
     @GET("users/referrals")
     suspend fun getReferralStats(): ApiResponse<ReferralStatsDto>
+
+    @GET("users/addresses")
+    suspend fun getAddresses(): ApiResponse<List<AddressDto>>
+
+    @POST("users/addresses")
+    suspend fun addAddress(@Body request: AddressDto): ApiResponse<List<AddressDto>>
+
+    @PUT("users/addresses/{addressId}")
+    suspend fun updateAddress(@Path("addressId") addressId: String, @Body request: AddressDto): ApiResponse<List<AddressDto>>
+
+    @DELETE("users/addresses/{addressId}")
+    suspend fun deleteAddress(@Path("addressId") addressId: String): ApiResponse<List<AddressDto>>
+
+    @GET("users/saved-locations")
+    suspend fun getSavedLocations(): ApiResponse<List<SavedLocationDto>>
+
+    @POST("users/saved-locations")
+    suspend fun addSavedLocation(@Body request: SavedLocationDto): ApiResponse<List<SavedLocationDto>>
+
+    @PUT("users/saved-locations/{locationId}")
+    suspend fun updateSavedLocation(@Path("locationId") locationId: String, @Body request: SavedLocationDto): ApiResponse<List<SavedLocationDto>>
+
+    @DELETE("users/saved-locations/{locationId}")
+    suspend fun deleteSavedLocation(@Path("locationId") locationId: String): ApiResponse<List<SavedLocationDto>>
+
+    @GET("users/payment-methods")
+    suspend fun getUserPaymentMethods(): ApiResponse<List<UserCardDto>>
+
+    @POST("users/payment-methods")
+    suspend fun addUserPaymentMethod(@Body request: UserCardDto): ApiResponse<List<UserCardDto>>
+
+    @DELETE("users/payment-methods/{cardId}")
+    suspend fun deleteUserPaymentMethod(@Path("cardId") cardId: String): ApiResponse<List<UserCardDto>>
+
+    @GET("users/emergency-contacts")
+    suspend fun getEmergencyContacts(): ApiResponse<List<EmergencyContactDto>>
+
+    @POST("users/emergency-contacts")
+    suspend fun addEmergencyContact(@Body request: EmergencyContactDto): ApiResponse<List<EmergencyContactDto>>
+
+    @PUT("users/emergency-contacts/{contactId}")
+    suspend fun updateEmergencyContact(@Path("contactId") contactId: String, @Body request: EmergencyContactDto): ApiResponse<List<EmergencyContactDto>>
+
+    @DELETE("users/emergency-contacts/{contactId}")
+    suspend fun deleteEmergencyContact(@Path("contactId") contactId: String): ApiResponse<List<EmergencyContactDto>>
+
+    @PATCH("users/preferences")
+    suspend fun updatePreferences(@Body request: Map<String, String?>): ApiResponse<UserDto>
+
+    @PATCH("users/privacy")
+    suspend fun updatePrivacy(@Body request: PrivacySettingsDto): ApiResponse<PrivacySettingsDto>
+
+    @GET("users/subscription")
+    suspend fun getSubscription(): ApiResponse<SubscriptionDto>
+
+    @POST("users/subscription/upgrade")
+    suspend fun upgradeSubscription(@Body request: Map<String, String>): ApiResponse<SubscriptionDto>
+
+    @POST("users/subscription/cancel")
+    suspend fun cancelSubscription(): ApiResponse<SubscriptionDto>
 
     @GET("wallets/balance")
     suspend fun getWalletBalance(): ApiResponse<WalletDto>
