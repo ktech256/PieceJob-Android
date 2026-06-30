@@ -287,8 +287,10 @@ fun NavGraph(
                 },
                 onCallOpen = { receiverId, name, phone, photo ->
                     val route = Screen.Call.passArgs(jobId, receiverId, name, phone, photo)
-                    Log.d("FORENSIC", "NAV_GRAPH | Navigating to Call: $route")
-                    navController.navigate(route)
+                    Log.d("FORENSIC", "NAV_GRAPH | Navigating to Call Screen. Route: $route")
+                    navController.navigate(route) {
+                        launchSingleTop = true
+                    }
                 },
                 onSosTrigger = { },
                 onNavigateToRating = {
@@ -312,8 +314,10 @@ fun NavGraph(
                 },
                 onCallOpen = { receiverId, name, phone, photo ->
                     val route = Screen.Call.passArgs(jobId, receiverId, name, phone, photo)
-                    Log.d("FORENSIC", "NAV_GRAPH | Navigating to Call: $route")
-                    navController.navigate(route)
+                    Log.d("FORENSIC", "NAV_GRAPH | Navigating to Call Screen. Route: $route")
+                    navController.navigate(route) {
+                        launchSingleTop = true
+                    }
                 },
                 onBack = { navController.popBackStack() },
                 onNavigateToRating = {

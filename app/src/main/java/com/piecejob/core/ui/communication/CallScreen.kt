@@ -39,18 +39,23 @@ fun CallScreen(
     val isMuted by viewModel.isMuted.collectAsState()
     val isSpeakerOn by viewModel.isSpeakerOn.collectAsState()
     var secondsElapsed by remember { mutableIntStateOf(0) }
+    var initiationStarted by remember { mutableStateOf(false) }
 
     LaunchedEffect(isCallActive) {
-        if (!isCallActive) {
+        if (!isCallActive && initiationStarted) {
             android.util.Log.d("FORENSIC", "CALL_SCREEN | Call ended or inactive. Navigating back.")
             onBack()
         }
     }
 
     LaunchedEffect(Unit) {
-        android.util.Log.d("FORENSIC", "CALL_SCREEN | Screen opened. initiateCall called.")
+        android.util.Log.d("FORENSIC", "CALL_SCREEN | Screen opened. initiateCall requested.")
         if (!isCallActive) {
+            initiationStarted = true
             viewModel.initiateCall(jobId, receiverId)
+        } else {
+            // If already active (e.g. returning to screen), mark initiation as started
+            initiationStarted = true
         }
     }
 

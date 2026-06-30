@@ -77,20 +77,21 @@ class CallViewModel @Inject constructor(
     }
 
     fun initiateCall(jobId: String, receiverId: String) {
-        Log.d("FORENSIC", "CALL_INIT_CLICKED | Job: $jobId | To: $receiverId")
+        Log.d("FORENSIC", "CALL_BUTTON_CLICKED | Job: $jobId | To: $receiverId")
         if (callManager.isCallActive.value && callManager.activeJobId == jobId) {
             Log.w("FORENSIC", "CALL_INIT_IGNORED | Already active in this job")
             return
         }
 
         // WhatsApp Style: Immediate UI State Transition
+        Log.d("FORENSIC", "CALL_SCREEN_LAUNCH | Triggering immediate state change")
         callManager.setCallActive(true) // Status -> Calling...
         callManager.activeJobId = jobId
         callManager.targetUserId = receiverId
         
         // Persistent logic flow (survives screen rotation/navigation)
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            Log.d("FORENSIC", "CALL_BACKEND_INIT | Creating session on server")
+            Log.d("FORENSIC", "CALL_BACKEND_REQUEST | Creating session on server")
             val res = repository.logCallInitiation(jobId, receiverId)
             
             if (res.success && res.data != null) {
@@ -98,7 +99,7 @@ class CallViewModel @Inject constructor(
                 Log.d("FORENSIC", "CALL_SESSION_CREATED | ID: $callId")
                 callManager.currentCallId = callId
                 
-                Log.d("FORENSIC", "CALL_TOKEN_FETCH | Fetching LiveKit token")
+                Log.d("FORENSIC", "CALL_TOKEN_FETCH | Requesting LiveKit token")
                 val tokenRes = repository.getLiveKitToken(jobId)
                 if (tokenRes.success && tokenRes.data != null) {
                     Log.d("FORENSIC", "CALL_MEDIA_JOIN | Joining LiveKit room")

@@ -118,8 +118,8 @@ class MainActivity : AppCompatActivity() {
                         }
                         "NEW_JOB_BROADCAST" -> {
                             if (jobId != null) {
-                                android.util.Log.d("FCM_NAV", "Navigating to ProviderHome for broadcast $jobId")
-                                navController.navigate(Screen.ProviderHome.route)
+                                android.util.Log.d("FCM_NAV", "Navigating to Dashboard for broadcast $jobId")
+                                navController.navigate(Screen.Dashboard.route)
                             }
                         }
                         "INCOMING_CALL" -> {
