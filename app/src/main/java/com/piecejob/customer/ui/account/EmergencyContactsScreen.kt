@@ -1,5 +1,6 @@
 package com.piecejob.customer.ui.account
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,6 +28,7 @@ fun EmergencyContactsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingContact by remember { mutableStateOf<EmergencyContactDto?>(null) }
 
     Scaffold(
         topBar = {
@@ -75,6 +77,7 @@ fun EmergencyContactsScreen(
                         items(contacts) { contact ->
                             ContactItem(
                                 contact = contact,
+                                onEdit = { editingContact = contact },
                                 onDelete = { contact._id?.let { viewModel.deleteEmergencyContact(it) } }
                             )
                         }
@@ -88,7 +91,8 @@ fun EmergencyContactsScreen(
     }
 
     if (showAddDialog) {
-        AddContactDialog(
+        ContactDialog(
+            title = "Add Emergency Contact",
             onDismiss = { showAddDialog = false },
             onConfirm = { name, phone, relation ->
                 viewModel.addEmergencyContact(name, phone, relation)
@@ -96,12 +100,26 @@ fun EmergencyContactsScreen(
             }
         )
     }
+
+    if (editingContact != null) {
+        ContactDialog(
+            title = "Edit Emergency Contact",
+            initialName = editingContact!!.name,
+            initialPhone = editingContact!!.phone,
+            initialRelationship = editingContact!!.relationship,
+            onDismiss = { editingContact = null },
+            onConfirm = { name, phone, relation ->
+                viewModel.updateEmergencyContact(editingContact!!._id!!, name, phone, relation)
+                editingContact = null
+            }
+        )
+    }
 }
 
 @Composable
-fun ContactItem(contact: EmergencyContactDto, onDelete: () -> Unit) {
+fun ContactItem(contact: EmergencyContactDto, onEdit: () -> Unit, onDelete: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onEdit() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9))
     ) {
@@ -131,14 +149,21 @@ fun ContactItem(contact: EmergencyContactDto, onDelete: () -> Unit) {
 }
 
 @Composable
-fun AddContactDialog(onDismiss: () -> Unit, onConfirm: (String, String, String) -> Unit) {
-    var name by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var relationship by remember { mutableStateOf("") }
+fun ContactDialog(
+    title: String,
+    initialName: String = "",
+    initialPhone: String = "",
+    initialRelationship: String = "",
+    onDismiss: () -> Unit,
+    onConfirm: (String, String, String) -> Unit
+) {
+    var name by remember { mutableStateOf(initialName) }
+    var phone by remember { mutableStateOf(initialPhone) }
+    var relationship by remember { mutableStateOf(initialRelationship) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Emergency Contact") },
+        title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Full Name") })
@@ -148,7 +173,7 @@ fun AddContactDialog(onDismiss: () -> Unit, onConfirm: (String, String, String) 
         },
         confirmButton = {
             Button(onClick = { onConfirm(name, phone, relationship) }) {
-                Text("ADD")
+                Text("SAVE")
             }
         },
         dismissButton = {

@@ -1,5 +1,6 @@
 package com.piecejob.customer.ui.account
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,6 +28,7 @@ fun SavedLocationsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingLocation by remember { mutableStateOf<SavedLocationDto?>(null) }
 
     Scaffold(
         topBar = {
@@ -64,6 +66,7 @@ fun SavedLocationsScreen(
                     items(locations) { location ->
                         LocationItem(
                             location = location,
+                            onEdit = { editingLocation = location },
                             onDelete = { location._id?.let { viewModel.deleteSavedLocation(it) } }
                         )
                     }
@@ -76,7 +79,8 @@ fun SavedLocationsScreen(
     }
 
     if (showAddDialog) {
-        AddLocationDialog(
+        LocationDialog(
+            title = "Save New Location",
             onDismiss = { showAddDialog = false },
             onConfirm = { name, addr, lat, lng ->
                 viewModel.addSavedLocation(name, addr, listOf(lng, lat))
@@ -84,12 +88,25 @@ fun SavedLocationsScreen(
             }
         )
     }
+
+    if (editingLocation != null) {
+        LocationDialog(
+            title = "Rename Location",
+            initialName = editingLocation!!.name,
+            initialAddress = editingLocation!!.address,
+            onDismiss = { editingLocation = null },
+            onConfirm = { name, addr, lat, lng ->
+                viewModel.updateSavedLocation(editingLocation!!._id!!, name, addr, listOf(lng, lat))
+                editingLocation = null
+            }
+        )
+    }
 }
 
 @Composable
-fun LocationItem(location: SavedLocationDto, onDelete: () -> Unit) {
+fun LocationItem(location: SavedLocationDto, onEdit: () -> Unit, onDelete: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onEdit() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9))
     ) {
@@ -111,13 +128,19 @@ fun LocationItem(location: SavedLocationDto, onDelete: () -> Unit) {
 }
 
 @Composable
-fun AddLocationDialog(onDismiss: () -> Unit, onConfirm: (String, String, Double, Double) -> Unit) {
-    var name by remember { mutableStateOf("") }
-    var addressText by remember { mutableStateOf("") }
+fun LocationDialog(
+    title: String,
+    initialName: String = "",
+    initialAddress: String = "",
+    onDismiss: () -> Unit,
+    onConfirm: (String, String, Double, Double) -> Unit
+) {
+    var name by remember { mutableStateOf(initialName) }
+    var addressText by remember { mutableStateOf(initialAddress) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Save New Location") },
+        title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name (e.g. Grandma's, Gym)") })

@@ -81,14 +81,18 @@ data class AddressDto(
     val label: String,
     val address: String,
     val coordinates: List<Double>,
-    val isDefault: Boolean
+    val isDefault: Boolean,
+    val usageCount: Int = 1,
+    val lastUsedAt: String? = null
 )
 
 data class SavedLocationDto(
     val _id: String? = null,
     val name: String,
     val address: String,
-    val coordinates: List<Double>
+    val coordinates: List<Double>,
+    val usageCount: Int = 1,
+    val lastUsedAt: String? = null
 )
 
 data class PrivacySettingsDto(

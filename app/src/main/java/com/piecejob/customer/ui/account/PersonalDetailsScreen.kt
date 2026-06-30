@@ -61,6 +61,14 @@ fun PersonalDetailsScreen(
                 },
                 actions = {
                     TextButton(onClick = {
+                        if (firstName.isBlank() || lastName.isBlank()) {
+                            // Show error
+                            return@TextButton
+                        }
+                        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                            // Show error
+                            return@TextButton
+                        }
                         viewModel.updateProfile(firstName, lastName, email, gender, dob, profilePhoto)
                     }, enabled = !isLoading) {
                         Text("SAVE", fontWeight = FontWeight.Black)

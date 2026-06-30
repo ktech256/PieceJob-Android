@@ -129,6 +129,19 @@ class CustomerAccountViewModel @Inject constructor(
         }
     }
 
+    fun updateSavedLocation(locationId: String, name: String, address: String, coordinates: List<Double>) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val response = userRepository.updateSavedLocation(locationId, name, address, coordinates)
+            if (response.success) {
+                _savedLocations.value = response.data ?: emptyList()
+            } else {
+                _error.value = response.message
+            }
+            _isLoading.value = false
+        }
+    }
+
     fun deleteSavedLocation(locationId: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -172,6 +185,19 @@ class CustomerAccountViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             val response = userRepository.addEmergencyContact(name, phone, relationship)
+            if (response.success) {
+                _emergencyContacts.value = response.data ?: emptyList()
+            } else {
+                _error.value = response.message
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun updateEmergencyContact(contactId: String, name: String, phone: String, relationship: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val response = userRepository.updateEmergencyContact(contactId, name, phone, relationship)
             if (response.success) {
                 _emergencyContacts.value = response.data ?: emptyList()
             } else {
