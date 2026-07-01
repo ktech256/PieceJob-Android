@@ -15,7 +15,7 @@ data class CustomerDashboardDto(
 )
 
 data class ReferralCampaignDto(
-    @SerializedName("_id") val id: String,
+    @SerializedName("_id", alternate = ["id"]) val id: String,
     val title: String,
     val description: String,
     val rewardAmount: Double,
@@ -33,7 +33,7 @@ data class DashboardProfileDto(
 )
 
 data class PromotionDto(
-    @SerializedName("_id") val id: String,
+    @SerializedName("_id", alternate = ["id"]) val id: String,
     val title: String,
     val description: String,
     val imageUrl: String?,
@@ -42,7 +42,7 @@ data class PromotionDto(
 )
 
 data class ActivityDto(
-    val id: String,
+    @SerializedName("_id", alternate = ["id"]) val id: String,
     val type: String,
     val status: String,
     val serviceCode: String,
@@ -51,7 +51,7 @@ data class ActivityDto(
 )
 
 data class TopProviderDto(
-    val id: String,
+    @SerializedName("_id", alternate = ["id"]) val id: String,
     val name: String,
     val photo: String?,
     val rating: Double,

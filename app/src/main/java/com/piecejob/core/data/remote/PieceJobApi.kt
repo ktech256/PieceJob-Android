@@ -1,5 +1,6 @@
 package com.piecejob.core.data.remote
 
+import com.google.gson.annotations.SerializedName
 import com.piecejob.core.data.remote.dto.*
 import retrofit2.http.*
 import okhttp3.MultipartBody
@@ -469,6 +470,7 @@ data class SettingsDto(
 )
 
 data class ServiceDto(
+    @SerializedName("_id", alternate = ["id"])
     val id: String,
     val code: String,
     val name: String,
