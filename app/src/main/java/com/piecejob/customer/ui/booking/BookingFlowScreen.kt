@@ -454,7 +454,7 @@ fun BookingFeeStep(viewModel: BookingViewModel) {
         }
         Spacer(modifier = Modifier.height(24.dp))
         Text("Booking Fee", fontSize = 14.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-        Text("${estimate?.currency ?: "$"} ${estimate?.bookingFee ?: "0.00"}", fontSize = 42.sp, fontWeight = FontWeight.Black)
+        Text(String.format(java.util.Locale.getDefault(), "%s %.2f", estimate?.currencySymbol ?: estimate?.currency ?: "$", estimate?.bookingFee ?: 0.0), fontSize = 42.sp, fontWeight = FontWeight.Black)
         
         Spacer(modifier = Modifier.height(48.dp))
         
@@ -463,11 +463,12 @@ fun BookingFeeStep(viewModel: BookingViewModel) {
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
         ) {
+            val symbol = estimate?.currencySymbol ?: estimate?.currency ?: "$"
             Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                DetailRow("Base Service Price", "${estimate?.currency} ${estimate?.basePrice}")
-                DetailRow("Estimated Tax", "${estimate?.currency} ${estimate?.taxAmount}")
+                DetailRow("Base Service Price", String.format(java.util.Locale.getDefault(), "%s %.2f", symbol, estimate?.basePrice ?: 0.0))
+                DetailRow("Estimated Tax", String.format(java.util.Locale.getDefault(), "%s %.2f", symbol, estimate?.taxAmount ?: 0.0))
                 HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
-                DetailRow("Payable Now", "${estimate?.currency} ${estimate?.bookingFee}", highlight = true)
+                DetailRow("Payable Now", String.format(java.util.Locale.getDefault(), "%s %.2f", symbol, estimate?.bookingFee ?: 0.0), highlight = true)
             }
         }
 

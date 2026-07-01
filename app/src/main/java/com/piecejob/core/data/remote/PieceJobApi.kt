@@ -427,6 +427,7 @@ data class PriceEstimateDto(
     val taxAmount: Double,
     val totalAmount: Double,
     val currency: String,
+    val currencySymbol: String? = null,
     val surgeMultiplier: Double,
     val surcharges: List<SurchargeDto>
 )
