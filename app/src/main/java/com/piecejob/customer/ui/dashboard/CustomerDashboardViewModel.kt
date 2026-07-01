@@ -236,4 +236,10 @@ class CustomerDashboardViewModel @Inject constructor(
             }
         }
     }
+
+    fun loadServices(gender: String? = null, lat: Double? = null, lng: Double? = null) {
+        viewModelScope.launch {
+            performServiceLoad(gender, lat, lng)
+        }
+    }
 }

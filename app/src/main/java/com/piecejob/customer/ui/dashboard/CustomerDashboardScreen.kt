@@ -532,13 +532,18 @@ fun ServiceCardSmall(service: ServiceDto, onClick: (ServiceDto) -> Unit) {
 }
 
 @Composable
-fun ServiceDetailsDialog(service: ServiceDto, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+fun ServiceDetailsDialog(
+    service: ServiceDto,
+    confirmColor: Color = Color(0xFFD32F2F),
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = service.name, fontWeight = FontWeight.Black, fontSize = 20.sp) },
         text = { Text(text = service.description ?: "Professional service on demand.", fontSize = 14.sp) },
         confirmButton = {
-            Button(onClick = onConfirm, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))) {
+            Button(onClick = onConfirm, colors = ButtonDefaults.buttonColors(containerColor = confirmColor)) {
                 Text("CONFIRM", fontWeight = FontWeight.Black)
             }
         },
