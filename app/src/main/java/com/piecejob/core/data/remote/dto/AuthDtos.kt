@@ -140,7 +140,7 @@ data class WalletDto(
     val balanceCredit: Double,
     val balanceReferral: Double,
     val balanceBonus: Double,
-    val currency: String = "USD"
+    val currency: String
 )
 
 data class WalletTransactionDto(

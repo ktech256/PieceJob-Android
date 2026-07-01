@@ -46,7 +46,7 @@ class SessionManager @Inject constructor(
     }
 
     fun getCountryCode(): String? {
-        return prefs.getString("country_code", "ZA")
+        return prefs.getString("country_code", null)
     }
 
     // Dynamic Workspace Config
@@ -55,7 +55,7 @@ class SessionManager @Inject constructor(
     }
 
     fun getCurrencySymbol(): String {
-        return prefs.getString("currency_symbol", "R") ?: "R"
+        return prefs.getString("currency_symbol", "") ?: ""
     }
 
     fun saveTimezone(timezone: String) {
