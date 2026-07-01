@@ -45,6 +45,7 @@ fun CustomerDashboardScreen(
     val activeJob by viewModel.activeJob.collectAsState()
     val dashboardData by viewModel.dashboardData.collectAsState()
     val realtimePromotions by viewModel.realtimePromotions.collectAsState()
+    val currencySymbol by viewModel.currencySymbol.collectAsState()
     val currentAddress by viewModel.currentAddress.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val bookAgainServices by viewModel.bookAgainServices.collectAsState()
@@ -85,7 +86,7 @@ fun CustomerDashboardScreen(
             WelcomeCard(
                 name = profile?.firstName ?: "User",
                 balance = wallet?.balanceMain ?: 0.0,
-                currency = wallet?.currency ?: "R"
+                currency = currencySymbol
             ) 
         }
 
@@ -219,7 +220,7 @@ fun CustomerDashboardScreen(
             item { Text("No recent activity found.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(horizontal = 24.dp)) }
         } else {
             items(activityList) { act ->
-                ActivityItem(act)
+                ActivityItem(act, currencySymbol)
             }
         }
 
@@ -691,12 +692,12 @@ fun TopProviderCard(provider: com.piecejob.core.data.remote.dto.TopProviderDto) 
 }
 
 @Composable
-fun ActivityItem(act: com.piecejob.core.data.remote.dto.ActivityDto) {
+fun ActivityItem(act: com.piecejob.core.data.remote.dto.ActivityDto, currency: String) {
     ListItem(
         headlineContent = { Text(act.serviceCode, fontWeight = FontWeight.Bold) },
         supportingContent = { Text("${act.status} • ${act.createdAt.take(10)}", fontSize = 12.sp, color = Color.Gray) },
         leadingContent = { Surface(modifier = Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = Color(0xFFF5F5F5)) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(20.dp)) } } },
-        trailingContent = { Text("$${String.format("%.2f", act.amount)}", fontWeight = FontWeight.Black, fontSize = 14.sp) },
+        trailingContent = { Text("$currency ${String.format("%.2f", act.amount)}", fontWeight = FontWeight.Black, fontSize = 14.sp) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
     )
 }

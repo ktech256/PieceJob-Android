@@ -46,7 +46,32 @@ class SessionManager @Inject constructor(
     }
 
     fun getCountryCode(): String? {
-        return prefs.getString("country_code", "ZA") // Default to ZA
+        return prefs.getString("country_code", "ZA")
+    }
+
+    // Dynamic Workspace Config
+    fun saveCurrencySymbol(symbol: String) {
+        prefs.edit().putString("currency_symbol", symbol).apply()
+    }
+
+    fun getCurrencySymbol(): String {
+        return prefs.getString("currency_symbol", "R") ?: "R"
+    }
+
+    fun saveTimezone(timezone: String) {
+        prefs.edit().putString("timezone", timezone).apply()
+    }
+
+    fun getTimezone(): String {
+        return prefs.getString("timezone", "Africa/Johannesburg") ?: "Africa/Johannesburg"
+    }
+
+    fun saveLocale(locale: String) {
+        prefs.edit().putString("locale", locale).apply()
+    }
+
+    fun getLocale(): String {
+        return prefs.getString("locale", "en-ZA") ?: "en-ZA"
     }
 
     fun saveLastPhoneNumber(phone: String) {

@@ -30,6 +30,7 @@ class CustomerDashboardViewModel @Inject constructor(
     private val serviceRepository: ServiceRepository,
     private val jobRepository: JobRepository,
     private val dashboardRepository: DashboardRepository,
+    private val configRepository: com.piecejob.core.data.repository.ConfigRepository,
     private val socketManager: SocketManager,
     private val sessionManager: SessionManager,
     @ApplicationContext private val context: Context
@@ -40,6 +41,8 @@ class CustomerDashboardViewModel @Inject constructor(
 
     private val _realtimePromotions = MutableStateFlow<List<PromotionDto>>(emptyList())
     val realtimePromotions: StateFlow<List<PromotionDto>> = _realtimePromotions.asStateFlow()
+
+    val currencySymbol = MutableStateFlow(configRepository.getCurrencySymbol())
 
     private val _services = MutableStateFlow<List<ServiceDto>>(emptyList())
     val services: StateFlow<List<ServiceDto>> = _services
@@ -148,6 +151,12 @@ class CustomerDashboardViewModel @Inject constructor(
             _isLoading.value = true
             Log.d("FORENSIC", "VM | loadDashboard(lat=$lat, lng=$lng) started")
             try {
+                // Refresh config in parallel
+                launch { 
+                    configRepository.refreshWorkspaceConfig()
+                    currencySymbol.value = configRepository.getCurrencySymbol()
+                }
+
                 val response = dashboardRepository.getCustomerDashboard(lat, lng)
                 if (response.success && response.data != null) {
                     val data = response.data

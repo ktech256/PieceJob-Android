@@ -450,7 +450,10 @@ data class CountryDto(
     val code: String,
     val currency: String,
     val phoneCode: String? = null,
-    val flagEmoji: String? = null
+    val flagEmoji: String? = null,
+    val timezone: String? = null,
+    val language: String? = null,
+    val locale: String? = null
 )
 
 data class LanguageDto(
@@ -468,6 +471,7 @@ data class SettingsDto(
     val minimumCharge: Double,
     val taxPercentage: Double,
     val currencyCode: String,
+    val currencySymbol: String? = null,
     val nightFeeEnabled: Boolean,
     val weekendFeeEnabled: Boolean
 )

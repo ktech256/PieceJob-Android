@@ -12,11 +12,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProviderAnalyticsViewModel @Inject constructor(
-    private val repository: AnalyticsRepository
+    private val repository: AnalyticsRepository,
+    private val configRepository: com.piecejob.core.data.repository.ConfigRepository
 ) : ViewModel() {
 
     private val _analytics = MutableStateFlow<ProviderAnalyticsDto?>(null)
     val analytics: StateFlow<ProviderAnalyticsDto?> = _analytics
+
+    val currencySymbol = MutableStateFlow(configRepository.getCurrencySymbol())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading

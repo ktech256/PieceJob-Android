@@ -27,6 +27,7 @@ fun CustomerWalletScreen(
     val wallet by viewModel.wallet.collectAsState()
     val history by viewModel.history.collectAsState()
     val invoices by viewModel.invoices.collectAsState()
+    val currencySymbol by viewModel.currencySymbol.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
 
@@ -58,16 +59,19 @@ fun CustomerWalletScreen(
             WalletMiniCard(
                 label = "Credit",
                 amount = wallet?.balanceCredit ?: 0.0,
+                currency = currencySymbol,
                 modifier = Modifier.weight(1f)
             )
             WalletMiniCard(
                 label = "Referral",
                 amount = wallet?.balanceReferral ?: 0.0,
+                currency = currencySymbol,
                 modifier = Modifier.weight(1f)
             )
             WalletMiniCard(
                 label = "Bonus",
                 amount = wallet?.balanceBonus ?: 0.0,
+                currency = currencySymbol,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -88,7 +92,7 @@ fun CustomerWalletScreen(
         ) {
             if (activeTab == 0) {
                 items(history) { tx ->
-                    TransactionRow(tx)
+                    TransactionRow(tx, currencySymbol)
                 }
                 if (history.isEmpty() && !isLoading) {
                     item {
@@ -97,7 +101,7 @@ fun CustomerWalletScreen(
                 }
             } else {
                 items(invoices) { invoice ->
-                    InvoiceRow(invoice, onDownload = { url ->
+                    InvoiceRow(invoice, currencySymbol, onDownload = { url ->
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                         context.startActivity(intent)
                     })
@@ -120,7 +124,7 @@ fun EmptyState(message: String) {
 }
 
 @Composable
-fun WalletMiniCard(label: String, amount: Double, modifier: Modifier) {
+fun WalletMiniCard(label: String, amount: Double, currency: String, modifier: Modifier) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
@@ -128,13 +132,13 @@ fun WalletMiniCard(label: String, amount: Double, modifier: Modifier) {
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(text = label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(text = "$${String.format("%.2f", amount)}", fontSize = 16.sp, fontWeight = FontWeight.Black)
+            Text(text = "$currency ${String.format("%.2f", amount)}", fontSize = 16.sp, fontWeight = FontWeight.Black)
         }
     }
 }
 
 @Composable
-fun TransactionRow(tx: WalletTransactionDto) {
+fun TransactionRow(tx: WalletTransactionDto, currency: String) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -145,7 +149,7 @@ fun TransactionRow(tx: WalletTransactionDto) {
             Text(text = tx.createdAt.take(10), fontSize = 10.sp, color = Color.Gray)
         }
         Text(
-            text = "$${String.format("%.2f", tx.amount)}",
+            text = "$currency ${String.format("%.2f", tx.amount)}",
             fontSize = 16.sp,
             fontWeight = FontWeight.Black,
             color = if (tx.amount > 0) Color(0xFF2E7D32) else Color.Red
@@ -154,7 +158,7 @@ fun TransactionRow(tx: WalletTransactionDto) {
 }
 
 @Composable
-fun InvoiceRow(invoice: InvoiceDto, onDownload: (String) -> Unit) {
+fun InvoiceRow(invoice: InvoiceDto, currency: String, onDownload: (String) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -166,7 +170,7 @@ fun InvoiceRow(invoice: InvoiceDto, onDownload: (String) -> Unit) {
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "$${String.format("%.2f", invoice.amount)}",
+                text = "$currency ${String.format("%.2f", invoice.amount)}",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(end = 8.dp)

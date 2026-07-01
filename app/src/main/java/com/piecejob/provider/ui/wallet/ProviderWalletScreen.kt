@@ -29,6 +29,7 @@ fun ProviderWalletScreen(
     val history by viewModel.history.collectAsState()
     val statements by viewModel.statements.collectAsState()
     val invoices by viewModel.invoices.collectAsState()
+    val currencySymbol by viewModel.currencySymbol.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
 
@@ -61,7 +62,7 @@ fun ProviderWalletScreen(
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(text = "Available for Withdrawal", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
                 Text(
-                    text = String.format(Locale.getDefault(), "$%.2f", wallet?.balanceMain ?: 0.0),
+                    text = String.format(Locale.getDefault(), "%s %.2f", currencySymbol, wallet?.balanceMain ?: 0.0),
                     color = Color.White,
                     fontSize = 36.sp,
                     fontWeight = FontWeight.Black
@@ -98,14 +99,14 @@ fun ProviderWalletScreen(
         ) {
             when (activeTab) {
                 0 -> {
-                    items(history) { tx -> TransactionItem(tx) }
+                    items(history) { tx -> TransactionItem(tx, currencySymbol) }
                     if (history.isEmpty() && !isLoading) {
                         item { EmptyState("No transaction history.") }
                     }
                 }
                 1 -> {
                     items(statements) { statement ->
-                        StatementRow(statement, onDownload = { url ->
+                        StatementRow(statement, currencySymbol, onDownload = { url ->
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                             context.startActivity(intent)
                         })
@@ -138,7 +139,7 @@ fun EmptyState(message: String) {
 }
 
 @Composable
-fun TransactionItem(tx: WalletTransactionDto) {
+fun TransactionItem(tx: WalletTransactionDto, currency: String) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -149,7 +150,7 @@ fun TransactionItem(tx: WalletTransactionDto) {
             Text(text = tx.createdAt.take(10), fontSize = 10.sp, color = Color.Gray)
         }
         Text(
-            text = String.format(Locale.getDefault(), "${if (tx.amount > 0) "+" else ""}$%.2f", tx.amount),
+            text = String.format(Locale.getDefault(), "%s%s %.2f", if (tx.amount > 0) "+" else "", currency, tx.amount),
             fontWeight = FontWeight.Black,
             color = if (tx.amount > 0) Color(0xFF2E7D32) else Color(0xFFD32F2F)
         )
@@ -157,7 +158,7 @@ fun TransactionItem(tx: WalletTransactionDto) {
 }
 
 @Composable
-fun StatementRow(statement: StatementDto, onDownload: (String) -> Unit) {
+fun StatementRow(statement: StatementDto, currency: String, onDownload: (String) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -169,7 +170,7 @@ fun StatementRow(statement: StatementDto, onDownload: (String) -> Unit) {
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = String.format(Locale.getDefault(), "$%.2f", statement.summary.netEarnings),
+                text = String.format(Locale.getDefault(), "%s %.2f", currency, statement.summary.netEarnings),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(end = 8.dp)

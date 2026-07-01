@@ -34,6 +34,7 @@ fun ProviderDashboardScreen(
     val isShadowBanned by viewModel.isShadowBanned.collectAsState()
     val availableJobs by viewModel.availableJobs.collectAsState()
     val activeJob by viewModel.activeJob.collectAsState()
+    val currencySymbol by viewModel.currencySymbol.collectAsState()
     val error by viewModel.error.collectAsState()
     
     val context = LocalContext.current
@@ -205,8 +206,8 @@ fun ProviderDashboardScreen(
             item {
                 StatsCard(
                     title = "Earnings Summary",
-                    mainValue = "$${String.format("%.2f", stats?.earningsToday ?: 0.0)}",
-                    subValues = listOf("Week: $${String.format("%.2f", stats?.earningsWeekly ?: 0.0)}", "Month: $${String.format("%.2f", stats?.earningsMonthly ?: 0.0)}"),
+                    mainValue = "$currencySymbol ${String.format("%.2f", stats?.earningsToday ?: 0.0)}",
+                    subValues = listOf("Week: $currencySymbol ${String.format("%.2f", stats?.earningsWeekly ?: 0.0)}", "Month: $currencySymbol ${String.format("%.2f", stats?.earningsMonthly ?: 0.0)}"),
                     icon = Icons.Default.Payments,
                     color = Color(0xFF2E7D32)
                 )
@@ -238,8 +239,8 @@ fun ProviderDashboardScreen(
             item {
                 StatsCard(
                     title = "Wallet Balance",
-                    mainValue = "$0.00", // Will wire wallet later
-                    subValues = listOf("Escrow: $0.00", "Pending: $0.00"),
+                    mainValue = "$currencySymbol 0.00", // Will wire wallet later
+                    subValues = listOf("Escrow: $currencySymbol 0.00", "Pending: $currencySymbol 0.00"),
                     icon = Icons.Default.AccountBalanceWallet,
                     color = Color(0xFF1976D2)
                 )
@@ -263,7 +264,7 @@ fun ProviderDashboardScreen(
                 Text("Recent Activity", fontWeight = FontWeight.Black, fontSize = 16.sp)
             }
             items(3) {
-                RecentActivityItem()
+                RecentActivityItem(currencySymbol)
             }
         }
     }
@@ -378,7 +379,7 @@ fun QuickActionButton(label: String, icon: ImageVector, onClick: () -> Unit) {
 }
 
 @Composable
-fun RecentActivityItem() {
+fun RecentActivityItem(currency: String) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -391,7 +392,7 @@ fun RecentActivityItem() {
         Spacer(modifier = Modifier.width(16.dp))
         Column {
             Text("Job Completed: House Cleaning", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            Text("2 hours ago • +$45.00", fontSize = 11.sp, color = Color.Gray)
+            Text("2 hours ago • +$currency 45.00", fontSize = 11.sp, color = Color.Gray)
         }
     }
 }

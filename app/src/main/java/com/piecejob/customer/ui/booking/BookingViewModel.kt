@@ -50,6 +50,7 @@ class BookingViewModel @Inject constructor(
     private val serviceRepository: ServiceRepository,
     private val providerRepository: ProviderRepository,
     private val settingsRepository: SettingsRepository,
+    private val configRepository: com.piecejob.core.data.repository.ConfigRepository,
     private val socketManager: SocketManager,
     private val sessionManager: SessionManager,
     private val placesClient: PlacesClient
@@ -308,6 +309,9 @@ class BookingViewModel @Inject constructor(
         val service = selectedService.value ?: return
         viewModelScope.launch {
             _isLoading.value = true
+            // Refresh workspace config to ensure correct currency
+            configRepository.refreshWorkspaceConfig()
+
             val res = jobRepository.getPriceEstimate(service.code, resolvedZone.value?.id, false)
             if (res.success) {
                 priceEstimate.value = res.data

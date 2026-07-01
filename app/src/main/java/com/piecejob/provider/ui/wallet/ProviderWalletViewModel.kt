@@ -12,11 +12,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProviderWalletViewModel @Inject constructor(
-    private val walletRepository: WalletRepository
+    private val walletRepository: WalletRepository,
+    private val configRepository: com.piecejob.core.data.repository.ConfigRepository
 ) : ViewModel() {
 
     private val _wallet = MutableStateFlow<WalletDto?>(null)
     val wallet: StateFlow<WalletDto?> = _wallet
+
+    val currencySymbol = MutableStateFlow(configRepository.getCurrencySymbol())
 
     private val _transactions = MutableStateFlow<List<WalletTransactionDto>>(emptyList())
     val transactions: StateFlow<List<WalletTransactionDto>> = _transactions
@@ -47,6 +50,12 @@ class ProviderWalletViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                // Refresh config
+                launch {
+                    configRepository.refreshWorkspaceConfig()
+                    currencySymbol.value = configRepository.getCurrencySymbol()
+                }
+
                 // Parallel load
                 launch {
                     val balanceRes = walletRepository.getWalletBalance()

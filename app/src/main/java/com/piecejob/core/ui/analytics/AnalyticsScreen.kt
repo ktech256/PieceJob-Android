@@ -22,6 +22,7 @@ fun ProviderAnalyticsScreen(
     viewModel: ProviderAnalyticsViewModel = hiltViewModel()
 ) {
     val analytics by viewModel.analytics.collectAsState()
+    val currencySymbol by viewModel.currencySymbol.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     Column(
@@ -60,6 +61,7 @@ fun CustomerAnalyticsScreen(
     viewModel: CustomerAnalyticsViewModel = hiltViewModel()
 ) {
     val analytics by viewModel.analytics.collectAsState()
+    val currencySymbol by viewModel.currencySymbol.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     Column(
@@ -80,7 +82,7 @@ fun CustomerAnalyticsScreen(
                 StatGrid(
                     listOf(
                         "Bookings" to (analytics?.totalBookings?.toString() ?: "0"),
-                        "Spending" to String.format(Locale.getDefault(), "$%.2f", analytics?.totalSpending ?: 0.0)
+                        "Spending" to String.format(Locale.getDefault(), "%s%.2f", currencySymbol, analytics?.totalSpending ?: 0.0)
                     )
                 )
             }
@@ -93,7 +95,7 @@ fun CustomerAnalyticsScreen(
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(cat.categoryName)
-                        Text(String.format(Locale.getDefault(), "$%.2f", cat.amount), fontWeight = FontWeight.Bold)
+                        Text(String.format(Locale.getDefault(), "%s%.2f", currencySymbol, cat.amount), fontWeight = FontWeight.Bold)
                     }
                 }
             }

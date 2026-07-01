@@ -22,12 +22,15 @@ import javax.inject.Inject
 class ProviderDashboardViewModel @Inject constructor(
     private val repository: ProviderRepository,
     private val jobRepository: JobRepository,
+    private val configRepository: com.piecejob.core.data.repository.ConfigRepository,
     private val socketManager: SocketManager,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _stats = MutableStateFlow<ProviderStatsDto?>(null)
     val stats: StateFlow<ProviderStatsDto?> = _stats
+
+    val currencySymbol = MutableStateFlow(configRepository.getCurrencySymbol())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -56,6 +59,12 @@ class ProviderDashboardViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                // Refresh config in parallel
+                launch {
+                    configRepository.refreshWorkspaceConfig()
+                    currencySymbol.value = configRepository.getCurrencySymbol()
+                }
+
                 // Parallel fetching
                 launch { loadStats() }
                 launch { loadProfile() }
