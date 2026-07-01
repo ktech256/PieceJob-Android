@@ -77,7 +77,7 @@ class CustomerDashboardViewModel @Inject constructor(
         
         viewModelScope.launch {
             socketManager.statusEventFlow.collect { event ->
-                Log.d("FORENSIC", "VM | Socket Status Update: ${event.status}. Reloading dashboard.")
+                Log.d("FORENSIC", "VM | Socket Status Update: ${event.status}. Reloading.")
                 loadDashboard(lastLoadedLocation?.latitude, lastLoadedLocation?.longitude)
             }
         }
@@ -85,16 +85,14 @@ class CustomerDashboardViewModel @Inject constructor(
 
     private fun observeLocationAndLoad() {
         viewModelScope.launch {
-            // Initial load immediately
+            // Priority 1: Instant load to get user profile and existing address
             loadDashboard()
 
             LocationService.currentLocation.collectLatest { location ->
                 if (location != null) {
-                    val shouldReload = lastLoadedLocation == null || 
-                        location.distanceTo(lastLoadedLocation!!) > 100 
-
-                    if (shouldReload) {
-                        Log.d("FORENSIC", "VM | Location update triggered reload.")
+                    val distance = lastLoadedLocation?.distanceTo(location) ?: Float.MAX_VALUE
+                    if (distance > 100) { // 100m threshold
+                        Log.d("FORENSIC", "VM | Significant location change detected ($distance m). Reloading dashboard.")
                         lastLoadedLocation = location
                         loadDashboard(lat = location.latitude, lng = location.longitude)
                     }
@@ -128,41 +126,41 @@ class CustomerDashboardViewModel @Inject constructor(
 
     fun loadDashboard(lat: Double? = null, lng: Double? = null) {
         viewModelScope.launch {
-            if (_isLoading.value) return@launch // Prevent concurrent reloads
             _isLoading.value = true
             Log.d("FORENSIC", "VM | loadDashboard(lat=$lat, lng=$lng) started")
             try {
-                // 1. Load Aggregated Dashboard
                 val response = dashboardRepository.getCustomerDashboard(lat, lng)
                 if (response.success && response.data != null) {
                     val data = response.data
+                    Log.d("FORENSIC", "VM | Dashboard API Success. User: ${data.profile.firstName}")
+                    
                     _dashboardData.value = data
                     _activeJob.value = data.activeJob
                     
-                    // Priority Location Resolution
+                    // Priority Location Resolution (Issue 1)
                     resolveDisplayAddress(lat, lng, data.profile)
 
                     // Process Book Again
                     processBookAgain(data)
 
-                    // 2. Load Full Service List (Synced)
+                    // Ensure services are loaded
                     performServiceLoad(lat = lat, lng = lng)
-
-                    // Re-process Book Again now that we have full services
-                    processBookAgain(data)
                 } else {
-                    Log.e("FORENSIC", "VM | loadDashboard API failure: ${response.message}")
-                    // Even if dashboard fails, attempt to load services
+                    Log.e("FORENSIC", "VM | Dashboard API Failure: ${response.message}")
+                    _error.value = response.message
+                    
+                    // Even if aggregated dashboard fails, attempt to load services
                     performServiceLoad(lat = lat, lng = lng)
+                    
                     if (currentAddress.value == "Determining location...") {
-                        currentAddress.value = "Location Unavailable"
+                        currentAddress.value = "Location Offline"
                     }
                 }
             } catch (e: Exception) {
-                Log.e("FORENSIC", "VM | loadDashboard CRASH", e)
+                Log.e("FORENSIC", "VM | loadDashboard CRITICAL ERROR", e)
+                _error.value = e.message
             } finally {
                 _isLoading.value = false
-                Log.d("FORENSIC", "VM | loadDashboard finished")
             }
         }
     }
@@ -170,10 +168,9 @@ class CustomerDashboardViewModel @Inject constructor(
     private suspend fun performServiceLoad(gender: String? = null, lat: Double? = null, lng: Double? = null) {
         withContext(Dispatchers.IO) {
             try {
-                // Parallel categories
-                val catRes = serviceRepository.getCategories()
-                if (catRes.success) {
-                    _categories.value = catRes.data ?: emptyList()
+                launch {
+                    val catRes = serviceRepository.getCategories()
+                    if (catRes.success) _categories.value = catRes.data ?: emptyList()
                 }
 
                 val response = serviceRepository.getServices(gender, lat, lng)
@@ -182,7 +179,7 @@ class CustomerDashboardViewModel @Inject constructor(
                     _groupedServices.value = response.data.grouped
                 }
             } catch (e: Exception) {
-                Log.e("FORENSIC", "VM | performServiceLoad error", e)
+                Log.e("FORENSIC", "VM | performServiceLoad Error", e)
             }
         }
     }
@@ -198,11 +195,14 @@ class CustomerDashboardViewModel @Inject constructor(
                         val addr = addresses[0]
                         val city = addr.locality ?: addr.subAdminArea ?: ""
                         val country = addr.countryCode ?: ""
-                        currentAddress.value = "$city, $country".trim().removePrefix(",").removeSuffix(",")
+                        val resolved = "$city, $country".trim().removePrefix(",").removeSuffix(",")
+                        currentAddress.value = if (resolved.isNotBlank()) resolved else "Current Location"
                     } else {
+                        Log.w("FORENSIC", "VM | Geocoder returned empty for $lat, $lng. Falling back.")
                         fallbackAddress(profile)
                     }
                 } catch (e: Exception) {
+                    Log.e("FORENSIC", "VM | Geocoding Exception", e)
                     fallbackAddress(profile)
                 }
             }
@@ -221,11 +221,11 @@ class CustomerDashboardViewModel @Inject constructor(
 
     private fun processBookAgain(data: CustomerDashboardDto) {
         val recentCodes = data.latestActivity.filter { it.type == "JOB" }.map { it.serviceCode }.distinct()
-        // If we have full service list, we can filter from it.
-        // Otherwise, use recommendations.
-        val pool = if (_services.value.isNotEmpty()) _services.value else data.recommendations
+        // Try to find full service details from the registry or recommendations
+        val pool = (_services.value + data.recommendations).distinctBy { it.code }
         val fromPool = pool.filter { recentCodes.contains(it.code) }
         _bookAgainServices.value = fromPool
+        Log.d("FORENSIC", "VM | Book Again processed: ${fromPool.size} items")
     }
 
     fun loadActiveJob() {

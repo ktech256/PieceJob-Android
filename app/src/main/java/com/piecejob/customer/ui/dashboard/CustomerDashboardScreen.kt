@@ -117,9 +117,11 @@ fun CustomerDashboardScreen(
         }
 
         // SECTION 4: PROMOTIONAL BANNER CAROUSEL
-        val promotions = dashboardData?.promotions ?: emptyList()
-        if (promotions.isNotEmpty() || isLoading) {
-            item { PromotionCarousel(promotions, isLoading) }
+        item { 
+            PromotionCarousel(
+                promotions = dashboardData?.promotions ?: emptyList(), 
+                isLoading = isLoading
+            ) 
         }
 
         // SECTION 5: POPULAR CATEGORIES
@@ -136,13 +138,19 @@ fun CustomerDashboardScreen(
         }
 
         // SECTION 7: BOOK AGAIN
-        if (bookAgainServices.isNotEmpty()) {
-            item { SectionTitle("Book Again") }
-            item {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+        item { SectionTitle("Book Again") }
+        item {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                if (bookAgainServices.isEmpty()) {
+                    if (isLoading) {
+                        items(3) { Box(modifier = Modifier.size(64.dp).clip(CircleShape).background(Color.LightGray.copy(alpha = 0.2f))) }
+                    } else {
+                        item { Text("No recently booked services.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(vertical = 12.dp)) }
+                    }
+                } else {
                     items(bookAgainServices) { service ->
                         RecentServiceAvatar(service.name) { onServiceClick(service) }
                     }
@@ -153,7 +161,7 @@ fun CustomerDashboardScreen(
         // SECTION 10: EMERGENCY SERVICES
         item { EmergencyServicesSection() }
 
-        // SECTION 6: ALL SERVICE CATEGORIES (Issue 4 Restoration)
+        // SECTION 6: ALL SERVICE CATEGORIES
         if (isLoading && services.isEmpty()) {
             item { SkeletonGrid() }
         } else {
@@ -182,53 +190,53 @@ fun CustomerDashboardScreen(
         }
 
         // SECTION 8: RECOMMENDED SERVICES
-        val recommendations = dashboardData?.recommendations ?: emptyList()
-        if (recommendations.isNotEmpty() || isLoading) {
-            item { SectionTitle("Recommended For You") }
-            item {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    if (recommendations.isEmpty() && isLoading) {
-                        items(3) { SkeletonCard(width = 140.dp) }
-                    } else {
-                        items(recommendations) { service ->
-                            ServiceCardSmall(service) { selectedServiceForDetails = it }
-                        }
+        item { SectionTitle("Recommended For You") }
+        item {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                val recommendations = dashboardData?.recommendations ?: emptyList()
+                if (recommendations.isEmpty() && isLoading) {
+                    items(3) { SkeletonCard(width = 140.dp) }
+                } else if (recommendations.isEmpty()) {
+                    item { Text("Calculating recommendations...", fontSize = 12.sp, color = Color.Gray) }
+                } else {
+                    items(recommendations) { service ->
+                        ServiceCardSmall(service) { selectedServiceForDetails = it }
                     }
                 }
             }
         }
 
         // SECTION 12: LATEST ACTIVITY
+        item { SectionTitle("Latest Activity") }
         val activityList = dashboardData?.latestActivity ?: emptyList()
-        if (activityList.isNotEmpty() || isLoading) {
-            item { SectionTitle("Latest Activity") }
-            if (activityList.isEmpty() && isLoading) {
-                items(2) { SkeletonListItem() }
-            } else {
-                items(activityList) { act ->
-                    ActivityItem(act)
-                }
+        if (activityList.isEmpty() && isLoading) {
+            items(2) { SkeletonListItem() }
+        } else if (activityList.isEmpty()) {
+            item { Text("No recent activity found.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(horizontal = 24.dp)) }
+        } else {
+            items(activityList) { act ->
+                ActivityItem(act)
             }
         }
 
         // SECTION 9: TOP RATED PROVIDERS NEARBY
-        val providers = dashboardData?.topRatedNearby ?: emptyList()
-        if (providers.isNotEmpty() || isLoading) {
-            item { SectionTitle("Top Rated Nearby") }
-            item {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    if (providers.isEmpty() && isLoading) {
-                        items(3) { SkeletonCard(width = 170.dp) }
-                    } else {
-                        items(providers) { provider ->
-                            TopProviderCard(provider)
-                        }
+        item { SectionTitle("Top Rated Nearby") }
+        item {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                val providers = dashboardData?.topRatedNearby ?: emptyList()
+                if (providers.isEmpty() && isLoading) {
+                    items(3) { SkeletonCard(width = 170.dp) }
+                } else if (providers.isEmpty()) {
+                    item { Text("No providers found in your area.", fontSize = 12.sp, color = Color.Gray) }
+                } else {
+                    items(providers) { provider ->
+                        TopProviderCard(provider)
                     }
                 }
             }
@@ -412,52 +420,64 @@ fun SearchResultItem(result: Any, onClick: (Any) -> Unit) {
 
 @Composable
 fun PromotionCarousel(promotions: List<com.piecejob.core.data.remote.dto.PromotionDto>, isLoading: Boolean) {
-    if (promotions.isEmpty() && isLoading) {
-        SkeletonCard(width = 360.dp)
+    if (isLoading && promotions.isEmpty()) {
+        Box(modifier = Modifier.padding(horizontal = 24.dp)) {
+            SkeletonCard(width = 360.dp)
+        }
         return
     }
 
-    if (promotions.isEmpty()) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(130.dp)
-                .padding(horizontal = 24.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFD32F2F))
-        ) {
-            Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-                Text("PJ PLUS EXCLUSIVE\nGet 50% OFF all\ntasks this weekend.", color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp, lineHeight = 24.sp)
-                Icon(Icons.Default.Stars, contentDescription = null, tint = Color.White.copy(alpha = 0.2f), modifier = Modifier.size(100.dp).align(Alignment.CenterEnd))
+    val promo = if (promotions.isNotEmpty()) promotions.first() else null
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(130.dp)
+            .padding(horizontal = 24.dp),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFD32F2F))
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (promo?.imageUrl != null) {
+                coil.compose.AsyncImage(
+                    model = promo.imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)))
+            } else {
+                Icon(
+                    Icons.Default.Stars, 
+                    contentDescription = null, 
+                    tint = Color.White.copy(alpha = 0.2f), 
+                    modifier = Modifier.size(100.dp).align(Alignment.CenterEnd)
+                )
             }
-        }
-    } else {
-        val promo = promotions.first()
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(130.dp)
-                .padding(horizontal = 24.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFD32F2F))
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (promo.imageUrl != null) {
-                    coil.compose.AsyncImage(
-                        model = promo.imageUrl,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text(
+                    text = promo?.title ?: "PJ PLUS EXCLUSIVE\nGet 50% OFF all tasks.", 
+                    color = Color.White, 
+                    fontWeight = FontWeight.Black, 
+                    fontSize = 18.sp,
+                    lineHeight = 24.sp
+                )
+                Text(
+                    text = promo?.description ?: "This weekend only. Join PJ Plus now.", 
+                    color = Color.White.copy(alpha = 0.8f), 
+                    fontSize = 12.sp, 
+                    maxLines = 2
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(color = Color.White, shape = RoundedCornerShape(8.dp)) {
+                    Text(
+                        text = promo?.ctaText ?: "GET STARTED", 
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), 
+                        fontSize = 10.sp, 
+                        fontWeight = FontWeight.Black, 
+                        color = Color.Black
                     )
-                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)))
-                }
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text(promo.title, color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp)
-                    Text(promo.description, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, maxLines = 2)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Surface(color = Color.White, shape = RoundedCornerShape(8.dp)) {
-                        Text(promo.ctaText, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Black)
-                    }
                 }
             }
         }
@@ -657,6 +677,13 @@ fun TopProviderCard(provider: com.piecejob.core.data.remote.dto.TopProviderDto) 
                 Text(" ${String.format("%.1f", provider.rating)} • ${provider.tier}", fontSize = 11.sp, color = Color(0xFFFFA000), fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(4.dp))
+            val distLabel = if (provider.distance != null) {
+                val km = provider.distance / 1000
+                if (km < 1) "${String.format("%.0f", provider.distance)}m away" 
+                else "${String.format("%.1f", km)}km away"
+            } else "Nearby"
+            
+            Text(distLabel, fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
             Text(provider.services.firstOrNull() ?: "General Pro", fontSize = 10.sp, color = Color.Gray, maxLines = 1)
         }
     }

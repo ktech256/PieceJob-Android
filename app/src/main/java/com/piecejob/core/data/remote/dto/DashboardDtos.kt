@@ -56,7 +56,8 @@ data class TopProviderDto(
     val photo: String?,
     val rating: Double,
     val tier: String,
-    val services: List<String>
+    val services: List<String>,
+    val distance: Double? = null
 )
 
 data class GlobalSearchDto(
