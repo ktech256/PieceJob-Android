@@ -18,4 +18,12 @@ class DashboardRepository @Inject constructor(
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
     }
+
+    suspend fun globalSearch(query: String): ApiResponse<GlobalSearchDto> {
+        return try {
+            api.globalSearch(query)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
 }

@@ -1,5 +1,7 @@
 package com.piecejob.customer.ui.dashboard
 
+import android.content.Context
+import android.location.Geocoder
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,6 +15,8 @@ import com.piecejob.core.location.LocationService
 import com.piecejob.core.socket.SocketManager
 import com.piecejob.core.data.local.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +30,8 @@ class CustomerDashboardViewModel @Inject constructor(
     private val jobRepository: JobRepository,
     private val dashboardRepository: DashboardRepository,
     private val socketManager: SocketManager,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _dashboardData = MutableStateFlow<CustomerDashboardDto?>(null)
@@ -52,33 +57,33 @@ class CustomerDashboardViewModel @Inject constructor(
 
     val currentAddress = MutableStateFlow("Determining location...")
 
+    private val _bookAgainServices = MutableStateFlow<List<ServiceDto>>(emptyList())
+    val bookAgainServices: StateFlow<List<ServiceDto>> = _bookAgainServices.asStateFlow()
+
     private val _searchResults = MutableStateFlow<List<Any>>(emptyList())
     val searchResults: StateFlow<List<Any>> = _searchResults.asStateFlow()
 
     fun onSearch(query: String) {
-        if (query.length < 3) {
+        if (query.length < 2) {
             _searchResults.value = emptyList()
             return
         }
         
         viewModelScope.launch {
-            // Logic to search through services, categories, and saved locations
-            val filteredServices = _services.value.filter { 
-                it.name.contains(query, ignoreCase = true) || it.description?.contains(query, ignoreCase = true) == true 
+            val response = dashboardRepository.globalSearch(query)
+            if (response.success && response.data != null) {
+                val results = mutableListOf<Any>()
+                results.addAll(response.data.services)
+                results.addAll(response.data.categories)
+                results.addAll(response.data.providers)
+                
+                // Also search local saved locations
+                _dashboardData.value?.profile?.savedLocations?.filter {
+                    it.name.contains(query, ignoreCase = true) || it.address.contains(query, ignoreCase = true)
+                }?.let { results.addAll(it) }
+
+                _searchResults.value = results
             }
-            val filteredCategories = _categories.value.filter {
-                it.name.contains(query, ignoreCase = true)
-            }
-            val filteredLocations = _dashboardData.value?.profile?.savedLocations?.filter {
-                it.name.contains(query, ignoreCase = true) || it.address.contains(query, ignoreCase = true)
-            } ?: emptyList()
-            
-            val results = mutableListOf<Any>()
-            results.addAll(filteredServices)
-            results.addAll(filteredCategories)
-            results.addAll(filteredLocations)
-            
-            _searchResults.value = results
         }
     }
 
@@ -114,24 +119,60 @@ class CustomerDashboardViewModel @Inject constructor(
     fun loadDashboard(lat: Double? = null, lng: Double? = null) {
         viewModelScope.launch {
             _isLoading.value = true
+            Log.d("FORENSIC", "VM | loadDashboard(lat=$lat, lng=$lng) called")
             val response = dashboardRepository.getCustomerDashboard(lat, lng)
             if (response.success && response.data != null) {
+                Log.d("FORENSIC", "VM | Dashboard Loaded. Profile: ${response.data.profile.firstName}")
                 _dashboardData.value = response.data
                 _activeJob.value = response.data.activeJob
                 
-                // Set current address based on priority (Issue 3)
-                // 1. If GPS lat/lng provided, maybe reverse geocode? 
-                // For now use first address from profile or "Current Location"
-                val profile = response.data.profile
-                currentAddress.value = profile.addresses?.find { it.isDefault }?.address 
-                    ?: profile.addresses?.firstOrNull()?.address
-                    ?: profile.savedLocations?.firstOrNull()?.address
-                    ?: "Current Location"
+                // Priority Location Resolution (Issue 1)
+                resolveDisplayAddress(lat, lng, response.data.profile)
+
+                // Process Book Again (Issue 5)
+                processBookAgain(response.data)
 
                 loadServices(lat = lat, lng = lng)
             }
             _isLoading.value = false
         }
+    }
+
+    private fun resolveDisplayAddress(lat: Double?, lng: Double?, profile: DashboardProfileDto) {
+        if (lat != null && lng != null) {
+            // Attempt Reverse Geocoding
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    val geocoder = Geocoder(context)
+                    val addresses = geocoder.getFromLocation(lat, lng, 1)
+                    if (!addresses.isNullOrEmpty()) {
+                        val addr = addresses[0]
+                        val city = addr.locality ?: addr.subAdminArea ?: ""
+                        val country = addr.countryCode ?: ""
+                        currentAddress.value = "$city, $country".trim().removePrefix(",").removeSuffix(",")
+                    } else {
+                        fallbackAddress(profile)
+                    }
+                } catch (e: Exception) {
+                    fallbackAddress(profile)
+                }
+            }
+        } else {
+            fallbackAddress(profile)
+        }
+    }
+
+    private fun fallbackAddress(profile: DashboardProfileDto) {
+        currentAddress.value = profile.addresses?.find { it.isDefault }?.address 
+            ?: profile.addresses?.firstOrNull()?.address
+            ?: profile.savedLocations?.firstOrNull()?.address
+            ?: "Current Location"
+    }
+
+    private fun processBookAgain(data: CustomerDashboardDto) {
+        val recentCodes = data.latestActivity.filter { it.type == "JOB" }.map { it.serviceCode }.distinct()
+        val services = data.recommendations.filter { recentCodes.contains(it.code) }
+        _bookAgainServices.value = services
     }
 
     fun loadActiveJob() {

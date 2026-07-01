@@ -8,9 +8,19 @@ data class CustomerDashboardDto(
     val wallet: WalletDto,
     val activeJob: JobDto?,
     val promotions: List<PromotionDto>,
+    val referralCampaign: ReferralCampaignDto?,
     val latestActivity: List<ActivityDto>,
     val topRatedNearby: List<TopProviderDto>,
     val recommendations: List<ServiceDto>
+)
+
+data class ReferralCampaignDto(
+    @SerializedName("_id") val id: String,
+    val title: String,
+    val description: String,
+    val rewardAmount: Double,
+    val currency: String,
+    val bannerUrl: String?
 )
 
 data class DashboardProfileDto(
@@ -47,4 +57,10 @@ data class TopProviderDto(
     val rating: Double,
     val tier: String,
     val services: List<String>
+)
+
+data class GlobalSearchDto(
+    val services: List<ServiceDto>,
+    val categories: List<com.piecejob.core.data.remote.ServiceCategoryDto>,
+    val providers: List<TopProviderDto>
 )

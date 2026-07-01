@@ -27,6 +27,7 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 import com.piecejob.core.data.local.SessionManager
+import com.piecejob.core.location.LocationService
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @AndroidEntryPoint
@@ -158,6 +159,9 @@ class MainActivity : AppCompatActivity() {
                             android.util.Log.d("SOCKET_AUDIT", "Connecting socket globally...")
                             socketManager.connect("https://piecejob-backend.onrender.com")
                             
+                            // Start Location Service
+                            LocationService.startService(this@MainActivity)
+
                             val userId = sessionManager.getUserId()
                             if (userId != null) {
                                 socketManager.joinUser(userId)
@@ -174,6 +178,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     } else {
                         socketManager.disconnect()
+                        LocationService.stopService(this@MainActivity)
                     }
                 }
                 

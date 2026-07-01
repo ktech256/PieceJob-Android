@@ -306,6 +306,11 @@ interface PieceJobApi {
     @GET("config/languages")
     suspend fun getLanguages(): ApiResponse<List<LanguageDto>>
 
+    @GET("config/search")
+    suspend fun globalSearch(
+        @Query("q") query: String
+    ): ApiResponse<GlobalSearchDto>
+
     @GET("config/integrations")
     suspend fun getIntegrations(): ApiResponse<IntegrationsConfigDto>
 

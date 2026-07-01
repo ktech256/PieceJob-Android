@@ -47,6 +47,7 @@ fun CustomerDashboardScreen(
     val dashboardData by viewModel.dashboardData.collectAsState()
     val currentAddress by viewModel.currentAddress.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
+    val bookAgainServices by viewModel.bookAgainServices.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
@@ -141,7 +142,13 @@ fun CustomerDashboardScreen(
                 contentPadding = PaddingValues(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(3) { RecentServiceAvatar() }
+                if (bookAgainServices.isEmpty()) {
+                    items(3) { RecentServiceAvatar("Cleaning") }
+                } else {
+                    items(bookAgainServices) { service ->
+                        RecentServiceAvatar(service.name) { onServiceClick(service) }
+                    }
+                }
             }
         }
 
@@ -185,8 +192,8 @@ fun CustomerDashboardScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 val recommendations = dashboardData?.recommendations ?: emptyList()
-                if (recommendations.isEmpty()) {
-                    items(3) { RecommendedServiceCard() }
+                if (recommendations.isEmpty() && isLoading) {
+                    items(3) { SkeletonCard(width = 140.dp) }
                 } else {
                     items(recommendations) { service ->
                         ServiceCardSmall(service) { selectedServiceForDetails = it }
@@ -198,8 +205,8 @@ fun CustomerDashboardScreen(
         // SECTION 12: RECENT BOOKINGS
         item { SectionTitle("Latest Activity") }
         val activityList = dashboardData?.latestActivity ?: emptyList()
-        if (activityList.isEmpty()) {
-            items(2) { RecentBookingItem() }
+        if (activityList.isEmpty() && isLoading) {
+            items(2) { SkeletonListItem() }
         } else {
             items(activityList) { act ->
                 ActivityItem(act)
@@ -214,8 +221,8 @@ fun CustomerDashboardScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 val providers = dashboardData?.topRatedNearby ?: emptyList()
-                if (providers.isEmpty()) {
-                    items(3) { ProviderMiniCard() }
+                if (providers.isEmpty() && isLoading) {
+                    items(3) { SkeletonCard(width = 170.dp) }
                 } else {
                     items(providers) { provider ->
                         TopProviderCard(provider)
@@ -225,7 +232,11 @@ fun CustomerDashboardScreen(
         }
 
         // SECTION 13: REFERRAL PROGRAM
-        item { ReferralDashboardCard() }
+        item { 
+            ReferralDashboardCard(dashboardData?.referralCampaign) {
+                onProfileClick() // Or navigate directly to referrals if route passed
+            } 
+        }
 
         // SECTION 14: CUSTOMER TIPS
         item { CustomerTipsSection() }
@@ -372,16 +383,19 @@ fun SearchResultItem(result: Any, onClick: (Any) -> Unit) {
         is ServiceDto -> result.name
         is com.piecejob.core.data.remote.ServiceCategoryDto -> result.name
         is com.piecejob.core.data.remote.dto.SavedLocationDto -> result.name
+        is com.piecejob.core.data.remote.dto.TopProviderDto -> result.name
         else -> "Result"
     }
     val type = when (result) {
         is ServiceDto -> "Service"
         is com.piecejob.core.data.remote.ServiceCategoryDto -> "Category"
         is com.piecejob.core.data.remote.dto.SavedLocationDto -> "Saved Location"
+        is com.piecejob.core.data.remote.dto.TopProviderDto -> "Provider"
         else -> "Other"
     }
     val icon = when (result) {
         is com.piecejob.core.data.remote.dto.SavedLocationDto -> Icons.Default.Star
+        is com.piecejob.core.data.remote.dto.TopProviderDto -> Icons.Default.Person
         else -> Icons.Default.Search
     }
 
@@ -578,15 +592,15 @@ fun ServiceDetailsDialog(
 }
 
 @Composable
-fun RecentServiceAvatar() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+fun RecentServiceAvatar(label: String, onClick: () -> Unit = {}) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onClick() }) {
         Box(modifier = Modifier.size(64.dp).clip(CircleShape).background(Color.White).padding(2.dp).border(2.dp, Color(0xFFD32F2F), CircleShape).padding(4.dp)) {
            Surface(modifier = Modifier.fillMaxSize(), shape = CircleShape, color = Color(0xFFF5F5F5)) {
                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.History, contentDescription = null, tint = Color.Gray) }
            }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text("Cleaning", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }
 
@@ -703,16 +717,28 @@ fun ProviderMiniCard() {
 }
 
 @Composable
-fun ReferralDashboardCard() {
-    Card(modifier = Modifier.fillMaxWidth().padding(24.dp), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1))) {
+fun ReferralDashboardCard(campaign: com.piecejob.core.data.remote.dto.ReferralCampaignDto?, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(24.dp).clickable { onClick() }, 
+        shape = RoundedCornerShape(24.dp), 
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1))
+    ) {
         Row(modifier = Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = Color.White) {
                 Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = Color(0xFFFFA000)) }
             }
             Spacer(modifier = Modifier.width(20.dp))
             Column {
-                Text("Invite & Earn $50", fontWeight = FontWeight.Black, fontSize = 16.sp)
-                Text("Get rewards for every friend who joins.", fontSize = 12.sp, color = Color.Gray)
+                Text(
+                    text = campaign?.title ?: "Invite & Earn", 
+                    fontWeight = FontWeight.Black, 
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = campaign?.description ?: "Get rewards for every friend who joins.", 
+                    fontSize = 12.sp, 
+                    color = Color.Gray
+                )
             }
         }
     }
@@ -780,6 +806,24 @@ fun SkeletonGrid() {
                 Box(modifier = Modifier.size(140.dp, 160.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(24.dp)))
                 Spacer(modifier = Modifier.width(16.dp))
             }
+        }
+    }
+}
+
+@Composable
+fun SkeletonCard(width: androidx.compose.ui.unit.Dp) {
+    Box(modifier = Modifier.size(width, 160.dp).background(Color.LightGray.copy(alpha = 0.2f), RoundedCornerShape(24.dp)))
+}
+
+@Composable
+fun SkeletonListItem() {
+    Row(modifier = Modifier.fillMaxWidth().padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.size(40.dp).background(Color.LightGray.copy(alpha = 0.2f), RoundedCornerShape(10.dp)))
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Box(modifier = Modifier.size(120.dp, 12.dp).background(Color.LightGray.copy(alpha = 0.2f), RoundedCornerShape(4.dp)))
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(modifier = Modifier.size(80.dp, 8.dp).background(Color.LightGray.copy(alpha = 0.2f), RoundedCornerShape(4.dp)))
         }
     }
 }
