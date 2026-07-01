@@ -38,6 +38,9 @@ class CustomerDashboardViewModel @Inject constructor(
     private val _dashboardData = MutableStateFlow<CustomerDashboardDto?>(null)
     val dashboardData: StateFlow<CustomerDashboardDto?> = _dashboardData.asStateFlow()
 
+    private val _realtimePromotions = MutableStateFlow<List<PromotionDto>>(emptyList())
+    val realtimePromotions: StateFlow<List<PromotionDto>> = _realtimePromotions.asStateFlow()
+
     private val _services = MutableStateFlow<List<ServiceDto>>(emptyList())
     val services: StateFlow<List<ServiceDto>> = _services
 
@@ -78,7 +81,23 @@ class CustomerDashboardViewModel @Inject constructor(
         viewModelScope.launch {
             socketManager.statusEventFlow.collect { event ->
                 Log.d("FORENSIC", "VM | Socket Status Update: ${event.status}. Reloading.")
-                loadDashboard(lastLoadedLocation?.latitude, lastLoadedLocation?.longitude)
+                if (event.status == "PROMOTIONS_REFRESH") {
+                    refreshPromotionsOnly()
+                } else {
+                    loadDashboard(lastLoadedLocation?.latitude, lastLoadedLocation?.longitude)
+                }
+            }
+        }
+    }
+
+    private fun refreshPromotionsOnly() {
+        viewModelScope.launch {
+            val response = dashboardRepository.getCustomerPromotions()
+            if (response.success && response.data != null) {
+                Log.d("FORENSIC", "VM | Promotions Refreshed. Count: ${response.data.size}")
+                _realtimePromotions.value = response.data
+                // Also update aggregated data to keep consistency if needed, but UI will prefer realtimePromotions
+                _dashboardData.value = _dashboardData.value?.copy(promotions = response.data)
             }
         }
     }
@@ -136,7 +155,22 @@ class CustomerDashboardViewModel @Inject constructor(
                     
                     _dashboardData.value = data
                     _activeJob.value = data.activeJob
+                    _realtimePromotions.value = data.promotions
                     
+                    // ISSUE 2: Sync Location Service for Provider or stop if null for customer
+                    if (sessionManager.getRole() == "provider" && data.activeJob != null && isTrackingRequired(data.activeJob.status)) {
+                        Log.d("LOCATION_AUDIT", "Provider active job found. Starting service.")
+                        LocationService.activeJobId = data.activeJob.id
+                        LocationService.startService(context)
+                    } else if (data.activeJob == null || !isTrackingRequired(data.activeJob.status)) {
+                        // For customers, the TrackingScreen handles starting. We only ensure it's stopped here if no job.
+                        if (sessionManager.getRole() != "provider") {
+                            Log.d("LOCATION_AUDIT", "No tracking required for customer. Ensuring service stopped.")
+                            LocationService.activeJobId = null
+                            LocationService.stopService(context)
+                        }
+                    }
+
                     // Priority Location Resolution (Issue 1)
                     resolveDisplayAddress(lat, lng, data.profile)
 
@@ -226,6 +260,13 @@ class CustomerDashboardViewModel @Inject constructor(
         val fromPool = pool.filter { recentCodes.contains(it.code) }
         _bookAgainServices.value = fromPool
         Log.d("FORENSIC", "VM | Book Again processed: ${fromPool.size} items")
+    }
+
+    private fun isTrackingRequired(status: String): Boolean {
+        return when (status) {
+            "ACCEPTED", "EN_ROUTE", "ARRIVED", "STARTED", "IN_PROGRESS" -> true
+            else -> false
+        }
     }
 
     fun loadActiveJob() {

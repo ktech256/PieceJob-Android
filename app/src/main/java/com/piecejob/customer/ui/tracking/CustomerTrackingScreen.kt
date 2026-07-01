@@ -37,7 +37,22 @@ fun CustomerTrackingScreen(
     onNavigateToRating: (String) -> Unit,
     onBack: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val job by viewModel.job.collectAsState()
+
+    DisposableEffect(job?.id, job?.status) {
+        val currentJob = job
+        if (currentJob != null && isTrackingCapable(currentJob.status)) {
+            android.util.Log.d("LOCATION_AUDIT", "Tracking Screen Active. Starting LocationService.")
+            com.piecejob.core.location.LocationService.activeJobId = currentJob.id
+            com.piecejob.core.location.LocationService.startService(context)
+        }
+
+        onDispose {
+            android.util.Log.d("LOCATION_AUDIT", "Tracking Screen Disposed or Job changed. Stopping LocationService.")
+            com.piecejob.core.location.LocationService.stopService(context)
+        }
+    }
     
     // FORENSIC: Track recompositions
     LaunchedEffect(job?.status) {
@@ -303,6 +318,13 @@ fun CustomerTrackingScreen(
         if (error != null) {
             // Snackbar removed for consistency with Provider app.
         }
+    }
+}
+
+private fun isTrackingCapable(status: String): Boolean {
+    return when (status) {
+        "ACCEPTED", "EN_ROUTE", "ARRIVED", "STARTED", "IN_PROGRESS" -> true
+        else -> false
     }
 }
 

@@ -159,13 +159,23 @@ class MainActivity : AppCompatActivity() {
                             android.util.Log.d("SOCKET_AUDIT", "Connecting socket globally...")
                             socketManager.connect("https://piecejob-backend.onrender.com")
                             
-                            // Start Location Service
-                            LocationService.startService(this@MainActivity)
+                            // ISSUE 2: Start Location Service only for providers by default
+                            // Customers only start it during active job tracking
+                            if (isProvider) {
+                                android.util.Log.d("LOCATION_AUDIT", "Starting LocationService for Provider")
+                                LocationService.startService(this@MainActivity)
+                            }
 
                             val userId = sessionManager.getUserId()
                             if (userId != null) {
                                 socketManager.joinUser(userId)
                                 android.util.Log.d("SOCKET_AUDIT", "Joined user room: user_$userId")
+                            }
+
+                            // JOIN WORKSPACE ROOM (ISSUE 1 FIX)
+                            sessionManager.getCountryCode()?.let { code ->
+                                socketManager.joinWorkspace(code)
+                                android.util.Log.d("SOCKET_AUDIT", "Joined workspace room: workspace_$code")
                             }
 
                             val token = FirebaseMessaging.getInstance().token.await()
@@ -201,10 +211,22 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                // GLOBAL OBSERVER: Job Completion
+                // GLOBAL OBSERVER: Job Completion & Location Service Lifecycle (Issue 2)
                 LaunchedEffect(Unit) {
                     socketManager.statusEventFlow.collect { event ->
                         android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Job: ${event.jobId} Status: ${event.status}")
+                        
+                        // Handle Location Service for Customers (Terminal States Only - Safety Net)
+                        if (!isProvider) {
+                            when (event.status) {
+                                "COMPLETED", "CANCELLED", "RATED", "CLOSED" -> {
+                                    android.util.Log.d("LOCATION_AUDIT", "Stopping LocationService for Customer - Job ended")
+                                    LocationService.activeJobId = null
+                                    LocationService.stopService(this@MainActivity)
+                                }
+                            }
+                        }
+
                         if (event.status == "COMPLETED") {
                             callManager.disconnect("Ended")
                             navController.navigate(Screen.Rating.passJobId(event.jobId)) {

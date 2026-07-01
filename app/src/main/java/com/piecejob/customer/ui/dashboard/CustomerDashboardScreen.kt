@@ -44,6 +44,7 @@ fun CustomerDashboardScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val activeJob by viewModel.activeJob.collectAsState()
     val dashboardData by viewModel.dashboardData.collectAsState()
+    val realtimePromotions by viewModel.realtimePromotions.collectAsState()
     val currentAddress by viewModel.currentAddress.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val bookAgainServices by viewModel.bookAgainServices.collectAsState()
@@ -119,7 +120,7 @@ fun CustomerDashboardScreen(
         // SECTION 4: PROMOTIONAL BANNER CAROUSEL
         item { 
             PromotionCarousel(
-                promotions = dashboardData?.promotions ?: emptyList(), 
+                promotions = realtimePromotions,
                 isLoading = isLoading
             ) 
         }
@@ -457,22 +458,22 @@ fun PromotionCarousel(promotions: List<com.piecejob.core.data.remote.dto.Promoti
             
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
-                    text = promo?.title ?: "PJ PLUS EXCLUSIVE\nGet 50% OFF all tasks.", 
+                    text = promo?.title ?: "PIECEJOB MAKES FINDING WORKERS EASY", 
                     color = Color.White, 
                     fontWeight = FontWeight.Black, 
                     fontSize = 18.sp,
                     lineHeight = 24.sp
                 )
                 Text(
-                    text = promo?.description ?: "This weekend only. Join PJ Plus now.", 
+                    text = promo?.description ?: "Need a mechanic, plumber, electrician, cleaner, mover, or any skilled worker? PieceJob connects you with trusted professionals near you in minutes — fast, reliable, and hassle-free.", 
                     color = Color.White.copy(alpha = 0.8f), 
                     fontSize = 12.sp, 
-                    maxLines = 2
+                    maxLines = 4
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Surface(color = Color.White, shape = RoundedCornerShape(8.dp)) {
                     Text(
-                        text = promo?.ctaText ?: "GET STARTED", 
+                        text = promo?.ctaText ?: "LEARN MORE",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), 
                         fontSize = 10.sp, 
                         fontWeight = FontWeight.Black, 

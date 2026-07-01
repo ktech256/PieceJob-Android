@@ -19,6 +19,14 @@ class DashboardRepository @Inject constructor(
         }
     }
 
+    suspend fun getCustomerPromotions(): ApiResponse<List<PromotionDto>> {
+        return try {
+            api.getCustomerPromotions()
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
     suspend fun globalSearch(query: String): ApiResponse<GlobalSearchDto> {
         return try {
             api.globalSearch(query)

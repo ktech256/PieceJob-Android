@@ -67,6 +67,9 @@ interface PieceJobApi {
         @Query("lng") lng: Double? = null
     ): ApiResponse<CustomerDashboardDto>
 
+    @GET("dashboard/customer/promotions")
+    suspend fun getCustomerPromotions(): ApiResponse<List<PromotionDto>>
+
     @GET("users/addresses")
     suspend fun getAddresses(): ApiResponse<List<AddressDto>>
 

@@ -48,7 +48,9 @@ class SocketManager @Inject constructor(
                 Log.d(TAG, "Socket connected")
                 // 1. Join User Room (Global)
                 sessionManager.getUserId()?.let { joinUser(it) }
-                // 2. Re-join Active Job Room if session exists
+                // 2. Join Workspace Room (Isolation)
+                sessionManager.getCountryCode()?.let { joinWorkspace(it) }
+                // 3. Re-join Active Job Room if session exists
                 currentActiveJobId?.let { joinJob(it) }
             }
             
@@ -61,6 +63,17 @@ class SocketManager @Inject constructor(
             }
 
             // PERMANENT GLOBAL LISTENERS (Don't use .off() on these)
+            socket?.on("PROMOTIONS_UPDATED") { args ->
+                try {
+                    val data = args[0] as JSONObject
+                    Log.d("FORENSIC", "GLOBAL_SOCKET_RECEIVED | PROMOTIONS_UPDATED | Workspace: ${data.optString("workspace")}")
+                    // Reuse status flow but with a special jobId/status to trigger refresh
+                    _statusEventFlow.tryEmit(StatusEvent("INTERNAL", "PROMOTIONS_REFRESH"))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in PROMOTIONS_UPDATED listener", e)
+                }
+            }
+
             socket?.on("status_updated") { args ->
                 try {
                     val data = args[0] as JSONObject
@@ -134,6 +147,11 @@ class SocketManager @Inject constructor(
     fun joinUser(userId: String) {
         socket?.emit("join_user", userId)
         Log.d("FORENSIC", "JOIN_ROOM_REQUESTED | Room: user_$userId")
+    }
+
+    fun joinWorkspace(countryCode: String) {
+        socket?.emit("join_workspace", countryCode)
+        Log.d("FORENSIC", "JOIN_WORKSPACE_REQUESTED | Workspace: $countryCode")
     }
 
     fun sendHeartbeat(lat: Double, lng: Double, hardwareId: String, isMock: Boolean) {
