@@ -1,6 +1,8 @@
 package com.piecejob.core.di
 
 import android.content.Context
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.net.PlacesClient
 import dagger.Module
@@ -18,5 +20,11 @@ object GoogleModule {
     @Singleton
     fun providePlacesClient(@ApplicationContext context: Context): PlacesClient {
         return Places.createClient(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFusedLocationProviderClient(@ApplicationContext context: Context): FusedLocationProviderClient {
+        return LocationServices.getFusedLocationProviderClient(context)
     }
 }

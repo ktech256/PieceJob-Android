@@ -1,5 +1,8 @@
 package com.piecejob.customer.ui.booking
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.location.Geocoder
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.remote.ServiceDto
@@ -17,9 +20,12 @@ import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.model.Place
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.Priority
 import com.piecejob.core.socket.SocketManager
 import com.piecejob.core.data.local.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -53,7 +59,9 @@ class BookingViewModel @Inject constructor(
     private val configRepository: com.piecejob.core.data.repository.ConfigRepository,
     private val socketManager: SocketManager,
     private val sessionManager: SessionManager,
-    private val placesClient: PlacesClient
+    private val placesClient: PlacesClient,
+    private val fusedLocationClient: FusedLocationProviderClient,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _currentStep = MutableStateFlow(BookingStep.ADDRESS_SELECTION)
@@ -96,6 +104,51 @@ class BookingViewModel @Inject constructor(
         android.util.Log.d("BOOKING_VM", "BookingViewModel Initialized")
         loadCategories()
         setupPaymentSocket()
+    }
+
+    @SuppressLint("MissingPermission")
+    fun fetchCurrentLocation() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val location = fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
+                if (location != null) {
+                    val lat = location.latitude
+                    val lng = location.longitude
+                    reverseGeocode(lat, lng)
+                } else {
+                    _error.value = "Unable to obtain live GPS coordinates. Please ensure GPS is enabled."
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("BOOKING_VM", "Error fetching location", e)
+                _error.value = "Failed to fetch current location. Please search manually."
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    private fun reverseGeocode(lat: Double, lng: Double) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            _isLoading.value = true
+            try {
+                val geocoder = Geocoder(context)
+                @Suppress("DEPRECATION")
+                val addresses = geocoder.getFromLocation(lat, lng, 1)
+                if (!addresses.isNullOrEmpty()) {
+                    val addr = addresses[0]
+                    val fullAddress = addr.getAddressLine(0) ?: "Lat: $lat, Lng: $lng"
+                    setAddress(fullAddress, listOf(lng, lat))
+                } else {
+                    setAddress("Lat: $lat, Lng: $lng", listOf(lng, lat))
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("BOOKING_VM", "Geocoding error", e)
+                setAddress("Lat: $lat, Lng: $lng", listOf(lng, lat))
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 
     fun initializeWithArgs(serviceCode: String?, address: String?, lat: Double?, lng: Double?) {

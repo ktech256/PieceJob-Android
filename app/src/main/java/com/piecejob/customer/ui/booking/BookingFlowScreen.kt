@@ -78,7 +78,7 @@ fun BookingFlowScreen(
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             when (currentStep) {
-                BookingStep.ADDRESS_SELECTION -> AddressSelectionStep(viewModel)
+                BookingStep.ADDRESS_SELECTION -> AddressSelectionStep(viewModel, initialLat, initialLng)
                 BookingStep.RECIPIENT_SELECTION -> RecipientSelectionStep(viewModel)
                 BookingStep.CATEGORY_SELECTION -> CategorySelectionStep(viewModel)
                 BookingStep.SERVICE_SELECTION -> ServiceSelectionStep(viewModel)
@@ -103,19 +103,60 @@ fun BookingFlowScreen(
 }
 
 @Composable
-fun AddressSelectionStep(viewModel: BookingViewModel) {
+fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initialLng: Double?) {
     val nearbyProviders by viewModel.nearbyProviders.collectAsState()
     val error by viewModel.error.collectAsState()
-    
-    val johannesburg = LatLng(-26.2041, 28.0473)
+    val selectedCoords by viewModel.selectedCoordinates.collectAsState()
+    val addressPredictions by viewModel.addressPredictions.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(johannesburg, 12f)
+        position = CameraPosition.fromLatLngZoom(LatLng(0.0, 0.0), 2f)
+    }
+
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
+            viewModel.fetchCurrentLocation()
+        }
+    }
+
+    fun checkAndRequestLocation() {
+        val hasFine = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val hasCoarse = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        
+        if (hasFine || hasCoarse) {
+            viewModel.fetchCurrentLocation()
+        } else {
+            permissionLauncher.launch(arrayOf(
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ))
+        }
+    }
+
+    // Effect to center map when current location is found
+    LaunchedEffect(selectedCoords) {
+        selectedCoords?.let { coords ->
+            cameraPositionState.animate(
+                com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(
+                    LatLng(coords[1], coords[0]), 15f
+                )
+            )
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (initialLat == null || initialLng == null) {
+            checkAndRequestLocation()
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // MAP (75%)
         Box(modifier = Modifier.weight(0.75f)) {
-            val selectedCoords by viewModel.selectedCoordinates.collectAsState()
             var isMapLoaded by remember { mutableStateOf(false) }
             
             LaunchedEffect(Unit) {
@@ -147,7 +188,7 @@ fun AddressSelectionStep(viewModel: BookingViewModel) {
                 },
                 uiSettings = MapUiSettings(
                     zoomControlsEnabled = false,
-                    myLocationButtonEnabled = true
+                    myLocationButtonEnabled = false // We'll use our own button
                 ),
                 properties = MapProperties(
                     isMyLocationEnabled = true
@@ -174,6 +215,18 @@ fun AddressSelectionStep(viewModel: BookingViewModel) {
                 }
             }
 
+            // "Your Location" Floating Button
+            SmallFloatingActionButton(
+                onClick = { checkAndRequestLocation() },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 16.dp, end = 16.dp),
+                containerColor = Color.White,
+                contentColor = Color(0xFFD32F2F)
+            ) {
+                Icon(Icons.Default.MyLocation, contentDescription = "Your Location")
+            }
+
             if (!isMapLoaded) {
                 Box(
                     modifier = Modifier.fillMaxSize().background(Color.White),
@@ -196,7 +249,7 @@ fun AddressSelectionStep(viewModel: BookingViewModel) {
 
         // SELECTION UI (25%)
         Card(
-            modifier = Modifier.weight(if (viewModel.addressPredictions.collectAsState().value.isNotEmpty()) 0.5f else 0.25f).fillMaxWidth(),
+            modifier = Modifier.weight(if (addressPredictions.isNotEmpty()) 0.5f else 0.25f).fillMaxWidth(),
             shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
@@ -204,7 +257,6 @@ fun AddressSelectionStep(viewModel: BookingViewModel) {
             Column(modifier = Modifier.padding(24.dp)) {
                 val focusManager = LocalFocusManager.current
                 val addressText by viewModel.selectedAddress.collectAsState()
-                val predictions by viewModel.addressPredictions.collectAsState()
                 
                 OutlinedTextField(
                     value = addressText,
@@ -239,11 +291,11 @@ fun AddressSelectionStep(viewModel: BookingViewModel) {
                     )
                 )
 
-                if (predictions.isNotEmpty()) {
+                if (addressPredictions.isNotEmpty()) {
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp).padding(top = 8.dp)
                     ) {
-                        items(predictions) { prediction ->
+                        items(addressPredictions) { prediction ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -266,13 +318,27 @@ fun AddressSelectionStep(viewModel: BookingViewModel) {
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedButton(
+                    onClick = { checkAndRequestLocation() },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFD32F2F)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD32F2F))
+                ) {
+                    Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("YOUR LOCATION", fontWeight = FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
                 
                 Button(
                     onClick = { 
                         viewModel.confirmRecipient() // Proceeding
                     },
-                    enabled = (viewModel.selectedAddress.collectAsState().value.isNotBlank() && viewModel.selectedCoordinates.collectAsState().value != null),
+                    enabled = (addressText.isNotBlank() && selectedCoords != null),
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
