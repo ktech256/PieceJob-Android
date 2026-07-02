@@ -26,6 +26,10 @@ fun ProviderJobsScreen(
     
     val availableJobs by viewModel.availableJobs.collectAsState()
     val activeJobs by viewModel.activeJobs.collectAsState()
+    val completedJobs by viewModel.completedJobs.collectAsState()
+    val cancelledJobs by viewModel.cancelledJobs.collectAsState()
+    val disputedJobs by viewModel.disputedJobs.collectAsState()
+    val scheduledJobs by viewModel.scheduledJobs.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -51,12 +55,16 @@ fun ProviderJobsScreen(
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
-            if (isLoading && availableJobs.isEmpty() && activeJobs.isEmpty()) {
+            if (isLoading && availableJobs.isEmpty() && activeJobs.isEmpty() && completedJobs.isEmpty()) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 when (selectedTabIndex) {
                     0 -> JobsList(availableJobs, isLoading) { viewModel.acceptJob(it) }
                     1 -> JobsList(activeJobs, isLoading) { onNavigateToTracking(it) }
+                    2 -> JobsList(scheduledJobs, isLoading) { /* Detail */ }
+                    3 -> JobsList(completedJobs, isLoading) { onNavigateToTracking(it) }
+                    4 -> JobsList(cancelledJobs, isLoading) { onNavigateToTracking(it) }
+                    5 -> JobsList(disputedJobs, isLoading) { onNavigateToTracking(it) }
                     else -> EmptyState(tabs[selectedTabIndex])
                 }
             }
@@ -86,16 +94,24 @@ fun JobCard(job: JobDto, isLoading: Boolean, onAction: (String) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = job.serviceName ?: job.serviceCode, fontWeight = FontWeight.Black, fontSize = 18.sp)
-                Text(text = "R${job.serviceFee ?: job.bookingFee}", fontWeight = FontWeight.Black, color = Color(0xFF2E7D32))
+                Column {
+                    Text(text = job.serviceName ?: job.serviceCode, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                    Text(text = "Job ID: #${job.id.takeLast(6).uppercase()}", fontSize = 10.sp, color = Color.Gray)
+                }
+                Text(text = "${job.currency} ${job.serviceFee ?: job.bookingFee}", fontWeight = FontWeight.Black, color = Color(0xFF2E7D32))
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Customer: Hidden until accepted", color = Color.Gray, fontSize = 12.sp)
-            Text(text = "Location: Johannesburg", color = Color.Gray, fontSize = 12.sp)
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            val customerName = if (job.status == "BROADCASTED") "Hidden until accepted" else "${job.customerInfo?.firstName} ${job.customerInfo?.lastName}"
+            InfoRow(label = "Customer", value = customerName)
+            InfoRow(label = "Date/Time", value = job.createdAt.take(16).replace("T", " "))
+            InfoRow(label = "Location", value = job.location?.address ?: "Client Location")
             
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -113,18 +129,33 @@ fun JobCard(job: JobDto, isLoading: Boolean, onAction: (String) -> Unit) {
                     }
                 }
             } else {
-                OutlinedButton(
-                    onClick = { /* Detail */ },
+                val statusColor = when (job.status) {
+                    "COMPLETED" -> Color(0xFF4CAF50)
+                    "CANCELLED" -> Color(0xFFD32F2F)
+                    "STARTED", "IN_PROGRESS" -> Color(0xFF1976D2)
+                    else -> Color(0xFFFFA000)
+                }
+                
+                Button(
+                    onClick = { onAction(job.id) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = statusColor)
                 ) {
-                    Text("VIEW STATUS: ${job.status}")
+                    Text(text = if(job.status in listOf("ACCEPTED", "ARRIVED", "STARTED", "IN_PROGRESS")) "OPEN TRACKING" else "VIEW STATUS: ${job.status}")
                 }
             }
         }
     }
 }
 
+@Composable
+fun InfoRow(label: String, value: String) {
+    Row(modifier = Modifier.padding(vertical = 2.dp)) {
+        Text(text = "$label: ", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+        Text(text = value, fontSize = 12.sp, color = Color.DarkGray, maxLines = 1)
+    }
+}
 @Composable
 fun EmptyState(tabName: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

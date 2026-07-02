@@ -14,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProviderJobsViewModel @Inject constructor(
-    private val jobRepository: JobRepository
+    private val jobRepository: JobRepository,
+    private val socketManager: com.piecejob.core.socket.SocketManager
 ) : ViewModel() {
 
     private val _availableJobs = MutableStateFlow<List<JobDto>>(emptyList())
@@ -23,8 +24,17 @@ class ProviderJobsViewModel @Inject constructor(
     private val _activeJobs = MutableStateFlow<List<JobDto>>(emptyList())
     val activeJobs: StateFlow<List<JobDto>> = _activeJobs
 
+    private val _scheduledJobs = MutableStateFlow<List<JobDto>>(emptyList())
+    val scheduledJobs: StateFlow<List<JobDto>> = _scheduledJobs
+
     private val _completedJobs = MutableStateFlow<List<JobDto>>(emptyList())
     val completedJobs: StateFlow<List<JobDto>> = _completedJobs
+
+    private val _cancelledJobs = MutableStateFlow<List<JobDto>>(emptyList())
+    val cancelledJobs: StateFlow<List<JobDto>> = _cancelledJobs
+
+    private val _disputedJobs = MutableStateFlow<List<JobDto>>(emptyList())
+    val disputedJobs: StateFlow<List<JobDto>> = _disputedJobs
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -34,19 +44,50 @@ class ProviderJobsViewModel @Inject constructor(
 
     init {
         loadJobs()
+        observeSocket()
+    }
+
+    private fun observeSocket() {
+        viewModelScope.launch {
+            socketManager.statusEventFlow.collect { event ->
+                loadJobs()
+            }
+        }
     }
 
     fun loadJobs() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                // 1. Available (Broadcasted)
                 val availableRes = jobRepository.getAvailableJobs()
                 if (availableRes.success) {
-                    _availableJobs.value = availableRes.data?.filter { it.status == "BROADCASTED" } ?: emptyList()
-                    _activeJobs.value = availableRes.data?.filter { it.status in listOf("ACCEPTED", "ARRIVED", "STARTED") } ?: emptyList()
+                    _availableJobs.value = availableRes.data ?: emptyList()
                 }
-                
-                // History logic could go here if there's a specific history endpoint
+
+                // 2. Active
+                val activeRes = jobRepository.getProviderJobs("ACTIVE")
+                if (activeRes.success) {
+                    _activeJobs.value = activeRes.data ?: emptyList()
+                }
+
+                // 3. Completed
+                val completedRes = jobRepository.getProviderJobs("COMPLETED")
+                if (completedRes.success) {
+                    _completedJobs.value = completedRes.data ?: emptyList()
+                }
+
+                // 4. Cancelled
+                val cancelledRes = jobRepository.getProviderJobs("CANCELLED")
+                if (cancelledRes.success) {
+                    _cancelledJobs.value = cancelledRes.data ?: emptyList()
+                }
+
+                // 5. Disputed
+                val disputedRes = jobRepository.getProviderJobs("DISPUTED")
+                if (disputedRes.success) {
+                    _disputedJobs.value = disputedRes.data ?: emptyList()
+                }
             } catch (e: Exception) {
             } finally {
                 _isLoading.value = false

@@ -114,7 +114,11 @@ fun ProviderMainScreen(
                     ProviderWalletTabScreen(onNavigate = { onNavigateToSubScreen(it.route) })
                 }
                 composable(BottomBarScreen.Messages.route) {
-                    ProviderMessagesScreen()
+                    ProviderMessagesScreen(
+                        onNavigateToChat = { jobId, otherUserId -> 
+                            onNavigateToSubScreen(Screen.Chat.passArgs(jobId, otherUserId))
+                        }
+                    )
                 }
                 composable(BottomBarScreen.Profile.route) {
                     ProviderProfileScreen(

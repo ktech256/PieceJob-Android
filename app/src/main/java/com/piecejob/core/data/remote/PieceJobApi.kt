@@ -205,6 +205,9 @@ interface PieceJobApi {
     @GET("providers/reviews")
     suspend fun getMyReviews(): ApiResponse<List<ReviewDto>>
 
+    @GET("providers/jobs")
+    suspend fun getProviderJobs(@Query("status") status: String? = null): ApiResponse<List<JobDto>>
+
     @GET("providers/dashboard-stats")
     suspend fun getProviderDashboardStats(): ApiResponse<ProviderStatsDto>
 
@@ -366,6 +369,9 @@ interface PieceJobApi {
     // =========================
     // ✅ CHAT ROUTES
     // =========================
+    @GET("chat/conversations")
+    suspend fun getConversations(): ApiResponse<List<ConversationDto>>
+
     @GET("chat/{jobId}")
     suspend fun getChatMessages(@Path("jobId") jobId: String): ApiResponse<List<MessageDto>>
 

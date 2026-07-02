@@ -27,3 +27,13 @@ data class SendMessageRequest(
     val mediaUrl: String? = null,
     val mediaType: String? = null
 )
+
+data class ConversationDto(
+    val jobId: String,
+    val serviceName: String,
+    val status: String,
+    val otherUser: UserSummaryDto,
+    val lastMessage: String,
+    val lastMessageTime: String,
+    val unreadCount: Int
+)
