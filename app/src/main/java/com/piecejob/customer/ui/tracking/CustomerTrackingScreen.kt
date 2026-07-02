@@ -278,7 +278,7 @@ fun CustomerTrackingScreen(
                                    job?.status != "DRAFT"
 
                     if (!isAssigned) {
-                        SearchingPanel(job?.serviceCode ?: "Service", nearbyProviders.size)
+                        SearchingPanel(job?.serviceName ?: job?.serviceCode ?: "Service", nearbyProviders.size)
                     } else {
                         val isTerminalState = job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED"
                         AssignedProviderPanel(

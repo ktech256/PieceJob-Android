@@ -35,6 +35,7 @@ class ProviderMainViewModel @Inject constructor(
             val incomingJob = IncomingJob(
                 jobId = data.optString("jobId"),
                 serviceCode = data.optString("serviceCode", "Service Request"),
+                serviceName = data.optString("serviceName"),
                 customerName = data.optString("recipientName"),
                 address = data.optString("address") ?: data.optJSONObject("location")?.optString("address"),
                 distance = "Nearby",

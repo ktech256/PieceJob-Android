@@ -166,7 +166,7 @@ fun ProviderDashboardScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("JOB IN PROGRESS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFF2E7D32))
-                        Text("Resume tracking for ${activeJob!!.serviceCode}", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("Resume tracking for ${activeJob!!.serviceName ?: activeJob!!.serviceCode}", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     }
                     Text("RESUME", color = Color(0xFF2E7D32), fontWeight = FontWeight.Black, fontSize = 12.sp)
                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF2E7D32))
@@ -462,7 +462,7 @@ fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, o
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text(text = job.serviceCode, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                    Text(text = job.serviceName ?: job.serviceCode, fontSize = 18.sp, fontWeight = FontWeight.Black)
                     Text(text = job.location?.address ?: "Client Location", fontSize = 13.sp, color = Color.Gray, maxLines = 1)
                 }
             }

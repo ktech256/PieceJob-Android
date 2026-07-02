@@ -602,7 +602,7 @@ fun ActiveJobMiniCard(job: com.piecejob.core.data.remote.dto.JobDto, onClick: ()
             Icon(imageVector = if (isCompleted) Icons.Default.Grade else Icons.Default.Timer, contentDescription = null, tint = if (isCompleted) Color(0xFF1976D2) else Color(0xFF2E7D32))
             Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text(text = if (isCompleted) "Rate Your Experience" else "Active Job: ${job.serviceCode}", fontWeight = FontWeight.Black, fontSize = 15.sp)
+                Text(text = if (isCompleted) "Rate Your Experience" else "Active Job: ${job.serviceName ?: job.serviceCode}", fontWeight = FontWeight.Black, fontSize = 15.sp)
                 Text(text = if (isCompleted) "Tap to review" else "Status: ${job.status}", fontSize = 12.sp, color = Color.Gray)
             }
             Spacer(modifier = Modifier.weight(1f))
@@ -694,7 +694,7 @@ fun TopProviderCard(provider: com.piecejob.core.data.remote.dto.TopProviderDto) 
 @Composable
 fun ActivityItem(act: com.piecejob.core.data.remote.dto.ActivityDto, currency: String) {
     ListItem(
-        headlineContent = { Text(act.serviceCode, fontWeight = FontWeight.Bold) },
+        headlineContent = { Text(act.serviceName ?: act.serviceCode, fontWeight = FontWeight.Bold) },
         supportingContent = { Text("${act.status} • ${act.createdAt.take(10)}", fontSize = 12.sp, color = Color.Gray) },
         leadingContent = { Surface(modifier = Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = Color(0xFFF5F5F5)) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(20.dp)) } } },
         trailingContent = { Text("$currency ${String.format("%.2f", act.amount)}", fontWeight = FontWeight.Black, fontSize = 14.sp) },

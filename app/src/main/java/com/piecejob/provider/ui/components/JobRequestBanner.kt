@@ -66,7 +66,7 @@ fun JobRequestBanner(
                 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "NEW: ${job.serviceCode}",
+                        text = "NEW: ${job.serviceName ?: job.serviceCode}",
                         color = Color.White,
                         fontWeight = FontWeight.Black,
                         fontSize = 16.sp

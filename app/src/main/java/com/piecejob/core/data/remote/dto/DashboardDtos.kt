@@ -46,6 +46,7 @@ data class ActivityDto(
     val type: String,
     val status: String,
     val serviceCode: String,
+    val serviceName: String?,
     val amount: Double,
     val createdAt: String
 )

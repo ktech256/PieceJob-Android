@@ -8,6 +8,7 @@ import javax.inject.Singleton
 data class IncomingJob(
     val jobId: String,
     val serviceCode: String,
+    val serviceName: String?,
     val customerName: String?,
     val address: String?,
     val distance: String?,

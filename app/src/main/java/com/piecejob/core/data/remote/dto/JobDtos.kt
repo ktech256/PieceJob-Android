@@ -22,6 +22,7 @@ data class JobStatusRequest(
 data class JobDto(
     @SerializedName("_id", alternate = ["id"]) val id: String,
     @SerializedName("serviceCode") val serviceCode: String,
+    @SerializedName("serviceName") val serviceName: String?,
     @SerializedName("status") val status: String,
     @SerializedName("customerId") val customerId: String,
     @SerializedName("providerId") val providerId: String?,

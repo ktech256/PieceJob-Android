@@ -353,7 +353,7 @@ fun ProviderTrackingScreen(
 
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = currentJob.serviceCode,
+                                        text = currentJob.serviceName ?: currentJob.serviceCode,
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 20.sp,
                                         lineHeight = 22.sp

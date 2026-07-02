@@ -104,7 +104,7 @@ fun RatingScreen(
             job?.providerInfo?.let { "${it.firstName} ${it.lastName}" } ?: "Provider"
         }
         
-        val displayRole = if (isProviderApp) "Customer" else job?.serviceCode ?: "Professional"
+        val displayRole = if (isProviderApp) "Customer" else job?.serviceName ?: job?.serviceCode ?: "Professional"
 
         Text(
             text = "Rate $displayName",

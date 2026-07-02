@@ -84,6 +84,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         val incomingJob = IncomingJob(
             jobId = data["jobId"] ?: "",
             serviceCode = data["serviceCode"] ?: "Service Request",
+            serviceName = data["serviceName"],
             customerName = data["recipientName"],
             address = data["address"],
             distance = data["distance"] ?: "Nearby", 
@@ -216,7 +217,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         Log.d("FCM_AUDIT", "Building notification for channel: $channelId")
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(job.serviceCode)
+            .setContentTitle(job.serviceName ?: job.serviceCode)
             .setContentText("Job from ${job.customerName ?: "Customer"}")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_CALL)

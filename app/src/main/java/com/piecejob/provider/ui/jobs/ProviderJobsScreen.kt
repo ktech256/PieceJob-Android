@@ -90,7 +90,7 @@ fun JobCard(job: JobDto, isLoading: Boolean, onAction: (String) -> Unit) {
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = job.serviceCode, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                Text(text = job.serviceName ?: job.serviceCode, fontWeight = FontWeight.Black, fontSize = 18.sp)
                 Text(text = "R${job.serviceFee ?: job.bookingFee}", fontWeight = FontWeight.Black, color = Color(0xFF2E7D32))
             }
             Spacer(modifier = Modifier.height(8.dp))
