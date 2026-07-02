@@ -100,6 +100,9 @@ class BookingViewModel @Inject constructor(
     val paymentUrl = MutableStateFlow<String?>(null)
     val paymentReference = MutableStateFlow<String?>(null)
 
+    private val _currentGpsCoordinates = MutableStateFlow<List<Double>?>(null)
+    val currentGpsCoordinates: StateFlow<List<Double>?> = _currentGpsCoordinates
+
     init {
         android.util.Log.d("BOOKING_VM", "BookingViewModel Initialized")
         loadCategories()
@@ -107,23 +110,27 @@ class BookingViewModel @Inject constructor(
     }
 
     @SuppressLint("MissingPermission")
-    fun fetchCurrentLocation() {
+    fun fetchCurrentLocation(isManualSelection: Boolean = false) {
         viewModelScope.launch {
-            _isLoading.value = true
+            if (isManualSelection) _isLoading.value = true
             try {
                 val location = fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
                 if (location != null) {
                     val lat = location.latitude
                     val lng = location.longitude
-                    reverseGeocode(lat, lng)
-                } else {
+                    _currentGpsCoordinates.value = listOf(lng, lat)
+                    
+                    if (isManualSelection) {
+                        reverseGeocode(lat, lng)
+                    }
+                } else if (isManualSelection) {
                     _error.value = "Unable to obtain live GPS coordinates. Please ensure GPS is enabled."
                 }
             } catch (e: Exception) {
                 android.util.Log.e("BOOKING_VM", "Error fetching location", e)
-                _error.value = "Failed to fetch current location. Please search manually."
+                if (isManualSelection) _error.value = "Failed to fetch current location. Please search manually."
             } finally {
-                _isLoading.value = false
+                if (isManualSelection) _isLoading.value = false
             }
         }
     }

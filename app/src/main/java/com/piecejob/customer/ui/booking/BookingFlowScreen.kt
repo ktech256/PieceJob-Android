@@ -107,6 +107,7 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
     val nearbyProviders by viewModel.nearbyProviders.collectAsState()
     val error by viewModel.error.collectAsState()
     val selectedCoords by viewModel.selectedCoordinates.collectAsState()
+    val currentGps by viewModel.currentGpsCoordinates.collectAsState()
     val addressPredictions by viewModel.addressPredictions.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
 
@@ -119,7 +120,7 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
     ) { permissions ->
         if (permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
-            viewModel.fetchCurrentLocation()
+            viewModel.fetchCurrentLocation(isManualSelection = false)
         }
     }
 
@@ -128,7 +129,7 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
         val hasCoarse = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
         
         if (hasFine || hasCoarse) {
-            viewModel.fetchCurrentLocation()
+            viewModel.fetchCurrentLocation(isManualSelection = false)
         } else {
             permissionLauncher.launch(arrayOf(
                 android.Manifest.permission.ACCESS_FINE_LOCATION,
@@ -137,7 +138,18 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
         }
     }
 
-    // Effect to center map when current location is found
+    // Effect to center map when current GPS is found (Initial Entry)
+    LaunchedEffect(currentGps) {
+        if (selectedCoords == null && currentGps != null) {
+            cameraPositionState.animate(
+                com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(
+                    LatLng(currentGps!![1], currentGps!![0]), 12.5f // ~8km radius view
+                )
+            )
+        }
+    }
+
+    // Effect to center map when a specific location is selected (Marker)
     LaunchedEffect(selectedCoords) {
         selectedCoords?.let { coords ->
             cameraPositionState.animate(
@@ -161,10 +173,8 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
             
             LaunchedEffect(Unit) {
                 android.util.Log.d("MAP_INIT", "Starting GoogleMap initialization. API Key present: ${com.piecejob.BuildConfig.GOOGLE_MAPS_API_KEY.isNotBlank()}")
-                // Fallback: If map doesn't load in 10 seconds, stop the spinner so we can see what's wrong
                 kotlinx.coroutines.delay(10000)
                 if (!isMapLoaded) {
-                    android.util.Log.e("MAP_TIMEOUT", "Map load timed out after 10s. Forcing loaded state for diagnostics.")
                     isMapLoaded = true
                 }
             }
@@ -174,27 +184,22 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
                 cameraPositionState = cameraPositionState,
                 onMapLoaded = { 
                     isMapLoaded = true 
-                    android.util.Log.d("MAPS_DEBUG", "Map SDK initialized")
-                    android.util.Log.d("MAP_LOADED", "onMapLoaded callback triggered.")
                 },
                 onMapClick = { latLng ->
-                    android.util.Log.d("MAP_CLICK", "User clicked coordinates: ${latLng.latitude}, ${latLng.longitude}")
                     val formatted = "Selected: ${String.format(java.util.Locale.US, "%.4f, %.4f", latLng.latitude, latLng.longitude)}"
                     viewModel.setAddress(formatted, listOf(latLng.longitude, latLng.latitude))
                 },
                 onPOIClick = { poi ->
-                    android.util.Log.d("MAP_POI", "User clicked POI: ${poi.name}")
                     viewModel.setAddress(poi.name, listOf(poi.latLng.longitude, poi.latLng.latitude))
                 },
                 uiSettings = MapUiSettings(
                     zoomControlsEnabled = false,
-                    myLocationButtonEnabled = false // We'll use our own button
+                    myLocationButtonEnabled = false
                 ),
                 properties = MapProperties(
                     isMyLocationEnabled = true
                 )
             ) {
-                // Nearby Providers
                 nearbyProviders.forEach { provider ->
                     provider.location.coordinates.let { coords ->
                         Marker(
@@ -205,7 +210,6 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
                     }
                 }
 
-                // Selected Location Pin
                 selectedCoords?.let { coords ->
                     Marker(
                         state = MarkerState(position = LatLng(coords[1], coords[0])),
@@ -213,18 +217,6 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
                         icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_RED)
                     )
                 }
-            }
-
-            // "Your Location" Floating Button
-            SmallFloatingActionButton(
-                onClick = { checkAndRequestLocation() },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(bottom = 16.dp, end = 16.dp),
-                containerColor = Color.White,
-                contentColor = Color(0xFFD32F2F)
-            ) {
-                Icon(Icons.Default.MyLocation, contentDescription = "Your Location")
             }
 
             if (!isMapLoaded) {
@@ -249,7 +241,7 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
 
         // SELECTION UI (25%)
         Card(
-            modifier = Modifier.weight(if (addressPredictions.isNotEmpty()) 0.5f else 0.25f).fillMaxWidth(),
+            modifier = Modifier.weight(if (addressPredictions.isNotEmpty()) 0.55f else 0.35f).fillMaxWidth(),
             shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
@@ -318,32 +310,36 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedButton(
-                    onClick = { checkAndRequestLocation() },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFD32F2F)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD32F2F))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("YOUR LOCATION", fontWeight = FontWeight.Bold)
-                }
+                    // "Your Location" Button (35%)
+                    Button(
+                        onClick = { viewModel.fetchCurrentLocation(isManualSelection = true) },
+                        modifier = Modifier.weight(0.35f).height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)), // WhatsApp Green
+                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    ) {
+                        Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("YOUR LOCATION", fontWeight = FontWeight.Bold, fontSize = 10.sp, maxLines = 1)
+                    }
 
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                Button(
-                    onClick = { 
-                        viewModel.confirmRecipient() // Proceeding
-                    },
-                    enabled = (addressText.isNotBlank() && selectedCoords != null),
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
-                ) {
-                    Text("CONFIRM LOCATION", fontWeight = FontWeight.Black)
+                    // "Continue" Button (65%)
+                    Button(
+                        onClick = { viewModel.confirmRecipient() },
+                        enabled = (addressText.isNotBlank() && selectedCoords != null),
+                        modifier = Modifier.weight(0.65f).height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                    ) {
+                        Text("CONTINUE", fontWeight = FontWeight.Black)
+                    }
                 }
             }
         }
