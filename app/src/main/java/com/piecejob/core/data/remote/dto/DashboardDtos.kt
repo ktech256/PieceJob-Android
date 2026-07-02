@@ -45,10 +45,19 @@ data class ActivityDto(
     @SerializedName("_id", alternate = ["id"]) val id: String,
     val type: String,
     val status: String,
-    val serviceCode: String,
-    val serviceName: String?,
+    val title: String? = null,
+    val serviceCode: String? = null,
+    val serviceName: String? = null,
     val amount: Double,
     val createdAt: String
+)
+
+data class ProviderDashboardDto(
+    val profile: DashboardProfileDto,
+    val stats: ProviderStatsDto,
+    val activeJob: JobDto?,
+    val recentActivity: List<ActivityDto>,
+    val currency: String
 )
 
 data class TopProviderDto(

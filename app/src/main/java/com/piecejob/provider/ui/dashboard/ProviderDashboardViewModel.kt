@@ -22,6 +22,7 @@ import javax.inject.Inject
 class ProviderDashboardViewModel @Inject constructor(
     private val repository: ProviderRepository,
     private val jobRepository: JobRepository,
+    private val dashboardRepository: com.piecejob.core.data.repository.DashboardRepository,
     private val configRepository: com.piecejob.core.data.repository.ConfigRepository,
     private val socketManager: SocketManager,
     private val sessionManager: SessionManager
@@ -29,6 +30,9 @@ class ProviderDashboardViewModel @Inject constructor(
 
     private val _stats = MutableStateFlow<ProviderStatsDto?>(null)
     val stats: StateFlow<ProviderStatsDto?> = _stats
+
+    private val _userProfile = MutableStateFlow<DashboardProfileDto?>(null)
+    val userProfile: StateFlow<DashboardProfileDto?> = _userProfile
 
     val currencySymbol = MutableStateFlow(configRepository.getCurrencySymbol())
 
@@ -47,31 +51,67 @@ class ProviderDashboardViewModel @Inject constructor(
     private val _activeJob = MutableStateFlow<JobDto?>(null)
     val activeJob: StateFlow<JobDto?> = _activeJob
 
+    private val _recentActivity = MutableStateFlow<List<ActivityDto>>(emptyList())
+    val recentActivity: StateFlow<List<ActivityDto>> = _recentActivity
+
+    private val _providerLocation = MutableStateFlow<List<Double>?>(null)
+    val providerLocation: StateFlow<List<Double>?> = _providerLocation
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
+
+    private var locationTrackingJob: kotlinx.coroutines.Job? = null
 
     init {
         loadDashboard()
         observeSocket()
+        startLocationTracking()
+    }
+
+    private fun startLocationTracking() {
+        locationTrackingJob?.cancel()
+        locationTrackingJob = viewModelScope.launch {
+            LocationService.currentLocation.collect { loc ->
+                if (loc != null) {
+                    _providerLocation.value = listOf(loc.longitude, loc.latitude)
+                }
+            }
+        }
     }
 
     private fun loadDashboard() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Refresh config in parallel
+                // Refresh workspace config for currency symbols
                 launch {
                     configRepository.refreshWorkspaceConfig()
                     currencySymbol.value = configRepository.getCurrencySymbol()
                 }
 
-                // Parallel fetching
-                launch { loadStats() }
-                launch { loadProfile() }
-                launch { loadAvailableJobs() }
-                launch { fetchActiveJob() }
+                val response = dashboardRepository.getProviderDashboard()
+                if (response.success && response.data != null) {
+                    val data = response.data
+                    _userProfile.value = data.profile
+                    _stats.value = data.stats
+                    _activeJob.value = data.activeJob
+                    _recentActivity.value = data.recentActivity
+                    _isOnline.value = data.stats.isOnline
+                    
+                    if (data.activeJob != null) {
+                        LocationService.activeJobId = data.activeJob.id
+                        socketManager.joinJob(data.activeJob.id)
+                    }
+                } else {
+                    // Fallback to legacy individual calls if unified dashboard fails
+                    launch { loadStats() }
+                    launch { loadProfile() }
+                    launch { loadAvailableJobs() }
+                    launch { fetchActiveJob() }
+                }
             } catch (e: Exception) {
                 Log.e("ProviderDashboard", "Error loading dashboard", e)
+                _error.value = "Failed to load dashboard data."
             } finally {
                 _isLoading.value = false
             }
@@ -128,8 +168,17 @@ class ProviderDashboardViewModel @Inject constructor(
     private suspend fun loadProfile() {
         try {
             val response = repository.getProfile()
-            if (response.success) {
-                _isShadowBanned.value = response.data?.isShadowBanned ?: false
+            if (response.success && response.data != null) {
+                val u = response.data
+                _userProfile.value = DashboardProfileDto(
+                    firstName = u.firstName,
+                    lastName = u.lastName,
+                    email = u.email,
+                    photo = u.profilePhoto,
+                    addresses = u.addresses,
+                    savedLocations = u.savedLocations
+                )
+                _isShadowBanned.value = u.isShadowBanned ?: false
             }
             
             // Also fetch provider-specific data like isOnline
@@ -242,30 +291,47 @@ class ProviderDashboardViewModel @Inject constructor(
 
     fun markArrival(jobId: String) {
         viewModelScope.launch {
+            _isLoading.value = true
             val response = jobRepository.markArrival(jobId)
-            if (response.success) {
-                _activeJob.value = _activeJob.value?.copy(status = "ARRIVED")
+            if (response.success && response.data != null) {
+                _activeJob.value = response.data
+                _error.value = null
+            } else {
+                _error.value = response.message ?: response.error?.message ?: "Failed to mark arrival"
             }
+            _isLoading.value = false
         }
     }
 
     fun startJob(jobId: String) {
         viewModelScope.launch {
-            val response = jobRepository.startJob(jobId)
-            if (response.success) {
-                _activeJob.value = _activeJob.value?.copy(status = "STARTED")
+            _isLoading.value = true
+            val coords = _providerLocation.value
+            val response = jobRepository.startJob(jobId, coords)
+            if (response.success && response.data != null) {
+                _activeJob.value = response.data
+                _error.value = null
+            } else {
+                _error.value = response.message ?: response.error?.message ?: "Failed to start job"
             }
+            _isLoading.value = false
         }
     }
 
     fun completeJob(jobId: String) {
         viewModelScope.launch {
+            _isLoading.value = true
             val response = jobRepository.completeJob(jobId)
-            if (response.success) {
-                _activeJob.value = null
+            if (response.success && response.data != null) {
+                _activeJob.value = response.data
                 LocationService.activeJobId = null
+                socketManager.leaveJob(jobId)
+                _error.value = null
                 loadStats()
+            } else {
+                _error.value = response.message ?: response.error?.message ?: "Failed to complete job"
             }
+            _isLoading.value = false
         }
     }
 }

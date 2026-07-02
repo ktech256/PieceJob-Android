@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,14 +27,17 @@ import com.piecejob.core.data.remote.dto.JobDto
 fun ProviderDashboardScreen(
     viewModel: ProviderDashboardViewModel = hiltViewModel(),
     onSosTrigger: () -> Unit,
-    onNavigateToTracking: (String) -> Unit
+    onNavigateToTracking: (String) -> Unit,
+    onNavigateToSubScreen: (String) -> Unit
 ) {
     val stats by viewModel.stats.collectAsState()
+    val userProfile by viewModel.userProfile.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isOnline by viewModel.isOnline.collectAsState()
     val isShadowBanned by viewModel.isShadowBanned.collectAsState()
     val availableJobs by viewModel.availableJobs.collectAsState()
     val activeJob by viewModel.activeJob.collectAsState()
+    val recentActivity by viewModel.recentActivity.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
     val error by viewModel.error.collectAsState()
     
@@ -64,13 +68,22 @@ fun ProviderDashboardScreen(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = Color.White.copy(alpha = 0.1f)) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                if (userProfile?.photo != null) {
+                                    coil.compose.AsyncImage(
+                                        model = userProfile!!.photo,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                    )
+                                } else {
+                                    Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
+                                }
                             }
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
-                            Text("Welcome, Provider", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                            Text("Welcome, ${userProfile?.firstName ?: "Provider"}", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black)
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(stats?.tier ?: "BRONZE", color = Color(0xFFFFA000), fontSize = 10.sp, fontWeight = FontWeight.Black)
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -252,19 +265,30 @@ fun ProviderDashboardScreen(
             }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    QuickActionButton("Trades", Icons.Default.Handyman) {}
-                    QuickActionButton("Docs", Icons.Default.Description) {}
-                    QuickActionButton("Stats", Icons.Default.BarChart) {}
-                    QuickActionButton("Support", Icons.Default.HelpCenter) {}
+                    QuickActionButton("Trades", Icons.Default.Handyman) { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.MyServices.route) }
+                    QuickActionButton("Docs", Icons.Default.Description) { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.VerificationDocs.route) }
+                    QuickActionButton("Stats", Icons.Default.BarChart) { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.ProviderAnalytics.route) }
+                    QuickActionButton("Support", Icons.Default.HelpCenter) { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Support.route) }
                 }
             }
 
-            // RECENT ACTIVITY FEED (Placeholder)
+            // RECENT ACTIVITY FEED
             item {
                 Text("Recent Activity", fontWeight = FontWeight.Black, fontSize = 16.sp)
             }
-            items(3) {
-                RecentActivityItem(currencySymbol)
+            if (recentActivity.isEmpty()) {
+                item {
+                    Text(
+                        text = "No recent activity found.",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                }
+            } else {
+                items(recentActivity) { activity ->
+                    RecentActivityItem(activity, currencySymbol)
+                }
             }
         }
     }
@@ -379,20 +403,29 @@ fun QuickActionButton(label: String, icon: ImageVector, onClick: () -> Unit) {
 }
 
 @Composable
-fun RecentActivityItem(currency: String) {
+fun RecentActivityItem(activity: com.piecejob.core.data.remote.dto.ActivityDto, currency: String) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(modifier = Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = Color.White) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.Gray)
+                Icon(
+                    imageVector = if (activity.type == "JOB") Icons.Default.Work else Icons.Default.Payments,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = Color.Gray
+                )
             }
         }
         Spacer(modifier = Modifier.width(16.dp))
         Column {
-            Text("Job Completed: House Cleaning", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            Text("2 hours ago • +$currency 45.00", fontSize = 11.sp, color = Color.Gray)
+            Text(activity.title ?: activity.type, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = "${activity.createdAt.take(10)} • ${if(activity.amount > 0) "+" else ""}$currency ${String.format("%.2f", activity.amount)}",
+                fontSize = 11.sp,
+                color = Color.Gray
+            )
         }
     }
 }

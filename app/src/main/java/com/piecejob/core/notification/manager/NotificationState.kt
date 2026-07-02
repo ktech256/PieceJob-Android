@@ -12,7 +12,6 @@ data class IncomingJob(
     val customerName: String?,
     val address: String?,
     val distance: String?,
-    val earnings: String?,
     val expiresAt: Long
 )
 

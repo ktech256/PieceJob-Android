@@ -86,9 +86,8 @@ class PieceJobMessagingService : FirebaseMessagingService() {
             serviceCode = data["serviceCode"] ?: "Service Request",
             serviceName = data["serviceName"],
             customerName = data["recipientName"],
-            address = data["address"],
+            address = data["address"] ?: "Nearby Location",
             distance = data["distance"] ?: "Nearby", 
-            earnings = data["earnings"] ?: "Estimated Pay",
             expiresAt = System.currentTimeMillis() + 60000 
         )
 

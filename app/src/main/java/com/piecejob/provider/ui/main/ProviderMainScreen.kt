@@ -101,7 +101,8 @@ fun ProviderMainScreen(
                 composable(BottomBarScreen.Home.route) {
                     ProviderDashboardScreen(
                         onSosTrigger = onSosTrigger,
-                        onNavigateToTracking = { jobId -> onNavigateToSubScreen(Screen.ProviderTracking.passJobId(jobId)) }
+                        onNavigateToTracking = { jobId -> onNavigateToSubScreen(Screen.ProviderTracking.passJobId(jobId)) },
+                        onNavigateToSubScreen = onNavigateToSubScreen
                     )
                 }
                 composable(BottomBarScreen.Jobs.route) {

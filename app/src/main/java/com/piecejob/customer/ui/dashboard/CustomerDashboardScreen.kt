@@ -694,7 +694,7 @@ fun TopProviderCard(provider: com.piecejob.core.data.remote.dto.TopProviderDto) 
 @Composable
 fun ActivityItem(act: com.piecejob.core.data.remote.dto.ActivityDto, currency: String) {
     ListItem(
-        headlineContent = { Text(act.serviceName ?: act.serviceCode, fontWeight = FontWeight.Bold) },
+        headlineContent = { Text(act.serviceName ?: act.serviceCode ?: "Service", fontWeight = FontWeight.Bold) },
         supportingContent = { Text("${act.status} • ${act.createdAt.take(10)}", fontSize = 12.sp, color = Color.Gray) },
         leadingContent = { Surface(modifier = Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = Color(0xFFF5F5F5)) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(20.dp)) } } },
         trailingContent = { Text("$currency ${String.format("%.2f", act.amount)}", fontWeight = FontWeight.Black, fontSize = 14.sp) },

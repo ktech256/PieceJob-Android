@@ -37,9 +37,10 @@ class ProviderMainViewModel @Inject constructor(
                 serviceCode = data.optString("serviceCode", "Service Request"),
                 serviceName = data.optString("serviceName"),
                 customerName = data.optString("recipientName"),
-                address = data.optString("address") ?: data.optJSONObject("location")?.optString("address"),
-                distance = "Nearby",
-                earnings = "R 150.00",
+                address = data.optString("address").takeIf { it.isNotEmpty() }
+                    ?: data.optJSONObject("location")?.optString("address").takeIf { it?.isNotEmpty() == true }
+                    ?: "Nearby Location",
+                distance = data.optString("distance").takeIf { it.isNotEmpty() } ?: "Nearby",
                 expiresAt = System.currentTimeMillis() + 60000
             )
             android.util.Log.d("FCM_AUDIT", "Triggering banner display for Job ${incomingJob.jobId}")

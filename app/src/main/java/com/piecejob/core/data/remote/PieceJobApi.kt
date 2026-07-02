@@ -151,6 +151,9 @@ interface PieceJobApi {
     @POST("wallets/withdraw")
     suspend fun requestWithdrawal(@Body request: WithdrawRequest): ApiResponse<Unit>
 
+    @GET("providers/dashboard")
+    suspend fun getProviderDashboard(): ApiResponse<ProviderDashboardDto>
+
     @GET("providers/profile")
     suspend fun getProviderProfile(): ApiResponse<ProviderFullDto>
 

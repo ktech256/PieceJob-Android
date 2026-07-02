@@ -90,10 +90,9 @@ fun JobRequestBanner(
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 InfoItem(Icons.Default.Map, job.distance ?: "Nearby", "DISTANCE")
                 InfoItem(Icons.Default.Star, "4.9", "RATING")
-                InfoItem(Icons.Default.Build, job.earnings ?: "R 150.00", "EST. PAY")
             }
             
             Spacer(modifier = Modifier.height(24.dp))

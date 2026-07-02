@@ -19,6 +19,14 @@ class DashboardRepository @Inject constructor(
         }
     }
 
+    suspend fun getProviderDashboard(): ApiResponse<ProviderDashboardDto> {
+        return try {
+            api.getProviderDashboard()
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
     suspend fun getCustomerPromotions(): ApiResponse<List<PromotionDto>> {
         return try {
             api.getCustomerPromotions()

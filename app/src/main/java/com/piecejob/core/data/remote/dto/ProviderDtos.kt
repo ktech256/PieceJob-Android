@@ -15,6 +15,7 @@ data class ProviderStatsDto(
     val tierProgress: Double, // 0.0 to 1.0
     val rating: Double,
     val verificationStatus: String,
+    val isOnline: Boolean = false,
     val isGhostMode: Boolean = false
 )
 
