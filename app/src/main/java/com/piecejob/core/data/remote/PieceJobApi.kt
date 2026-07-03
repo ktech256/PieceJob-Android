@@ -498,7 +498,8 @@ data class ServiceDto(
     val isActive: Boolean,
     val description: String? = null,
     val onlineCountLabel: String? = null,
-    val onlineCount: Int? = 0
+    val onlineCount: Int? = 0,
+    val bookingFee: Double? = 0.0
 )
 
 data class GroupedServicesDto(

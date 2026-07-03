@@ -375,7 +375,13 @@ class BookingViewModel @Inject constructor(
             val res = jobRepository.getPriceEstimate(service.code, resolvedZone.value?.id, false)
             if (res.success) {
                 priceEstimate.value = res.data
-                _currentStep.value = BookingStep.BOOKING_FEE
+                if ((res.data?.bookingFee ?: 0.0) > 0.0) {
+                    _currentStep.value = BookingStep.BOOKING_FEE
+                } else {
+                    // Requirement: Skip Review & Pay if fee is 0 or null
+                    android.util.Log.d("TowMechSecurity", "ZERO_FEE_DETECTED: Skipping review step.")
+                    createJob()
+                }
             } else {
                 _error.value = res.error?.message
             }

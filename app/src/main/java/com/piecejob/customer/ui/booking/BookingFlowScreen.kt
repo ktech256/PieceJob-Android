@@ -476,6 +476,7 @@ fun ServiceSelectionStep(viewModel: BookingViewModel) {
 @Composable
 fun BookingFeeStep(viewModel: BookingViewModel) {
     val estimate by viewModel.priceEstimate.collectAsState()
+    val selectedService by viewModel.selectedService.collectAsState()
     val error by viewModel.error.collectAsState()
     var showPaymentWarning by remember { mutableStateOf(false) }
 
@@ -483,7 +484,7 @@ fun BookingFeeStep(viewModel: BookingViewModel) {
         AlertDialog(
             onDismissRequest = { showPaymentWarning = false },
             title = { Text("Booking Fee Payment", fontWeight = FontWeight.Black) },
-            text = { Text("The booking fee you pay today will be credited toward the final amount agreed between you and the service provider. It is not an additional charge.") },
+            text = { Text("This booking fee confirms your booking. The final service price will be negotiated directly between you and the provider.") },
             confirmButton = {
                 Button(onClick = { 
                     android.util.Log.d("TowMechSecurity", "PAYMENT_CONFIRM_CLICKED: Review & Pay Confirm Button")
@@ -515,6 +516,7 @@ fun BookingFeeStep(viewModel: BookingViewModel) {
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
+        Text(selectedService?.name ?: "Service", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color.Black)
         Text("Booking Fee", fontSize = 14.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
         Text(String.format(java.util.Locale.getDefault(), "%s %.2f", estimate?.currencySymbol ?: estimate?.currency ?: "", estimate?.bookingFee ?: 0.0), fontSize = 42.sp, fontWeight = FontWeight.Black)
 
@@ -527,8 +529,13 @@ fun BookingFeeStep(viewModel: BookingViewModel) {
         ) {
             val symbol = estimate?.currencySymbol ?: estimate?.currency ?: ""
             Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                DetailRow("Base Service Price", String.format(java.util.Locale.getDefault(), "%s %.2f", symbol, estimate?.basePrice ?: 0.0))
-                DetailRow("Estimated Tax", String.format(java.util.Locale.getDefault(), "%s %.2f", symbol, estimate?.taxAmount ?: 0.0))
+                Text(
+                    text = "This booking fee confirms your booking. The final service price will be negotiated directly between you and the provider.",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.DarkGray,
+                    lineHeight = 20.sp
+                )
                 HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
                 DetailRow("Payable Now", String.format(java.util.Locale.getDefault(), "%s %.2f", symbol, estimate?.bookingFee ?: 0.0), highlight = true)
             }

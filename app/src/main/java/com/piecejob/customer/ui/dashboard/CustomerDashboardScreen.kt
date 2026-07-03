@@ -563,7 +563,26 @@ fun ServiceDetailsDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = service.name, fontWeight = FontWeight.Black, fontSize = 20.sp) },
-        text = { Text(text = service.description ?: "Professional service on demand.", fontSize = 14.sp) },
+        text = {
+            Column {
+                Text(text = service.description ?: "Professional service on demand.", fontSize = 14.sp)
+                if ((service.bookingFee ?: 0.0) > 0) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Surface(
+                        color = Color(0xFFF5F5F5),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Booking Fee", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(String.format("%.2f", service.bookingFee), fontWeight = FontWeight.Black, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        },
         confirmButton = {
             Button(onClick = onConfirm, colors = ButtonDefaults.buttonColors(containerColor = confirmColor)) {
                 Text("CONFIRM", fontWeight = FontWeight.Black)
