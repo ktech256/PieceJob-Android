@@ -19,7 +19,6 @@ import com.piecejob.core.ui.navigation.Screen
 import com.piecejob.customer.ui.dashboard.CustomerDashboardScreen
 import com.piecejob.customer.ui.jobs.CustomerJobsScreen
 import com.piecejob.customer.ui.wallet.CustomerWalletScreen
-import com.piecejob.customer.ui.wallet.CustomerWalletTabScreen
 import com.piecejob.customer.ui.messages.CustomerMessagesScreen
 import com.piecejob.customer.ui.account.CustomerAccountScreen
 
