@@ -205,7 +205,7 @@ interface PieceJobApi {
     @GET("providers/reviews")
     suspend fun getMyReviews(): ApiResponse<List<ReviewDto>>
 
-    @GET("providers/jobs")
+    @GET("jobs/my-jobs")
     suspend fun getProviderJobs(@Query("status") status: String? = null): ApiResponse<List<JobDto>>
 
     @GET("providers/dashboard-stats")

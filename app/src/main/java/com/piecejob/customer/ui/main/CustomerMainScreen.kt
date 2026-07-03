@@ -113,13 +113,19 @@ fun CustomerMainScreen(
                 )
             }
             composable(CustomerBottomBarScreen.Jobs.route) {
-                CustomerJobsScreen()
+                CustomerJobsScreen(
+                    onNavigateToJob = { route -> onNavigateToSubScreen(route) }
+                )
             }
             composable(CustomerBottomBarScreen.Wallet.route) {
                 CustomerWalletTabScreen()
             }
             composable(CustomerBottomBarScreen.Messages.route) {
-                CustomerMessagesScreen()
+                CustomerMessagesScreen(
+                    onNavigateToChat = { jobId, otherUserId -> 
+                        onNavigateToSubScreen(Screen.Chat.passArgs(jobId, otherUserId))
+                    }
+                )
             }
             composable(CustomerBottomBarScreen.Account.route) {
                 CustomerAccountScreen(
