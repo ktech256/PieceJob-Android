@@ -139,21 +139,42 @@ fun WalletMiniCard(label: String, amount: Double, currency: String, modifier: Mo
 
 @Composable
 fun TransactionRow(tx: WalletTransactionDto, currency: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
     ) {
-        Column {
-            Text(text = tx.type.replace("_", " "), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Text(text = tx.createdAt.take(10), fontSize = 10.sp, color = Color.Gray)
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = tx.type.replace("_", " "), fontSize = 14.sp, fontWeight = FontWeight.Black)
+                Text(text = tx.description ?: "", fontSize = 11.sp, color = Color.Gray, maxLines = 1)
+                Text(text = tx.createdAt.take(16).replace("T", " "), fontSize = 9.sp, color = Color.LightGray)
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = String.format("%.2f %s", tx.amount, currency),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Black,
+                    color = if (tx.amount > 0) Color(0xFF2E7D32) else Color.Red
+                )
+                Surface(
+                    color = if (tx.status == "COMPLETED") Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = tx.status,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (tx.status == "COMPLETED") Color(0xFF2E7D32) else Color(0xFFE65100)
+                    )
+                }
+            }
         }
-        Text(
-            text = "$currency ${String.format("%.2f", tx.amount)}",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Black,
-            color = if (tx.amount > 0) Color(0xFF2E7D32) else Color.Red
-        )
     }
 }
 

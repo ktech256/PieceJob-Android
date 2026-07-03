@@ -148,6 +148,7 @@ data class WalletTransactionDto(
     val amount: Double,
     val type: String,
     val status: String,
+    val description: String?,
     val createdAt: String,
     val metadata: Map<String, String>?
 )

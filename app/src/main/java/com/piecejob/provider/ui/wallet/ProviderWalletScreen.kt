@@ -60,13 +60,26 @@ fun ProviderWalletScreen(
             colors = CardDefaults.cardColors(containerColor = Color(0xFF212121))
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
-                Text(text = "Available for Withdrawal", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
-                Text(
-                    text = String.format(Locale.getDefault(), "%s %.2f", currencySymbol, wallet?.balanceMain ?: 0.0),
-                    color = Color.White,
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.Black
-                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column {
+                        Text(text = "Available for Withdrawal", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                        Text(
+                            text = String.format(Locale.getDefault(), "%s %.2f", currencySymbol, wallet?.balanceMain ?: 0.0),
+                            color = Color.White,
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(text = "In Escrow", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp)
+                        Text(
+                            text = String.format(Locale.getDefault(), "%s %.2f", currencySymbol, wallet?.balanceEscrow ?: 0.0),
+                            color = Color(0xFFFFA000),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
@@ -140,20 +153,28 @@ fun EmptyState(message: String) {
 
 @Composable
 fun TransactionItem(tx: WalletTransactionDto, currency: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9))
     ) {
-        Column {
-            Text(text = tx.type.replace("_", " "), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Text(text = tx.createdAt.take(10), fontSize = 10.sp, color = Color.Gray)
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = tx.type.replace("_", " "), fontWeight = FontWeight.Black, fontSize = 14.sp)
+                Text(text = tx.description ?: "", fontSize = 11.sp, color = Color.Gray, maxLines = 1)
+                Text(text = tx.createdAt.take(10), fontSize = 9.sp, color = Color.LightGray)
+            }
+            Text(
+                text = String.format(Locale.getDefault(), "%s%s %.2f", if (tx.amount > 0) "+" else "-", currency, tx.amount),
+                fontWeight = FontWeight.Black,
+                fontSize = 16.sp,
+                color = if (tx.amount > 0) Color(0xFF2E7D32) else Color(0xFFD32F2F)
+            )
         }
-        Text(
-            text = String.format(Locale.getDefault(), "%s%s %.2f", if (tx.amount > 0) "+" else "", currency, tx.amount),
-            fontWeight = FontWeight.Black,
-            color = if (tx.amount > 0) Color(0xFF2E7D32) else Color(0xFFD32F2F)
-        )
     }
 }
 
