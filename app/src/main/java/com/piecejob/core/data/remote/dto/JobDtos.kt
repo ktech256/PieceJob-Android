@@ -21,21 +21,21 @@ data class JobStatusRequest(
 
 data class JobDto(
     @SerializedName("_id", alternate = ["id"]) val id: String,
-    @SerializedName("serviceCode") val serviceCode: String,
+    @SerializedName("serviceCode") val serviceCode: String?,
     @SerializedName("serviceName") val serviceName: String?,
     @SerializedName("status") val status: String,
-    @SerializedName("customerId") val customerId: String,
+    @SerializedName("customerId") val customerId: String?,
     @SerializedName("providerId") val providerId: String?,
     @SerializedName("providerInfo") val providerInfo: ProviderInfoDto?,
     @SerializedName("customerInfo") val customerInfo: CustomerInfoDto?,
-    @SerializedName("bookingFee") val bookingFee: Double,
+    @SerializedName("bookingFee") val bookingFee: Double?,
     @SerializedName("serviceFee") val serviceFee: Double?,
-    @SerializedName("currency") val currency: String,
+    @SerializedName("currency") val currency: String?,
     @SerializedName("location") val location: LocationDto?,
-    @SerializedName("isForSomeoneElse") val isForSomeoneElse: Boolean,
+    @SerializedName("isForSomeoneElse") val isForSomeoneElse: Boolean?,
     @SerializedName("recipientName") val recipientName: String?,
     @SerializedName("recipientPhone") val recipientPhone: String?,
-    @SerializedName("createdAt") val createdAt: String,
+    @SerializedName("createdAt") val createdAt: String?,
     @SerializedName("paymentReference") val paymentReference: String? = null
 )
 
@@ -49,8 +49,8 @@ data class ProviderInfoDto(
     @SerializedName("firstName") val firstName: String,
     @SerializedName("lastName") val lastName: String,
     @SerializedName("phoneNumber") val phoneNumber: String? = null,
-    @SerializedName("ratingAvg") val ratingAvg: Double,
-    @SerializedName("jobsCompleted") val jobsCompleted: Int,
+    @SerializedName("ratingAvg") val ratingAvg: Double? = null,
+    @SerializedName("jobsCompleted") val jobsCompleted: Int? = null,
     @SerializedName("profilePicture") val profilePicture: String? = null
 )
 

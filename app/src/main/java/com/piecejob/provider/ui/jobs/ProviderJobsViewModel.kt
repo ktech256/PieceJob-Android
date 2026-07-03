@@ -53,6 +53,11 @@ class ProviderJobsViewModel @Inject constructor(
                 loadJobs()
             }
         }
+        viewModelScope.launch {
+            socketManager.broadcastEventFlow.collect { event ->
+                loadJobs()
+            }
+        }
     }
 
     fun loadJobs() {

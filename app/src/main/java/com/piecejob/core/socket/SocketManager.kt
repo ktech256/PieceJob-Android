@@ -23,6 +23,9 @@ class SocketManager @Inject constructor(
     private val _statusEventFlow = MutableSharedFlow<StatusEvent>(extraBufferCapacity = 10)
     val statusEventFlow: SharedFlow<StatusEvent> = _statusEventFlow
 
+    private val _broadcastEventFlow = MutableSharedFlow<JSONObject>(extraBufferCapacity = 10)
+    val broadcastEventFlow: SharedFlow<JSONObject> = _broadcastEventFlow
+
     private val _messageEventFlow = MutableSharedFlow<JSONObject>(extraBufferCapacity = 10)
     val messageEventFlow: SharedFlow<JSONObject> = _messageEventFlow
 
@@ -83,6 +86,16 @@ class SocketManager @Inject constructor(
                     _statusEventFlow.tryEmit(StatusEvent(jobId, status, data.optJSONObject("providerInfo")))
                 } catch (e: Exception) {
                     Log.e(TAG, "Error in status_updated listener", e)
+                }
+            }
+
+            socket?.on("NEW_JOB_BROADCAST") { args ->
+                try {
+                    val data = args[0] as JSONObject
+                    Log.d("FORENSIC", "GLOBAL_SOCKET_RECEIVED | NEW_JOB_BROADCAST | Job: ${data.optString("jobId")}")
+                    _broadcastEventFlow.tryEmit(data)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in NEW_JOB_BROADCAST listener", e)
                 }
             }
 
@@ -260,7 +273,6 @@ class SocketManager @Inject constructor(
         // We only clear ephemeral listeners, NOT global status/message/call listeners
         socket?.off("location_updated")
         socket?.off("route_updated")
-        socket?.off("NEW_JOB_BROADCAST")
     }
 
     fun disconnect() {

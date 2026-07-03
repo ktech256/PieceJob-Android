@@ -55,18 +55,24 @@ class JobTrackingViewModel @Inject constructor(
 
     private val statusPriority = mapOf(
         "DRAFT" to 0,
-        "PAYMENT_PENDING" to 1,
-        "BOOKING_FEE_PAID" to 2,
-        "BROADCASTING" to 3,
-        "BROADCASTED" to 4,
-        "ACCEPTED" to 5,
-        "EN_ROUTE" to 6,
-        "ARRIVED" to 7,
-        "STARTED" to 8,
-        "IN_PROGRESS" to 9,
-        "COMPLETED" to 10,
-        "RATED" to 11,
-        "CANCELLED" to -1
+        "REQUEST_CREATED" to 1,
+        "PAYMENT_PENDING" to 2,
+        "BOOKING_FEE_PAID" to 3,
+        "BROADCASTING" to 4,
+        "BROADCASTED" to 5,
+        "ACCEPTED" to 6,
+        "PROVIDER_ACCEPTED" to 6, // Treat same as ACCEPTED
+        "EN_ROUTE" to 7,
+        "ARRIVED" to 8,
+        "STARTED" to 9,
+        "IN_PROGRESS" to 10,
+        "COMPLETED" to 11,
+        "RATED" to 12,
+        "CLOSED" to 13,
+        "DISPUTED" to 14,
+        "CANCELLED" to -1,
+        "SCHEDULED" to 5, // Scheduled jobs are like broadcasted/pending
+        "RESCHEDULED" to 5
     )
 
     fun initTracking(jobId: String) {
