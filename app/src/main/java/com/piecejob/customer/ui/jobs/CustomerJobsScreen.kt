@@ -96,7 +96,7 @@ fun CustomerJobCard(job: JobDto, onClick: () -> Unit) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text(text = job.serviceName ?: job.serviceCode, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                    Text(text = job.serviceName ?: job.serviceCode ?: "Unknown Service", fontWeight = FontWeight.Black, fontSize = 18.sp)
                     Text(text = "Job ID: #${job.id.takeLast(6).uppercase()}", fontSize = 10.sp, color = Color.Gray)
                 }
                 Surface(
@@ -117,14 +117,14 @@ fun CustomerJobCard(job: JobDto, onClick: () -> Unit) {
             
             val providerName = if (job.providerInfo != null) "${job.providerInfo?.firstName} ${job.providerInfo?.lastName}" else "Searching for Provider..."
             JobInfoRow(label = "Provider", value = providerName)
-            JobInfoRow(label = "Date/Time", value = job.createdAt.take(16).replace("T", " "))
+            JobInfoRow(label = "Date/Time", value = job.createdAt?.take(16)?.replace("T", " ") ?: "Unknown")
             JobInfoRow(label = "Location", value = job.location?.address ?: "Location Shared")
             
             Spacer(modifier = Modifier.height(16.dp))
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(text = "Total Amount", fontSize = 12.sp, color = Color.Gray)
-                Text(text = "${job.currency} ${String.format("%.2f", (job.serviceFee ?: 0.0) + job.bookingFee)}", fontWeight = FontWeight.Black, color = Color.Black)
+                Text(text = "${job.currency ?: ""} ${String.format("%.2f", (job.serviceFee ?: 0.0) + (job.bookingFee ?: 0.0))}", fontWeight = FontWeight.Black, color = Color.Black)
             }
         }
     }

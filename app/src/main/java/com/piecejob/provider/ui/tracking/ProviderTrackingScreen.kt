@@ -353,7 +353,7 @@ fun ProviderTrackingScreen(
 
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = currentJob.serviceName ?: currentJob.serviceCode,
+                                        text = currentJob.serviceName ?: currentJob.serviceCode ?: "Unknown Service",
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 20.sp,
                                         lineHeight = 22.sp
@@ -401,7 +401,7 @@ fun ProviderTrackingScreen(
                                     }
                                     
                                     FilledIconButton(
-                                        onClick = { if (!isTerminalState) onChatOpen(currentJob.customerId) },
+                                        onClick = { if (!isTerminalState && currentJob.customerId != null) onChatOpen(currentJob.customerId) },
                                         modifier = Modifier.size(44.dp),
                                         colors = IconButtonDefaults.filledIconButtonColors(
                                             containerColor = if (isTerminalState) Color.LightGray else Color(0xFFE3F2FD)

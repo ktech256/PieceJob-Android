@@ -105,17 +105,17 @@ fun JobCard(job: JobDto, isLoading: Boolean, onAction: (String) -> Unit) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text(text = job.serviceName ?: job.serviceCode, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                    Text(text = job.serviceName ?: job.serviceCode ?: "Unknown Service", fontWeight = FontWeight.Black, fontSize = 18.sp)
                     Text(text = "Job ID: #${job.id.takeLast(6).uppercase()}", fontSize = 10.sp, color = Color.Gray)
                 }
-                Text(text = "${job.currency} ${job.serviceFee ?: job.bookingFee}", fontWeight = FontWeight.Black, color = Color(0xFF2E7D32))
+                Text(text = "${job.currency ?: ""} ${String.format("%.2f", (job.serviceFee ?: 0.0) + (job.bookingFee ?: 0.0))}", fontWeight = FontWeight.Black, color = Color(0xFF2E7D32))
             }
             
             Spacer(modifier = Modifier.height(12.dp))
             
             val customerName = if (job.status == "BROADCASTED") "Hidden until accepted" else "${job.customerInfo?.firstName} ${job.customerInfo?.lastName}"
             InfoRow(label = "Customer", value = customerName)
-            InfoRow(label = "Date/Time", value = job.createdAt.take(16).replace("T", " "))
+            InfoRow(label = "Date/Time", value = job.createdAt?.take(16)?.replace("T", " ") ?: "Unknown")
             InfoRow(label = "Location", value = job.location?.address ?: "Client Location")
             
             Spacer(modifier = Modifier.height(16.dp))
