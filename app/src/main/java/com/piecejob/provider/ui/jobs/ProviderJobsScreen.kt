@@ -32,6 +32,11 @@ fun ProviderJobsScreen(
     val scheduledJobs by viewModel.scheduledJobs.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
+    // Refresh jobs when screen is opened
+    LaunchedEffect(Unit) {
+        viewModel.loadJobs()
+    }
+
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { jobId ->
             onNavigateToTracking(jobId)

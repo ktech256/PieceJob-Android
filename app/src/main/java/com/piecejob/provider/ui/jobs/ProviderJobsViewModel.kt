@@ -71,19 +71,25 @@ class ProviderJobsViewModel @Inject constructor(
                     _activeJobs.value = activeRes.data ?: emptyList()
                 }
 
-                // 3. Completed
+                // 3. Scheduled
+                val scheduledRes = jobRepository.getProviderJobs("SCHEDULED")
+                if (scheduledRes.success) {
+                    _scheduledJobs.value = scheduledRes.data ?: emptyList()
+                }
+
+                // 4. Completed
                 val completedRes = jobRepository.getProviderJobs("COMPLETED")
                 if (completedRes.success) {
                     _completedJobs.value = completedRes.data ?: emptyList()
                 }
 
-                // 4. Cancelled
+                // 5. Cancelled
                 val cancelledRes = jobRepository.getProviderJobs("CANCELLED")
                 if (cancelledRes.success) {
                     _cancelledJobs.value = cancelledRes.data ?: emptyList()
                 }
 
-                // 5. Disputed
+                // 6. Disputed
                 val disputedRes = jobRepository.getProviderJobs("DISPUTED")
                 if (disputedRes.success) {
                     _disputedJobs.value = disputedRes.data ?: emptyList()

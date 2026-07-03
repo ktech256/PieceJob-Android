@@ -54,8 +54,8 @@ class ProviderDashboardViewModel @Inject constructor(
     private val _recentActivity = MutableStateFlow<List<ActivityDto>>(emptyList())
     val recentActivity: StateFlow<List<ActivityDto>> = _recentActivity
 
-    private val _providerLocation = MutableStateFlow<List<Double>?>(null)
-    val providerLocation: StateFlow<List<Double>?> = _providerLocation
+    private val _providerLocation = MutableStateFlow<com.google.android.gms.maps.model.LatLng?>(null)
+    val providerLocation: StateFlow<com.google.android.gms.maps.model.LatLng?> = _providerLocation
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
@@ -73,7 +73,7 @@ class ProviderDashboardViewModel @Inject constructor(
         locationTrackingJob = viewModelScope.launch {
             LocationService.currentLocation.collect { loc ->
                 if (loc != null) {
-                    _providerLocation.value = listOf(loc.longitude, loc.latitude)
+                    _providerLocation.value = com.google.android.gms.maps.model.LatLng(loc.latitude, loc.longitude)
                 }
             }
         }
@@ -304,15 +304,22 @@ class ProviderDashboardViewModel @Inject constructor(
     }
 
     fun startJob(jobId: String) {
+        android.util.Log.d("ForensicLog", "DASHBOARD_START_JOB_CLICKED | Job: $jobId")
         viewModelScope.launch {
             _isLoading.value = true
-            val coords = _providerLocation.value
+            val loc = _providerLocation.value
+            val coords = if (loc != null) listOf(loc.longitude, loc.latitude) else null
+            
+            android.util.Log.d("ForensicLog", "DASHBOARD_START_JOB_SENDING | Coords: $coords")
             val response = jobRepository.startJob(jobId, coords)
             if (response.success && response.data != null) {
+                android.util.Log.d("ForensicLog", "DASHBOARD_START_JOB_SUCCESS")
                 _activeJob.value = response.data
                 _error.value = null
             } else {
-                _error.value = response.message ?: response.error?.message ?: "Failed to start job"
+                val errorMsg = response.message ?: response.error?.message ?: "Failed to start job"
+                android.util.Log.e("ForensicLog", "DASHBOARD_START_JOB_FAILED: $errorMsg")
+                _error.value = errorMsg
             }
             _isLoading.value = false
         }

@@ -29,6 +29,11 @@ fun CustomerJobsScreen(
     val cancelledJobs by viewModel.cancelledJobs.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
+    // Refresh bookings when screen is opened
+    LaunchedEffect(Unit) {
+        viewModel.loadJobs()
+    }
+
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { (jobId, route) ->
             onNavigateToJob(route)

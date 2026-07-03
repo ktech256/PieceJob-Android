@@ -161,12 +161,13 @@ fun ProviderDashboardScreen(
         }
 
         // ✅ NEW: RESUME JOB OVERLAY (If job is started but screen is closed)
-        if (activeJob != null && (activeJob!!.status == "STARTED" || activeJob!!.status == "IN_PROGRESS")) {
+        val currentJob = activeJob
+        if (currentJob != null && (currentJob.status == "STARTED" || currentJob.status == "IN_PROGRESS")) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clickable { onNavigateToTracking(activeJob!!.id) },
+                    .clickable { onNavigateToTracking(currentJob.id) },
                 color = Color(0xFFE8F5E9),
                 shape = RoundedCornerShape(12.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4CAF50))
@@ -179,7 +180,7 @@ fun ProviderDashboardScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("JOB IN PROGRESS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFF2E7D32))
-                        Text("Resume tracking for ${activeJob!!.serviceName ?: activeJob!!.serviceCode}", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("Resume tracking for ${currentJob.serviceName ?: currentJob.serviceCode}", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     }
                     Text("RESUME", color = Color(0xFF2E7D32), fontWeight = FontWeight.Black, fontSize = 12.sp)
                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF2E7D32))
@@ -195,7 +196,7 @@ fun ProviderDashboardScreen(
             if (isShadowBanned) item { ShadowBanNotice() }
 
             // ✅ SECTION: ACTIVE ENGAGEMENT (Moved to top for visibility)
-            if (activeJob != null) {
+            if (currentJob != null) {
                 item {
                     Text(
                         "Ongoing Engagement",
@@ -205,12 +206,12 @@ fun ProviderDashboardScreen(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     ActiveJobCard(
-                        job = activeJob!!,
+                        job = currentJob,
                         isLoading = isLoading,
                         onStart = { viewModel.startJob(it) },
                         onComplete = { viewModel.completeJob(it) },
                         onArrive = { viewModel.markArrival(it) },
-                        onClick = { onNavigateToTracking(activeJob!!.id) }
+                        onClick = { onNavigateToTracking(currentJob.id) }
                     )
                 }
             }
