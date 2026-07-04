@@ -140,6 +140,8 @@ data class WalletDto(
     val balanceCredit: Double,
     val balanceReferral: Double,
     val balanceBonus: Double,
+    val outstandingCommission: Double = 0.0,
+    val isSuspended: Boolean = false,
     val currency: String
 )
 

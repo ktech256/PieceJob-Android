@@ -151,6 +151,9 @@ interface PieceJobApi {
     @POST("wallets/withdraw")
     suspend fun requestWithdrawal(@Body request: WithdrawRequest): ApiResponse<Unit>
 
+    @POST("wallets/pay-commission")
+    suspend fun payCommission(@Body request: PayCommissionRequest): ApiResponse<PayCommissionResponse>
+
     @GET("providers/dashboard")
     suspend fun getProviderDashboard(): ApiResponse<ProviderDashboardDto>
 
@@ -240,6 +243,18 @@ interface PieceJobApi {
 
     @PUT("jobs/{jobId}/accept")
     suspend fun acceptJob(@Path("jobId") jobId: String): ApiResponse<JobDto>
+
+    @POST("jobs/{jobId}/request-photos")
+    suspend fun requestPhotos(@Path("jobId") jobId: String): ApiResponse<Unit>
+
+    @POST("jobs/{jobId}/upload-photos")
+    suspend fun uploadPhotos(@Path("jobId") jobId: String, @Body request: UploadPhotosRequest): ApiResponse<Unit>
+
+    @POST("negotiation/propose")
+    suspend fun proposePrice(@Body request: ProposePriceRequest): ApiResponse<PriceProposalDto>
+
+    @POST("negotiation/respond/{proposalId}")
+    suspend fun respondToProposal(@Path("proposalId") proposalId: String, @Body request: RespondProposalRequest): ApiResponse<PriceProposalDto>
 
     @PATCH("jobs/{jobId}/status")
     suspend fun updateJobStatus(@Path("jobId") jobId: String, @Body request: JobStatusRequest): ApiResponse<JobDto>

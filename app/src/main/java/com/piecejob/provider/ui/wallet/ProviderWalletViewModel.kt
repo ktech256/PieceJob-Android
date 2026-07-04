@@ -90,6 +90,19 @@ class ProviderWalletViewModel @Inject constructor(
         }
     }
 
+    fun payCommission(vendor: String, voucherNumber: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val response = walletRepository.payCommission(vendor, voucherNumber)
+            if (response.success) {
+                loadWalletData() // Refresh balance and outstanding commission
+            } else {
+                _error.value = response.message ?: "Commission payment failed"
+            }
+            _isLoading.value = false
+        }
+    }
+
     fun resetWithdrawState() {
         _withdrawSuccess.value = false
         _error.value = null

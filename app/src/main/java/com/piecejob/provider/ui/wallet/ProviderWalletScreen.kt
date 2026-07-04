@@ -2,6 +2,7 @@ package com.piecejob.provider.ui.wallet
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,6 +33,51 @@ fun ProviderWalletScreen(
     val currencySymbol by viewModel.currencySymbol.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
+    
+    var showPayCommissionDialog by remember { mutableStateOf(false) }
+    var voucherNumber by remember { mutableStateOf("") }
+    var selectedVendor by remember { mutableStateOf("OTT") }
+
+    if (showPayCommissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showPayCommissionDialog = false },
+            title = { Text("Pay Commission") },
+            text = {
+                Column {
+                    Text("Select Voucher Vendor", fontSize = 12.sp, color = Color.Gray)
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("OTT", "BLUE", "1VOUCHER").forEach { vendor ->
+                            FilterChip(
+                                selected = selectedVendor == vendor,
+                                onClick = { selectedVendor = vendor },
+                                label = { Text(vendor, fontSize = 10.sp) }
+                            )
+                        }
+                    }
+                    OutlinedTextField(
+                        value = voucherNumber,
+                        onValueChange = { voucherNumber = it },
+                        label = { Text("Voucher Number") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text("Enter 'TEST' for simulation (R100) or 'PRE' + amount.", fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.payCommission(selectedVendor, voucherNumber)
+                        showPayCommissionDialog = false
+                        voucherNumber = ""
+                    },
+                    enabled = voucherNumber.isNotBlank()
+                ) { Text("Redeem & Pay") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPayCommissionDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -83,6 +129,37 @@ fun ProviderWalletScreen(
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
+                if ((wallet?.outstandingCommission ?: 0.0) > 0.0) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF333333)),
+                        border = BorderStroke(1.dp, if (wallet?.isSuspended == true) Color.Red else Color.Gray)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text("Outstanding Commission", color = Color.LightGray, fontSize = 11.sp)
+                                Text(
+                                    text = String.format(Locale.getDefault(), "%s %.2f", currencySymbol, wallet?.outstandingCommission ?: 0.0),
+                                    color = if (wallet?.isSuspended == true) Color.Red else Color.White,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Button(
+                                onClick = { showPayCommissionDialog = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Text("PAY", fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+
                 Button(
                     onClick = onWithdrawClick,
                     modifier = Modifier.fillMaxWidth(),

@@ -9,6 +9,7 @@ data class MessageDto(
     val mediaUrl: String?,
     val mediaType: String?,
     val isRead: Boolean,
+    val metadata: Map<String, Any>? = null,
     val createdAt: String
 )
 
