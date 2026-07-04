@@ -37,7 +37,9 @@ fun CustomerDashboardScreen(
     onProfileClick: () -> Unit,
     onNotificationsClick: () -> Unit,
     onSosClick: () -> Unit,
-    onNavigateToTracking: (String) -> Unit
+    onNavigateToTracking: (String) -> Unit,
+    onNavigateToChat: (String, String) -> Unit = { _, _ -> },
+    onNavigateToSubScreen: (String) -> Unit = {}
 ) {
     val services by viewModel.services.collectAsState()
     val categoriesList by viewModel.categories.collectAsState()
@@ -136,8 +138,8 @@ fun CustomerDashboardScreen(
                     job = activeJob!!,
                     onClick = { 
                         if (activeJob!!.status == "PROVIDER_ACCEPTED") {
-                            // Go to Chat for negotiation
-                            onNavigateToTracking(com.piecejob.core.ui.navigation.Screen.Chat.passArgs(activeJob!!.id, activeJob!!.providerId ?: ""))
+                            // Go to Negotiation Session
+                            onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(activeJob!!.id, activeJob!!.providerId ?: ""))
                         } else {
                             onNavigateToTracking(activeJob!!.id) 
                         }

@@ -146,7 +146,7 @@ fun JobCard(job: JobDto, isLoading: Boolean, onNavigateToSubScreen: (String) -> 
                 }
             } else if (job.status == "PROVIDER_ACCEPTED") {
                 Button(
-                    onClick = { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Chat.passArgs(job.id, job.customerId ?: "")) },
+                    onClick = { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.customerId ?: "")) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))

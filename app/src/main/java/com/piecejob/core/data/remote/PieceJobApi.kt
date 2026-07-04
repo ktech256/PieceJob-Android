@@ -247,6 +247,9 @@ interface PieceJobApi {
     @POST("jobs/{jobId}/request-photos")
     suspend fun requestPhotos(@Path("jobId") jobId: String): ApiResponse<Unit>
 
+    @POST("jobs/{jobId}/mark-photos-seen")
+    suspend fun markPhotosSeen(@Path("jobId") jobId: String): ApiResponse<Unit>
+
     @POST("jobs/{jobId}/upload-photos")
     suspend fun uploadPhotos(@Path("jobId") jobId: String, @Body request: UploadPhotosRequest): ApiResponse<Unit>
 

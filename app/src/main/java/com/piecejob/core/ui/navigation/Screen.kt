@@ -119,6 +119,9 @@ sealed class Screen(val route: String) {
     object Chat : Screen("chat/{jobId}/{otherUserId}") {
         fun passArgs(jobId: String, otherUserId: String) = "chat/$jobId/$otherUserId"
     }
+    object Negotiation : Screen("negotiation/{jobId}/{otherUserId}") {
+        fun passArgs(jobId: String, otherUserId: String) = "negotiation/$jobId/$otherUserId"
+    }
     object Call : Screen("call/{jobId}/{receiverId}/{receiverName}/{receiverPhone}/{receiverPhoto}") {
         fun passArgs(jobId: String, receiverId: String, receiverName: String, receiverPhone: String, receiverPhoto: String?) = 
             "call/$jobId/$receiverId/$receiverName/$receiverPhone/${android.net.Uri.encode(receiverPhoto ?: "none")}"

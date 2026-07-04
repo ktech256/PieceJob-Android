@@ -171,14 +171,14 @@ fun CustomerTrackingScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("Negotiating Price", fontWeight = FontWeight.Black, fontSize = 20.sp)
                     Text(
-                        "The provider is currently reviewing details. Please check Chat for proposals.",
+                        "The provider is currently reviewing details. Please check Negotiation Session for proposals.",
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         color = Color.Gray,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                     Spacer(modifier = Modifier.height(24.dp))
-                    Button(onClick = { onChatOpen(job?.providerId ?: "") }) {
-                        Text("OPEN CHAT")
+                    Button(onClick = { onChatOpen(job?.providerId ?: "") }) { // Using onChatOpen callback which parent maps to Negotiation
+                        Text("OPEN NEGOTIATION")
                     }
                 }
             }

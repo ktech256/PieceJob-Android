@@ -115,6 +115,14 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    fun markPhotosSeen() {
+        val jobId = currentJobId ?: return
+        viewModelScope.launch {
+            repository.markPhotosSeen(jobId)
+            loadJobConfig(jobId) // Refresh local state to enable pricing
+        }
+    }
+
     fun uploadTaskPhotos(uris: List<android.net.Uri>) {
         val jobId = currentJobId ?: return
         viewModelScope.launch {

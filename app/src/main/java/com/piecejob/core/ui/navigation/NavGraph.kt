@@ -24,6 +24,7 @@ import com.piecejob.provider.ui.onboarding.DocumentUploadScreen
 import com.piecejob.customer.ui.account.*
 import com.piecejob.customer.ui.dashboard.CustomerDashboardScreen
 import com.piecejob.core.ui.chat.ChatScreen
+import com.piecejob.core.ui.chat.NegotiationScreen
 import com.piecejob.core.ui.analytics.ProviderAnalyticsScreen
 import com.piecejob.core.ui.analytics.CustomerAnalyticsScreen
 import com.piecejob.provider.ui.tracking.ProviderTrackingScreen
@@ -301,7 +302,9 @@ fun NavGraph(
             CustomerTrackingScreen(
                 jobId = jobId,
                 onChatOpen = { otherUserId ->
-                    navController.navigate(Screen.Chat.passArgs(jobId, otherUserId))
+                    // Always try negotiation first if status might be PROVIDER_ACCEPTED
+                    // The NegotiationScreen itself handles redirecting back if already accepted.
+                    navController.navigate(Screen.Negotiation.passArgs(jobId, otherUserId))
                 },
                 onCallOpen = { receiverId, name, phone, photo ->
                     val route = Screen.Call.passArgs(jobId, receiverId, name, phone, photo)
@@ -328,7 +331,7 @@ fun NavGraph(
             ProviderTrackingScreen(
                 jobId = jobId,
                 onChatOpen = { otherUserId ->
-                    navController.navigate(Screen.Chat.passArgs(jobId, otherUserId))
+                    navController.navigate(Screen.Negotiation.passArgs(jobId, otherUserId))
                 },
                 onCallOpen = { receiverId, name, phone, photo ->
                     val route = Screen.Call.passArgs(jobId, receiverId, name, phone, photo)
@@ -386,6 +389,27 @@ fun NavGraph(
                 docType = docType,
                 onUploadComplete = {
                     navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = Screen.Negotiation.route,
+            arguments = listOf(
+                navArgument("jobId") { type = NavType.StringType },
+                navArgument("otherUserId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val jobId = backStackEntry.arguments?.getString("jobId") ?: ""
+            val otherUserId = backStackEntry.arguments?.getString("otherUserId") ?: ""
+            NegotiationScreen(
+                jobId = jobId,
+                otherUserId = otherUserId,
+                onBack = { navController.popBackStack() },
+                onNegotiationComplete = { jId, oId ->
+                    navController.navigate(Screen.Chat.passArgs(jId, oId)) {
+                        popUpTo(Screen.Negotiation.route) { inclusive = true }
+                    }
                 }
             )
         }

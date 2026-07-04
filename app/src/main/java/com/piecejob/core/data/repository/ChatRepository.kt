@@ -45,6 +45,14 @@ class ChatRepository @Inject constructor(
         }
     }
 
+    suspend fun markPhotosSeen(jobId: String): ApiResponse<Unit> {
+        return try {
+            api.markPhotosSeen(jobId)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
     suspend fun uploadTaskPhotos(jobId: String, photos: List<String>): ApiResponse<Unit> {
         return try {
             api.uploadPhotos(jobId, UploadPhotosRequest(photos))

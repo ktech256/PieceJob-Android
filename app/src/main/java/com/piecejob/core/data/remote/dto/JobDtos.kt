@@ -32,6 +32,8 @@ data class JobDto(
     @SerializedName("serviceFee") val serviceFee: Double?,
     @SerializedName("currency") val currency: String?,
     @SerializedName("location") val location: LocationDto?,
+    @SerializedName("taskPhotosRequested") val taskPhotosRequested: Boolean?,
+    @SerializedName("taskPhotosSeen") val taskPhotosSeen: Boolean?,
     @SerializedName("taskPhotos") val taskPhotos: List<String>?,
     @SerializedName("agreedPrice") val agreedPrice: Double?,
     @SerializedName("priceStatus") val priceStatus: String?,

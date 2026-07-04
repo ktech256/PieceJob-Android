@@ -56,7 +56,12 @@ fun ProviderMainScreen(
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { event ->
             Log.d("NavGraphTrace", "Auto-navigating: $event")
-            if (event.startsWith("CHAT:")) {
+            if (event.startsWith("NEGOTIATION:")) {
+                val parts = event.split(":")
+                if (parts.size >= 3) {
+                    onNavigateToSubScreen(Screen.Negotiation.passArgs(parts[1], parts[2]))
+                }
+            } else if (event.startsWith("CHAT:")) {
                 val parts = event.split(":")
                 if (parts.size >= 3) {
                     onNavigateToSubScreen(Screen.Chat.passArgs(parts[1], parts[2]))

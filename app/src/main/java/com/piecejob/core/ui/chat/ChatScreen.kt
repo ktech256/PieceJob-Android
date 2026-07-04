@@ -50,6 +50,14 @@ fun ChatScreen(
     
     val isProvider = com.piecejob.BuildConfig.FLAVOR == "provider"
 
+    LaunchedEffect(jobState?.status) {
+        if (jobState?.status == "PROVIDER_ACCEPTED") {
+            // Strictly enforce the separation requested by the user.
+            // If we are in ChatScreen but the job is in negotiation, we should be in NegotiationScreen.
+            onBack() // Or navigate to Negotiation.
+        }
+    }
+
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris ->
@@ -115,50 +123,18 @@ fun ChatScreen(
         bottomBar = {
             Surface(tonalElevation = 4.dp, shadowElevation = 8.dp) {
                 Column {
-                    if (isProvider) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (serviceConfig?.photoSharingRequired == true) {
-                                AssistChip(
-                                    onClick = { viewModel.requestPhotos() },
-                                    label = { Text("Request Photos", fontSize = 12.sp) },
-                                    leadingIcon = { Icon(Icons.Default.PhotoCamera, null, modifier = Modifier.size(16.dp)) }
-                                )
-                            }
-                            if (serviceConfig?.priceNegotiationRequired == true) {
-                                AssistChip(
-                                    onClick = { showPriceDialog = true },
-                                    label = { Text("Propose Price", fontSize = 12.sp) },
-                                    leadingIcon = { Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp)) }
-                                )
-                            } else if (jobState?.status == "PROVIDER_ACCEPTED") {
-                                // If negotiation NOT required but we are stuck in PROVIDER_ACCEPTED (likely due to photos)
-                                AssistChip(
-                                    onClick = { viewModel.confirmDispatch() },
-                                    label = { Text("Confirm Dispatch", fontSize = 12.sp) },
-                                    leadingIcon = { Icon(Icons.Default.LocalShipping, null, modifier = Modifier.size(16.dp)) }
-                                )
-                            }
-                        }
-                    }
-                    val isNegotiationMode = jobState?.status == "PROVIDER_ACCEPTED"
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                            .padding(start = 12.dp, end = 12.dp, bottom = 12.dp, top = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         OutlinedTextField(
                             value = messageText,
                             onValueChange = { messageText = it },
                             modifier = Modifier.weight(1f),
-                            placeholder = { Text(if (isNegotiationMode) "Messaging locked until agreed" else "Type a message...") },
-                            shape = RoundedCornerShape(24.dp),
-                            enabled = !isNegotiationMode
+                            placeholder = { Text("Type a message...") },
+                            shape = RoundedCornerShape(24.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         IconButton(
@@ -168,7 +144,7 @@ fun ChatScreen(
                                     messageText = ""
                                 }
                             },
-                            enabled = messageText.isNotBlank() && !isNegotiationMode,
+                            enabled = messageText.isNotBlank(),
                             colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
@@ -194,7 +170,7 @@ fun ChatScreen(
                             onAction = { action, meta ->
                                 when (action) {
                                     "UPLOAD_PHOTOS" -> photoPickerLauncher.launch("image/*")
-                                    "MARK_SEEN" -> { /* Logic for marking photos seen */ }
+                                    "MARK_SEEN" -> viewModel.markPhotosSeen()
                                     "ACCEPT_PROPOSAL" -> viewModel.respondToProposal(meta?.get("proposalId") as? String ?: "", "ACCEPT")
                                     "REJECT_PROPOSAL" -> viewModel.respondToProposal(meta?.get("proposalId") as? String ?: "", "REJECT")
                                     "COUNTER_PROPOSAL" -> showPriceDialog = true

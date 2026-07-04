@@ -60,8 +60,8 @@ class ProviderMainViewModel @Inject constructor(
                 
                 val job = res.data
                 if (job.status == "PROVIDER_ACCEPTED") {
-                    // Navigate to Chat for Negotiation
-                    _navigationEvent.emit("CHAT:${jobId}:${job.customerId}")
+                    // Navigate to Negotiation Session
+                    _navigationEvent.emit("NEGOTIATION:${jobId}:${job.customerId}")
                 } else {
                     // Navigate to Tracking for Dispatch
                     _navigationEvent.emit("TRACKING:${jobId}")

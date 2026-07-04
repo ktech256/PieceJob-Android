@@ -103,8 +103,9 @@ class SocketManager @Inject constructor(
                 try {
                     val data = args[0] as JSONObject
                     val jobId = data.getString("jobId")
-                    Log.d("FORENSIC", "GLOBAL_SOCKET_RECEIVED | JOB_ACCEPTED | Job: $jobId")
-                    _statusEventFlow.tryEmit(StatusEvent(jobId, "ACCEPTED", data.optJSONObject("providerInfo")))
+                    val status = data.optString("status", "ACCEPTED")
+                    Log.d("FORENSIC", "GLOBAL_SOCKET_RECEIVED | JOB_ACCEPTED | Job: $jobId | Status: $status")
+                    _statusEventFlow.tryEmit(StatusEvent(jobId, status, data.optJSONObject("providerInfo")))
                 } catch (e: Exception) {
                     Log.e(TAG, "Error in JOB_ACCEPTED listener", e)
                 }

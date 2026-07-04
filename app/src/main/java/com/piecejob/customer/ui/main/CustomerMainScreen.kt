@@ -44,7 +44,12 @@ fun CustomerMainScreen(
 
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { event ->
-            if (event.startsWith("CHAT:")) {
+            if (event.startsWith("NEGOTIATION:")) {
+                val parts = event.split(":")
+                if (parts.size >= 3) {
+                    onNavigateToSubScreen(Screen.Negotiation.passArgs(parts[1], parts[2]))
+                }
+            } else if (event.startsWith("CHAT:")) {
                 val parts = event.split(":")
                 if (parts.size >= 3) {
                     onNavigateToSubScreen(Screen.Chat.passArgs(parts[1], parts[2]))
@@ -116,7 +121,11 @@ fun CustomerMainScreen(
                     onProfileClick = { navController.navigate(CustomerBottomBarScreen.Account.route) },
                     onNotificationsClick = { onNavigateToSubScreen(Screen.CustomerNotifications.route) },
                     onSosClick = { onNavigateToSubScreen(Screen.ReportIssue.route) },
-                    onNavigateToTracking = { jobId -> onNavigateToSubScreen(Screen.CustomerTracking.passJobId(jobId)) }
+                    onNavigateToTracking = { jobId -> onNavigateToSubScreen(Screen.CustomerTracking.passJobId(jobId)) },
+                    onNavigateToChat = { jobId, otherUserId -> 
+                        onNavigateToSubScreen(Screen.Chat.passArgs(jobId, otherUserId))
+                    },
+                    onNavigateToSubScreen = onNavigateToSubScreen
                 )
             }
             composable(CustomerBottomBarScreen.Jobs.route) {

@@ -191,7 +191,7 @@ fun ProviderDashboardScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clickable { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Chat.passArgs(currentJob.id, currentJob.customerId ?: "")) },
+                    .clickable { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(currentJob.id, currentJob.customerId ?: "")) },
                 color = Color(0xFFFFF8E1),
                 shape = RoundedCornerShape(12.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFA000))
@@ -204,7 +204,7 @@ fun ProviderDashboardScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("NEGOTIATION REQUIRED", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFFE65100))
-                        Text("Open chat to propose price or request photos", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("Open negotiation to propose price or request photos", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     }
                     Text("NEGOTIATE", color = Color(0xFFE65100), fontWeight = FontWeight.Black, fontSize = 12.sp)
                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFFFA000))
@@ -236,14 +236,14 @@ fun ProviderDashboardScreen(
                         onComplete = { viewModel.completeJob(it) },
                         onArrive = { id ->
                             if (currentJob.status == "PROVIDER_ACCEPTED") {
-                                onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Chat.passArgs(currentJob.id, currentJob.customerId ?: ""))
+                                onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(currentJob.id, currentJob.customerId ?: ""))
                             } else {
                                 viewModel.markArrival(id)
                             }
                         },
                         onClick = { 
                             if (currentJob.status == "PROVIDER_ACCEPTED") {
-                                onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Chat.passArgs(currentJob.id, currentJob.customerId ?: ""))
+                                onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(currentJob.id, currentJob.customerId ?: ""))
                             } else {
                                 onNavigateToTracking(currentJob.id) 
                             }
