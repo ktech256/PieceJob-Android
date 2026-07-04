@@ -312,6 +312,9 @@ interface PieceJobApi {
         @Query("lng") lng: Double? = null
     ): ApiResponse<ServicesResponseDto>
 
+    @GET("config/services/{code}")
+    suspend fun getServiceDetails(@Path("code") code: String): ApiResponse<ServiceDto>
+
     @GET("config/pricing/estimate")
     suspend fun getPriceEstimate(
         @Query("serviceCode") serviceCode: String,
@@ -511,6 +514,8 @@ data class ServiceDto(
     val verificationLevel: String,
     val equipmentRequired: List<String>,
     val isActive: Boolean,
+    val photoSharingRequired: Boolean = false,
+    val priceNegotiationRequired: Boolean = false,
     val description: String? = null,
     val onlineCountLabel: String? = null,
     val onlineCount: Int? = 0,

@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.piecejob.core.data.remote.ServiceDto
 import com.piecejob.core.data.remote.dto.MessageDto
 
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -38,6 +39,7 @@ fun ChatScreen(
 ) {
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val serviceConfig by viewModel.serviceConfig.collectAsState()
     var messageText by remember { mutableStateOf("") }
     
     var showPriceDialog by remember { mutableStateOf(false) }
@@ -118,16 +120,20 @@ fun ChatScreen(
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            AssistChip(
-                                onClick = { viewModel.requestPhotos() },
-                                label = { Text("Request Photos", fontSize = 12.sp) },
-                                leadingIcon = { Icon(Icons.Default.PhotoCamera, null, modifier = Modifier.size(16.dp)) }
-                            )
-                            AssistChip(
-                                onClick = { showPriceDialog = true },
-                                label = { Text("Propose Price", fontSize = 12.sp) },
-                                leadingIcon = { Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp)) }
-                            )
+                            if (serviceConfig?.photoSharingRequired == true) {
+                                AssistChip(
+                                    onClick = { viewModel.requestPhotos() },
+                                    label = { Text("Request Photos", fontSize = 12.sp) },
+                                    leadingIcon = { Icon(Icons.Default.PhotoCamera, null, modifier = Modifier.size(16.dp)) }
+                                )
+                            }
+                            if (serviceConfig?.priceNegotiationRequired == true) {
+                                AssistChip(
+                                    onClick = { showPriceDialog = true },
+                                    label = { Text("Propose Price", fontSize = 12.sp) },
+                                    leadingIcon = { Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp)) }
+                                )
+                            }
                         }
                     }
                     Row(

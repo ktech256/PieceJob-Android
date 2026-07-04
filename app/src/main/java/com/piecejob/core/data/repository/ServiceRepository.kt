@@ -34,4 +34,10 @@ class ServiceRepository @Inject constructor(
     fun hasStoredGender(): Boolean {
         return sessionManager.getGender() != null
     }
+
+    suspend fun getServiceDetails(code: String) = try {
+        api.getServiceDetails(code)
+    } catch (e: Exception) {
+        handleError(e)
+    }
 }

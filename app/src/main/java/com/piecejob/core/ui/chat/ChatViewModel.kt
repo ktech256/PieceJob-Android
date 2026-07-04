@@ -3,6 +3,7 @@ package com.piecejob.core.ui.chat
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.piecejob.core.data.remote.ServiceDto
 import com.piecejob.core.data.remote.dto.*
 import com.piecejob.core.data.repository.ChatRepository
 import com.piecejob.core.socket.SocketManager
@@ -16,7 +17,9 @@ import javax.inject.Inject
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val repository: ChatRepository,
-    private val socketManager: SocketManager
+    private val socketManager: SocketManager,
+    private val jobRepository: com.piecejob.core.data.repository.JobRepository,
+    private val serviceRepository: com.piecejob.core.data.repository.ServiceRepository
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<MessageDto>>(emptyList())
@@ -25,17 +28,33 @@ class ChatViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _serviceConfig = MutableStateFlow<ServiceDto?>(null)
+    val serviceConfig: StateFlow<ServiceDto?> = _serviceConfig
+
     private var currentJobId: String? = null
 
     fun initChat(jobId: String) {
         currentJobId = jobId
         Log.d("FORENSIC", "CHAT_LOAD_HISTORY | Job: $jobId")
         loadMessages(jobId)
+        loadJobConfig(jobId)
         socketManager.joinJob(jobId)
         
         viewModelScope.launch {
             socketManager.messageEventFlow.collect { json ->
                 handleIncomingMessage(json)
+            }
+        }
+    }
+
+    private fun loadJobConfig(jobId: String) {
+        viewModelScope.launch {
+            val jobRes = jobRepository.getJobById(jobId)
+            if (jobRes.success && jobRes.data?.serviceCode != null) {
+                val servRes = serviceRepository.getServiceDetails(jobRes.data.serviceCode)
+                if (servRes.success) {
+                    _serviceConfig.value = servRes.data
+                }
             }
         }
     }

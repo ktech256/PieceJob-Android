@@ -32,4 +32,10 @@ class ConfigRepository @Inject constructor(
     fun getCurrencySymbol(): String = sessionManager.getCurrencySymbol()
     fun getTimezone(): String = sessionManager.getTimezone()
     fun getLocale(): String = sessionManager.getLocale()
+
+    suspend fun getServiceDetails(code: String) = try {
+        api.getServiceDetails(code)
+    } catch (e: Exception) {
+        handleError(e)
+    }
 }
