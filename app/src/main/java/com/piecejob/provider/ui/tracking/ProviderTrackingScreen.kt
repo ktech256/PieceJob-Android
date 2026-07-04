@@ -166,7 +166,7 @@ fun ProviderTrackingScreen(
 
         // AUTO-START NAVIGATION TO CUSTOMER
         val dest = j.location?.coordinates
-        if (dest != null && dest.size >= 2) {
+        if (dest != null && dest.size >= 2 && dest[0] != 0.0) {
             val waypoint = Waypoint.builder()
                 .setLatLng(dest[1], dest[0])
                 .setTitle("Customer Location")
@@ -243,6 +243,29 @@ fun ProviderTrackingScreen(
             factory = { navigationView },
             modifier = Modifier.fillMaxSize()
         )
+        
+        if (job?.status == "PROVIDER_ACCEPTED") {
+            Box(
+                modifier = Modifier.fillMaxSize().background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
+                    Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color.Gray)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Negotiation Pending", fontWeight = FontWeight.Black, fontSize = 20.sp)
+                    Text(
+                        "Navigation and exact location are locked until the price is agreed upon. Please return to Chat.",
+                        textAlign = TextAlign.Center,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(onClick = { onChatOpen(job?.customerId ?: "") }) {
+                        Text("OPEN CHAT")
+                    }
+                }
+            }
+        }
 
         // Overlay: Top Header
         Column(

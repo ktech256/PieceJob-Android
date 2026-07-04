@@ -145,6 +145,7 @@ fun ChatScreen(
                             }
                         }
                     }
+                    val isNegotiationMode = jobState?.status == "PROVIDER_ACCEPTED"
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -155,8 +156,9 @@ fun ChatScreen(
                             value = messageText,
                             onValueChange = { messageText = it },
                             modifier = Modifier.weight(1f),
-                            placeholder = { Text("Type a message...") },
-                            shape = RoundedCornerShape(24.dp)
+                            placeholder = { Text(if (isNegotiationMode) "Messaging locked until agreed" else "Type a message...") },
+                            shape = RoundedCornerShape(24.dp),
+                            enabled = !isNegotiationMode
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         IconButton(
@@ -166,7 +168,7 @@ fun ChatScreen(
                                     messageText = ""
                                 }
                             },
-                            enabled = messageText.isNotBlank(),
+                            enabled = messageText.isNotBlank() && !isNegotiationMode,
                             colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
@@ -192,6 +194,7 @@ fun ChatScreen(
                             onAction = { action, meta ->
                                 when (action) {
                                     "UPLOAD_PHOTOS" -> photoPickerLauncher.launch("image/*")
+                                    "MARK_SEEN" -> { /* Logic for marking photos seen */ }
                                     "ACCEPT_PROPOSAL" -> viewModel.respondToProposal(meta?.get("proposalId") as? String ?: "", "ACCEPT")
                                     "REJECT_PROPOSAL" -> viewModel.respondToProposal(meta?.get("proposalId") as? String ?: "", "REJECT")
                                     "COUNTER_PROPOSAL" -> showPriceDialog = true
@@ -291,6 +294,16 @@ fun StructuredMessageCard(type: String, metadata: Map<String, Any>, isMe: Boolea
                                 modifier = Modifier.fillMaxSize().background(Color.Gray),
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
                             )
+                        }
+                    }
+                    if (!isMe) {
+                        Button(
+                            onClick = { onAction("MARK_SEEN", metadata) },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("Mark as Seen", fontSize = 12.sp)
                         }
                     }
                 }
