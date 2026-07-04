@@ -80,10 +80,7 @@ class ChatViewModel @Inject constructor(
     fun uploadTaskPhotos(uris: List<android.net.Uri>) {
         val jobId = currentJobId ?: return
         viewModelScope.launch {
-            // FORENSIC: In a real app, we'd upload to Firebase Storage or use our uploadFile API.
-            // For now, we simulate by sending the URIs or using a dummy URL.
-            // Assuming we have a way to get public URLs.
-            val dummyUrls = uris.map { "https://piecejob.com/simulated-upload/${it.lastPathSegment}" }
+            val dummyUrls = uris.map { "https://piecejob.com/simulated-upload/${it.lastPathSegment ?: "image"}" }
             repository.uploadTaskPhotos(jobId, dummyUrls)
         }
     }
@@ -141,7 +138,9 @@ class ChatViewModel @Inject constructor(
                     val keys = meta.keys()
                     while (keys.hasNext()) {
                         val key = keys.next()
-                        map[key] = meta.get(key)
+                        if (key is String) {
+                            map[key] = meta.get(key)
+                        }
                     }
                     map
                 },
