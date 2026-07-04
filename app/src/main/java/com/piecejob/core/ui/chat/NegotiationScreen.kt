@@ -7,9 +7,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Sell
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +30,16 @@ import com.piecejob.core.data.remote.dto.MessageDto
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,8 +58,42 @@ fun NegotiationScreen(
     var showPriceDialog by remember { mutableStateOf(false) }
     var priceAmount by remember { mutableStateOf("") }
     var priceNote by remember { mutableStateOf("") }
+
+    var selectedPhotosForGallery by remember { mutableStateOf<List<String>?>(null) }
+    var initialPhotoIndex by remember { mutableIntStateOf(0) }
     
+    var showPhotoPicker by remember { mutableStateOf(false) }
     val isProvider = com.piecejob.BuildConfig.FLAVOR == "provider"
+
+    if (showPhotoPicker) {
+        ModalBottomSheet(onDismissRequest = { showPhotoPicker = false }) {
+            Column(modifier = Modifier.padding(16.dp).padding(bottom = 32.dp)) {
+                Text("Select Photo Source", fontWeight = FontWeight.Black, modifier = Modifier.padding(bottom = 16.dp))
+                PickerOption(Icons.Default.CameraAlt, "Take Photo") {
+                    // Logic for single photo via camera can be added here
+                    // For now we use gallery for multiple
+                    showPhotoPicker = false
+                    photoPickerLauncher.launch("image/*")
+                }
+                PickerOption(Icons.Default.PhotoLibrary, "Choose From Gallery") {
+                    showPhotoPicker = false
+                    photoPickerLauncher.launch("image/*")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(onClick = { showPhotoPicker = false }, modifier = Modifier.fillMaxWidth()) {
+                    Text("CANCEL")
+                }
+            }
+        }
+    }
+
+    if (selectedPhotosForGallery != null) {
+        FullscreenPhotoGallery(
+            photos = selectedPhotosForGallery!!,
+            initialIndex = initialPhotoIndex,
+            onDismiss = { selectedPhotosForGallery = null }
+        )
+    }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
@@ -53,6 +101,10 @@ fun NegotiationScreen(
         if (uris.isNotEmpty()) {
             viewModel.uploadTaskPhotos(uris.take(4))
         }
+    }
+
+    LaunchedEffect(jobId) {
+        viewModel.initChat(jobId)
     }
 
     LaunchedEffect(jobState?.status) {
@@ -124,56 +176,83 @@ fun NegotiationScreen(
             Surface(tonalElevation = 8.dp, shadowElevation = 12.dp) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     if (isProvider) {
+                        val hasPhotos = !jobState?.taskPhotos.isNullOrEmpty()
+                        val photosRequested = jobState?.taskPhotosRequested == true
+                        val photosSeen = jobState?.taskPhotosSeen == true
+                        val negRequired = serviceConfig?.priceNegotiationRequired == true
+                        val photoRequired = serviceConfig?.photoSharingRequired == true
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            if (serviceConfig?.photoSharingRequired == true) {
+                            if (photoRequired && !photosRequested) {
                                 Button(
                                     onClick = { viewModel.requestPhotos() },
                                     modifier = Modifier.weight(1f),
-                                    enabled = jobState?.taskPhotosRequested != true,
-                                    shape = RoundedCornerShape(12.dp),
-                                    contentPadding = PaddingValues(0.dp)
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Icon(Icons.Default.PhotoCamera, null, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(4.dp))
                                     Text("Request Photos", fontSize = 11.sp)
                                 }
-                            }
-                            
-                            val canProposePrice = if (serviceConfig?.photoSharingRequired == true) {
-                                jobState?.taskPhotosSeen == true
-                            } else {
-                                true
-                            }
-
-                            if (serviceConfig?.priceNegotiationRequired == true) {
+                            } else if (photoRequired && hasPhotos && !photosSeen) {
+                                Button(
+                                    onClick = { viewModel.markPhotosSeen() },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                                ) {
+                                    Icon(Icons.Default.Visibility, null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Photos Reviewed", fontSize = 11.sp)
+                                }
+                            } else if (negRequired && jobState?.priceStatus != "ACCEPTED") {
+                                val canPropose = if (photoRequired) photosSeen else true
                                 Button(
                                     onClick = { showPriceDialog = true },
                                     modifier = Modifier.weight(1f),
-                                    enabled = canProposePrice,
+                                    enabled = canPropose,
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000)),
-                                    contentPadding = PaddingValues(0.dp)
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
                                 ) {
                                     Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(4.dp))
                                     Text("Propose Price", fontSize = 11.sp)
                                 }
                             } else if (jobState?.status == "PROVIDER_ACCEPTED") {
+                                // No neg required, but in PROVIDER_ACCEPTED (likely waiting for photos)
+                                val canDispatch = if (photoRequired) photosSeen else true
                                 Button(
                                     onClick = { viewModel.confirmDispatch() },
                                     modifier = Modifier.weight(1f),
+                                    enabled = canDispatch,
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                                    contentPadding = PaddingValues(0.dp)
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                                 ) {
                                     Icon(Icons.Default.LocalShipping, null, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(4.dp))
                                     Text("Confirm Dispatch", fontSize = 11.sp)
                                 }
                             }
+                        }
+                        
+                        // Status Text
+                        val statusHint = when {
+                            photoRequired && !photosRequested -> "Ask for photos to see the task detail."
+                            photoRequired && photosRequested && !hasPhotos -> "Waiting for customer to upload photos..."
+                            photoRequired && hasPhotos && !photosSeen -> "Review the photos above then mark as reviewed."
+                            negRequired && jobState?.priceStatus == "PENDING" -> "Waiting for counter-party to respond..."
+                            else -> ""
+                        }
+                        if (statusHint.isNotEmpty()) {
+                            Text(
+                                text = statusHint,
+                                fontSize = 10.sp,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(top = 8.dp).fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
                         }
                     } else {
                         // Customer View - Just informative text
@@ -221,7 +300,11 @@ fun NegotiationScreen(
                             isMe = msg.senderId._id != otherUserId,
                             onAction = { action, meta ->
                                 when (action) {
-                                    "UPLOAD_PHOTOS" -> photoPickerLauncher.launch("image/*")
+                                    "UPLOAD_PHOTOS" -> showPhotoPicker = true
+                                    "VIEW_PHOTOS" -> {
+                                        selectedPhotosForGallery = meta?.get("photos") as? List<String>
+                                        initialPhotoIndex = meta?.get("index") as? Int ?: 0
+                                    }
                                     "MARK_SEEN" -> viewModel.markPhotosSeen()
                                     "ACCEPT_PROPOSAL" -> viewModel.respondToProposal(meta?.get("proposalId") as? String ?: "", "ACCEPT")
                                     "REJECT_PROPOSAL" -> viewModel.respondToProposal(meta?.get("proposalId") as? String ?: "", "REJECT")
@@ -232,6 +315,68 @@ fun NegotiationScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
+import androidx.compose.ui.graphics.graphicsLayer
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun FullscreenPhotoGallery(
+    photos: List<String>,
+    initialIndex: Int,
+    onDismiss: () -> Unit
+) {
+    val pagerState = rememberPagerState(initialPage = initialIndex) { photos.size }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { index ->
+                var scale by remember { mutableFloatStateOf(1f) }
+                var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+                val state = rememberTransformableState { zoomChange, offsetChange, _ ->
+                    scale *= zoomChange
+                    offset += offsetChange
+                }
+
+                coil.compose.AsyncImage(
+                    model = photos[index],
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer(
+                            scaleX = scale.coerceIn(1f, 5f),
+                            scaleY = scale.coerceIn(1f, 5f),
+                            translationX = offset.x,
+                            translationY = offset.y
+                        )
+                        .transformable(state = state),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                )
+            }
+
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+            }
+
+            Text(
+                text = "${pagerState.currentPage + 1} / ${photos.size}",
+                color = Color.White,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(32.dp),
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }

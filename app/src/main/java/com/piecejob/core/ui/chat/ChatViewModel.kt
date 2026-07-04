@@ -1,17 +1,23 @@
 package com.piecejob.core.ui.chat
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Base64
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.piecejob.core.data.remote.ServiceDto
+import com.piecejob.core.data.remote.*
 import com.piecejob.core.data.remote.dto.*
 import com.piecejob.core.data.repository.ChatRepository
 import com.piecejob.core.socket.SocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 
 @HiltViewModel
@@ -19,7 +25,8 @@ class ChatViewModel @Inject constructor(
     private val repository: ChatRepository,
     private val socketManager: SocketManager,
     private val jobRepository: com.piecejob.core.data.repository.JobRepository,
-    private val serviceRepository: com.piecejob.core.data.repository.ServiceRepository
+    private val serviceRepository: com.piecejob.core.data.repository.ServiceRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<MessageDto>>(emptyList())
@@ -126,8 +133,36 @@ class ChatViewModel @Inject constructor(
     fun uploadTaskPhotos(uris: List<android.net.Uri>) {
         val jobId = currentJobId ?: return
         viewModelScope.launch {
-            val dummyUrls = uris.map { "https://piecejob.com/simulated-upload/${it.lastPathSegment ?: "image"}" }
-            repository.uploadTaskPhotos(jobId, dummyUrls)
+            _isLoading.value = true
+            try {
+                val uploadedUrls = mutableListOf<String>()
+                for (uri in uris) {
+                    val bitmap = context.contentResolver.openInputStream(uri)?.use { 
+                        BitmapFactory.decodeStream(it)
+                    } ?: continue
+
+                    // Compression
+                    val out = ByteArrayOutputStream()
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 70, out)
+                    val bytes = out.toByteArray()
+                    
+                    val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                    val res = repository.uploadFile(base64, "image/jpeg", "task-photos/$jobId")
+                    
+                    if (res.success && res.data != null) {
+                        uploadedUrls.add(res.data.url)
+                    }
+                }
+
+                if (uploadedUrls.isNotEmpty()) {
+                    repository.uploadTaskPhotos(jobId, uploadedUrls)
+                }
+            } catch (e: Exception) {
+                Log.e("FORENSIC", "CHAT_UPLOAD_FAILED", e)
+            } finally {
+                _isLoading.value = false
+                loadJobConfig(jobId)
+            }
         }
     }
 
@@ -196,7 +231,16 @@ class ChatViewModel @Inject constructor(
                     while (keys.hasNext()) {
                         val key = keys.next()
                         if (key is String) {
-                            map[key] = meta.get(key)
+                            val value = meta.get(key)
+                            if (value is org.json.JSONArray) {
+                                val list = mutableListOf<String>()
+                                for (i in 0 until value.length()) {
+                                    list.add(value.getString(i))
+                                }
+                                map[key] = list
+                            } else {
+                                map[key] = value
+                            }
                         }
                     }
                     map

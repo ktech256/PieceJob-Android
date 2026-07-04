@@ -61,6 +61,14 @@ class ChatRepository @Inject constructor(
         }
     }
 
+    suspend fun uploadFile(base64: String, mimeType: String, folder: String): ApiResponse<FileUploadResponse> {
+        return try {
+            api.uploadFile(FileUploadRequest(base64, mimeType, folder))
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
     suspend fun proposePrice(jobId: String, amount: Double, note: String?): ApiResponse<PriceProposalDto> {
         return try {
             api.proposePrice(ProposePriceRequest(jobId, amount, note))

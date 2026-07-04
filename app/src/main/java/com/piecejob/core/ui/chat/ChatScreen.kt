@@ -267,7 +267,12 @@ fun StructuredMessageCard(type: String, metadata: Map<String, Any>, isMe: Boolea
                             coil.compose.AsyncImage(
                                 model = photos[index],
                                 contentDescription = null,
-                                modifier = Modifier.fillMaxSize().background(Color.Gray),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Gray)
+                                    .clickable { 
+                                        onAction("VIEW_PHOTOS", mapOf("photos" to photos, "index" to index)) 
+                                    },
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
                             )
                         }
