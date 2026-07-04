@@ -621,7 +621,7 @@ fun RecentServiceAvatar(label: String, onClick: () -> Unit = {}) {
 @Composable
 fun ActiveJobMiniCard(job: com.piecejob.core.data.remote.dto.JobDto, onClick: () -> Unit) {
     val isCompleted = job.status == "COMPLETED"
-    val isNegotiation = job.status == "PROVIDER_ACCEPTED"
+    val isNegotiation = job.status == "PROVIDER_ACCEPTED" || job.status == "ACCEPTED"
     
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp).clickable { onClick() },
@@ -653,7 +653,7 @@ fun ActiveJobMiniCard(job: com.piecejob.core.data.remote.dto.JobDto, onClick: ()
                 Text(
                     text = when {
                         isCompleted -> "Rate Your Experience"
-                        isNegotiation -> "Negotiation Pending"
+                        isNegotiation -> "Negotiation Session"
                         else -> "Active Job: ${job.serviceName ?: job.serviceCode}"
                     }, 
                     fontWeight = FontWeight.Black, 
@@ -662,7 +662,7 @@ fun ActiveJobMiniCard(job: com.piecejob.core.data.remote.dto.JobDto, onClick: ()
                 Text(
                     text = when {
                         isCompleted -> "Tap to review"
-                        isNegotiation -> "Action required to proceed with task"
+                        isNegotiation -> "Finalize agreement to proceed"
                         else -> "Status: ${job.status}"
                     }, 
                     fontSize = 12.sp, 

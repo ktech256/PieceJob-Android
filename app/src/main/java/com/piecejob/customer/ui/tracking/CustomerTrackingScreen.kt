@@ -170,9 +170,9 @@ fun CustomerTrackingScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
                     Icon(Icons.Default.HourglassEmpty, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFFFA000))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Negotiating Price", fontWeight = FontWeight.Black, fontSize = 20.sp)
+                    Text("Negotiation Session", fontWeight = FontWeight.Black, fontSize = 20.sp)
                     Text(
-                        "A negotiation session is currently active for this job. Please finalize the agreement to proceed.",
+                        text = if (job?.status == "ACCEPTED") "Price agreed. Waiting for provider to confirm dispatch." else "Finalize task details and price agreement to proceed with tracking.",
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         color = Color.Gray,
                         modifier = Modifier.padding(top = 8.dp)

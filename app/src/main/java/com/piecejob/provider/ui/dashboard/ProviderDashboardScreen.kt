@@ -186,7 +186,7 @@ fun ProviderDashboardScreen(
                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF2E7D32))
                 }
             }
-        } else if (currentJob != null && currentJob.status == "PROVIDER_ACCEPTED") {
+        } else if (currentJob != null && (currentJob.status == "PROVIDER_ACCEPTED" || currentJob.status == "ACCEPTED")) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -203,10 +203,14 @@ fun ProviderDashboardScreen(
                     Icon(Icons.Default.PendingActions, contentDescription = null, tint = Color(0xFFFFA000))
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("NEGOTIATION REQUIRED", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFFE65100))
-                        Text("Active negotiation session for ${currentJob.serviceName ?: currentJob.serviceCode ?: "Task"}", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("RESUME NEGOTIATION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFFE65100))
+                        Text(
+                            text = if (currentJob.status == "ACCEPTED") "Price agreed. Please confirm dispatch." else "Propose price or request photos for ${currentJob.serviceName ?: currentJob.serviceCode}",
+                            fontSize = 13.sp, 
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                    Text("RESUME", color = Color(0xFFE65100), fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    Text("OPEN", color = Color(0xFFE65100), fontWeight = FontWeight.Black, fontSize = 12.sp)
                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFFFA000))
                 }
             }
@@ -488,14 +492,14 @@ fun ShadowBanNotice() {
 @Composable
 fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, onStart: (String) -> Unit, onComplete: (String) -> Unit, onNavigateToSubScreen: (String) -> Unit, onClick: () -> Unit) {
     val isCompleted = job.status == "COMPLETED"
-    val isNegotiationPending = job.status == "PROVIDER_ACCEPTED"
+    val isNegotiationPending = job.status == "PROVIDER_ACCEPTED" || job.status == "ACCEPTED"
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { 
                 if (isNegotiationPending) {
-                    onComplete(job.id) // Reuse the onClick path to go to Chat via parent navigation logic
+                    onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.customerId ?: ""))
                 } else {
                     onClick() 
                 }
@@ -520,7 +524,7 @@ fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, o
                         else if (isNegotiationPending) Color(0xFFFFA000)
                         else Color(0xFF4CAF50), CircleShape))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = if (isCompleted) "PENDING RATING" else if (isNegotiationPending) "NEGOTIATION PENDING" else "CURRENT ACTIVE JOB", fontWeight = FontWeight.Black, color = if (isCompleted) Color(0xFF1976D2) else if (isNegotiationPending) Color(0xFFE65100) else Color(0xFF4CAF50), fontSize = 11.sp, letterSpacing = 1.sp)
+                    Text(text = if (isCompleted) "PENDING RATING" else if (isNegotiationPending) "NEGOTIATION SESSION" else "CURRENT ACTIVE JOB", fontWeight = FontWeight.Black, color = if (isCompleted) Color(0xFF1976D2) else if (isNegotiationPending) Color(0xFFE65100) else Color(0xFF4CAF50), fontSize = 11.sp, letterSpacing = 1.sp)
                 }
                 
                 Surface(
@@ -559,7 +563,7 @@ fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, o
                 Box(modifier = Modifier.weight(1f)) {
                     val isActionLoading = isLoading
                     when (job.status) {
-                        "PROVIDER_ACCEPTED" -> Button(
+                        "PROVIDER_ACCEPTED", "ACCEPTED" -> Button(
                             onClick = { 
                                 onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.customerId ?: ""))
                             },
@@ -567,6 +571,7 @@ fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, o
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
                         ) { Text("RESUME NEGOTIATION", fontWeight = FontWeight.Bold) }
+// ...
 
                         "ACCEPTED" -> Button(
                             onClick = { onArrive(job.id) },

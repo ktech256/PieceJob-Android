@@ -255,9 +255,9 @@ fun ProviderTrackingScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
                     Icon(Icons.Default.HourglassEmpty, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFFFA000))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Negotiation in Progress", fontWeight = FontWeight.Black, fontSize = 20.sp)
+                    Text("Negotiation Session Active", fontWeight = FontWeight.Black, fontSize = 20.sp)
                     Text(
-                        "You have an active negotiation session for this job. Navigation is locked until the agreement is finalized.",
+                        text = if (job?.status == "ACCEPTED") "Price agreed. Please confirm dispatch to start navigation." else "Navigation and exact location are locked until task details and price are agreed.",
                         textAlign = TextAlign.Center,
                         color = Color.Gray,
                         modifier = Modifier.padding(top = 8.dp)

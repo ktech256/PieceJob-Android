@@ -191,7 +191,7 @@ fun NegotiationScreen(
                                 ) {
                                     Icon(Icons.Default.PhotoCamera, null, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(4.dp))
-                                    Text("Request Photos", fontSize = 11.sp)
+                                    Text("Request Task Photos", fontSize = 11.sp)
                                 }
                             } else if (photoRequired && hasPhotos && !photosSeen) {
                                 Button(
@@ -202,7 +202,7 @@ fun NegotiationScreen(
                                 ) {
                                     Icon(Icons.Default.Visibility, null, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(4.dp))
-                                    Text("Photos Reviewed", fontSize = 11.sp)
+                                    Text("I've Seen the Photos", fontSize = 11.sp)
                                 }
                             } else if (negRequired && jobState?.priceStatus != "ACCEPTED") {
                                 val canPropose = if (photoRequired) photosSeen else true
@@ -211,19 +211,19 @@ fun NegotiationScreen(
                                     modifier = Modifier.weight(1f),
                                     enabled = canPropose,
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (canPropose) Color(0xFFFFA000) else Color.LightGray
+                                    )
                                 ) {
                                     Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(4.dp))
                                     Text("Propose Price", fontSize = 11.sp)
                                 }
-                            } else if (jobState?.status == "PROVIDER_ACCEPTED") {
-                                // No neg required, but in PROVIDER_ACCEPTED (likely waiting for photos)
-                                val canDispatch = if (photoRequired) photosSeen else true
+                            } else if (jobState?.status == "ACCEPTED") {
+                                // Price agreed or not required, but dispatch pending
                                 Button(
                                     onClick = { viewModel.confirmDispatch() },
                                     modifier = Modifier.weight(1f),
-                                    enabled = canDispatch,
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                                 ) {
@@ -448,15 +448,22 @@ fun NegotiationProgressTracker(job: JobDto?, service: ServiceDto?) {
     
     val steps = remember(job.status, job.priceStatus, job.taskPhotosSeen, photoRequired, negRequired) {
         mutableListOf<NegotiationStep>().apply {
+            // Step 1: Request Accepted
             add(NegotiationStep("Request Accepted", true))
             
-            val photosStepCompleted = if (photoRequired) job.taskPhotosSeen == true else true
-            add(NegotiationStep("Photos Shared", photosStepCompleted))
+            // Step 2: Photos Shared (only if required)
+            if (photoRequired) {
+                add(NegotiationStep("Photos Shared", job.taskPhotosSeen == true))
+            }
             
-            val priceStepCompleted = if (negRequired) job.priceStatus == "ACCEPTED" else true
-            add(NegotiationStep("Price Agreed", priceStepCompleted))
+            // Step 3: Price Agreed (only if required)
+            if (negRequired) {
+                add(NegotiationStep("Price Agreed", job.priceStatus == "ACCEPTED"))
+            }
             
-            add(NegotiationStep("Provider Dispatched", job.status != "PROVIDER_ACCEPTED"))
+            // Step 4: Provider Dispatched
+            val isDispatched = !listOf("DRAFT", "REQUEST_CREATED", "PAYMENT_PENDING", "BOOKING_FEE_PAID", "BROADCASTING", "BROADCASTED", "PROVIDER_ACCEPTED", "ACCEPTED").contains(job.status)
+            add(NegotiationStep("Provider Dispatched", isDispatched))
         }
     }
 

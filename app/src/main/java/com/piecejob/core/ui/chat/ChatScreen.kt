@@ -52,7 +52,7 @@ fun ChatScreen(
     var priceNote by remember { mutableStateOf("") }
     
     val isProvider = com.piecejob.BuildConfig.FLAVOR == "provider"
-    val isNegotiating = jobState?.status == "PROVIDER_ACCEPTED" || jobState?.priceStatus == "PENDING"
+    val isNegotiating = jobState?.status == "PROVIDER_ACCEPTED" || jobState?.status == "ACCEPTED" || jobState?.priceStatus == "PENDING"
 
     LaunchedEffect(jobState?.status, jobState?.priceStatus) {
         if (isNegotiating) {

@@ -122,7 +122,7 @@ fun CustomerJobCard(job: JobDto, onClick: () -> Unit) {
             
             Spacer(modifier = Modifier.height(16.dp))
 
-            val isNegotiating = job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING"
+            val isNegotiating = job.status == "PROVIDER_ACCEPTED" || job.status == "ACCEPTED" || job.priceStatus == "PENDING"
             if (isNegotiating) {
                 Button(
                     onClick = onClick,
