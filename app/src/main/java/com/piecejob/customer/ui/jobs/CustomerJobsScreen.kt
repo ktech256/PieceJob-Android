@@ -121,6 +121,18 @@ fun CustomerJobCard(job: JobDto, onClick: () -> Unit) {
             JobInfoRow(label = "Location", value = job.location?.address ?: "Location Shared")
             
             Spacer(modifier = Modifier.height(16.dp))
+
+            val isNegotiating = job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING"
+            if (isNegotiating) {
+                Button(
+                    onClick = onClick,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
+                ) {
+                    Text("RESUME NEGOTIATION", fontWeight = FontWeight.Black)
+                }
+            }
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(text = "Total Amount", fontSize = 12.sp, color = Color.Gray)

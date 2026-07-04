@@ -662,15 +662,27 @@ fun ActiveJobMiniCard(job: com.piecejob.core.data.remote.dto.JobDto, onClick: ()
                 Text(
                     text = when {
                         isCompleted -> "Tap to review"
-                        isNegotiation -> "Provider waiting for price agreement"
+                        isNegotiation -> "Action required to proceed with task"
                         else -> "Status: ${job.status}"
                     }, 
                     fontSize = 12.sp, 
                     color = Color.Gray
                 )
             }
-            Spacer(modifier = Modifier.weight(1f))
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+            if (isNegotiation) {
+                Spacer(modifier = Modifier.weight(1f))
+                Button(
+                    onClick = onClick,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000)),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text("RESUME", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                }
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+            }
         }
     }
 }

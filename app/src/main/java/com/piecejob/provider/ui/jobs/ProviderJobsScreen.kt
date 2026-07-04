@@ -144,14 +144,14 @@ fun JobCard(job: JobDto, isLoading: Boolean, onNavigateToSubScreen: (String) -> 
                         Text("ACCEPT JOB")
                     }
                 }
-            } else if (job.status == "PROVIDER_ACCEPTED") {
+            } else if (job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING") {
                 Button(
                     onClick = { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.customerId ?: "")) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
                 ) {
-                    Text("OPEN NEGOTIATION")
+                    Text("RESUME NEGOTIATION")
                 }
             } else {
                 val statusColor = when (job.status) {

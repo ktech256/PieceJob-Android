@@ -101,6 +101,14 @@ class ChatViewModel @Inject constructor(
 
     fun sendMessage(receiverId: String, text: String) {
         val jobId = currentJobId ?: return
+        
+        // UI Side Lock
+        val job = _jobState.value
+        if (job?.status == "PROVIDER_ACCEPTED" || job?.priceStatus == "PENDING") {
+            Log.w("FORENSIC", "CHAT_LOCKED | Free text blocked during negotiation")
+            return
+        }
+
         val tag = if (com.piecejob.BuildConfig.FLAVOR == "provider") "PROVIDER_CHAT_SEND" else "CUSTOMER_CHAT_SEND"
         Log.d("FORENSIC", "$tag | To: $receiverId | Text: $text")
         
@@ -247,6 +255,13 @@ class ChatViewModel @Inject constructor(
                 },
                 createdAt = json.optString("createdAt")
             )
+
+            // IF it's a negotiation message, refresh job state
+            val type = message.metadata?.get("type") as? String
+            if (type != null && listOf("PRICE_PROPOSAL", "PRICE_ACCEPTED", "PRICE_REJECTED", "PHOTO_REQUEST", "PHOTO_UPLOAD", "PHOTOS_SEEN").contains(type)) {
+                Log.d("FORENSIC", "CHAT_SOCKET_RECEIVED | Negotiation Event ($type). Refreshing Job Config.")
+                loadJobConfig(jobId)
+            }
 
             // Deduplication
             if (_messages.value.none { it.id == message.id }) {

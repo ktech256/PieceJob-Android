@@ -4,10 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.PhotoCamera
@@ -19,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -26,12 +29,15 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.piecejob.core.data.remote.ServiceDto
 import com.piecejob.core.data.remote.dto.MessageDto
+import com.piecejob.core.data.remote.dto.JobDto
+import com.piecejob.core.data.remote.dto.PriceProposalDto
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
-
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -46,6 +52,7 @@ import androidx.compose.ui.window.DialogProperties
 fun NegotiationScreen(
     jobId: String,
     otherUserId: String,
+    currentUserId: String = "",
     viewModel: ChatViewModel = hiltViewModel(),
     onBack: () -> Unit,
     onNegotiationComplete: (String, String) -> Unit
@@ -65,17 +72,23 @@ fun NegotiationScreen(
     var showPhotoPicker by remember { mutableStateOf(false) }
     val isProvider = com.piecejob.BuildConfig.FLAVOR == "provider"
 
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            viewModel.uploadTaskPhotos(uris.take(4))
+        }
+    }
+
     if (showPhotoPicker) {
         ModalBottomSheet(onDismissRequest = { showPhotoPicker = false }) {
             Column(modifier = Modifier.padding(16.dp).padding(bottom = 32.dp)) {
                 Text("Select Photo Source", fontWeight = FontWeight.Black, modifier = Modifier.padding(bottom = 16.dp))
-                PickerOption(Icons.Default.CameraAlt, "Take Photo") {
-                    // Logic for single photo via camera can be added here
-                    // For now we use gallery for multiple
+                PickerOption(androidx.compose.material.icons.Icons.Default.CameraAlt, "Take Photo") {
                     showPhotoPicker = false
                     photoPickerLauncher.launch("image/*")
                 }
-                PickerOption(Icons.Default.PhotoLibrary, "Choose From Gallery") {
+                PickerOption(androidx.compose.material.icons.Icons.Default.PhotoLibrary, "Choose From Gallery") {
                     showPhotoPicker = false
                     photoPickerLauncher.launch("image/*")
                 }
@@ -84,22 +97,6 @@ fun NegotiationScreen(
                     Text("CANCEL")
                 }
             }
-        }
-    }
-
-    if (selectedPhotosForGallery != null) {
-        FullscreenPhotoGallery(
-            photos = selectedPhotosForGallery!!,
-            initialIndex = initialPhotoIndex,
-            onDismiss = { selectedPhotosForGallery = null }
-        )
-    }
-
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetMultipleContents()
-    ) { uris ->
-        if (uris.isNotEmpty()) {
-            viewModel.uploadTaskPhotos(uris.take(4))
         }
     }
 
@@ -294,6 +291,24 @@ fun NegotiationScreen(
                         }
                     }
                     
+                    item {
+                        NegotiationProgressTracker(jobState, serviceConfig)
+                    }
+
+                    item {
+                        NegotiationInfoCard(jobState, serviceConfig)
+                    }
+
+                    jobState?.activeProposal?.let { proposal ->
+                        item {
+                            ActiveProposalHeader(proposal, currentUserId) { action ->
+                                if (action == "ACCEPT") viewModel.respondToProposal(proposal.id, "ACCEPT")
+                                else if (action == "REJECT") viewModel.respondToProposal(proposal.id, "REJECT")
+                                else if (action == "COUNTER") showPriceDialog = true
+                            }
+                        }
+                    }
+                    
                     items(messages) { msg ->
                         ChatBubble(
                             msg = msg,
@@ -318,11 +333,6 @@ fun NegotiationScreen(
         }
     }
 }
-
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
-import androidx.compose.ui.graphics.graphicsLayer
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FullscreenPhotoGallery(
@@ -377,6 +387,215 @@ fun FullscreenPhotoGallery(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(32.dp),
                 fontWeight = FontWeight.Bold
             )
+        }
+    }
+}
+
+@Composable
+fun PickerOption(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(label, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun NegotiationInfoCard(job: JobDto?, service: ServiceDto?) {
+    if (job == null) return
+    
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color.LightGray)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Session Intelligence", fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                InfoBadge("Round: ${job.negotiationRounds ?: 0} / 4")
+                if (job.taskPhotosRequested == true) {
+                    val photoStatus = if (job.taskPhotosSeen == true) "Photos Reviewed" else if (!job.taskPhotos.isNullOrEmpty()) "Photos Uploaded" else "Awaiting Photos"
+                    InfoBadge(photoStatus)
+                }
+            }
+            
+            if (job.agreedPrice != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Price Agreed: R${job.agreedPrice}", fontWeight = FontWeight.Black, color = Color(0xFF2E7D32), fontSize = 16.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun NegotiationProgressTracker(job: JobDto?, service: ServiceDto?) {
+    if (job == null) return
+    
+    val photoRequired = service?.photoSharingRequired == true
+    val negRequired = service?.priceNegotiationRequired == true
+    
+    val steps = remember(job.status, job.priceStatus, job.taskPhotosSeen, photoRequired, negRequired) {
+        mutableListOf<NegotiationStep>().apply {
+            add(NegotiationStep("Request Accepted", true))
+            
+            val photosStepCompleted = if (photoRequired) job.taskPhotosSeen == true else true
+            add(NegotiationStep("Photos Shared", photosStepCompleted))
+            
+            val priceStepCompleted = if (negRequired) job.priceStatus == "ACCEPTED" else true
+            add(NegotiationStep("Price Agreed", priceStepCompleted))
+            
+            add(NegotiationStep("Provider Dispatched", job.status != "PROVIDER_ACCEPTED"))
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, Color(0xFFEEEEEE))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            steps.forEachIndexed { index, step ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(
+                                color = if (step.isCompleted) Color(0xFF2E7D32) else Color(0xFFEEEEEE),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (step.isCompleted) {
+                            Icon(Icons.Default.Check, null, modifier = Modifier.size(14.dp), tint = Color.White)
+                        } else {
+                            Text("${index + 1}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = step.label,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (step.isCompleted) Color.Black else Color.Gray,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 10.sp
+                    )
+                }
+                
+                if (index < steps.size - 1) {
+                    Box(
+                        modifier = Modifier
+                            .height(1.dp)
+                            .weight(0.5f)
+                            .background(if (step.isCompleted && steps[index+1].isCompleted) Color(0xFF2E7D32) else Color(0xFFEEEEEE))
+                            .offset(y = (-8).dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+data class NegotiationStep(val label: String, val isCompleted: Boolean)
+
+@Composable
+fun InfoBadge(text: String) {
+    Surface(
+        color = Color(0xFFF5F5F5),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(0.5.dp, Color.LightGray)
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+fun ActiveProposalHeader(proposal: PriceProposalDto, currentUserId: String, onAction: (String) -> Unit) {
+    val isMe = proposal.senderId == currentUserId
+    
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isMe) Color(0xFFF1F8E9) else Color(0xFFE3F2FD)
+        ),
+        border = BorderStroke(1.dp, (if (isMe) Color(0xFF4CAF50) else Color(0xFF1976D2)).copy(alpha = 0.5f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Sell, 
+                    contentDescription = null, 
+                    tint = if (isMe) Color(0xFF2E7D32) else Color(0xFF1976D2), 
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isMe) "Your Proposal" else "Incoming Proposal", 
+                    fontWeight = FontWeight.Black, 
+                    color = if (isMe) Color(0xFF2E7D32) else Color(0xFF1976D2)
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text("Amount: R${proposal.amount}", fontSize = 24.sp, fontWeight = FontWeight.Black)
+            if (!proposal.note.isNullOrBlank()) {
+                Text("Note: ${proposal.note}", fontSize = 12.sp, color = Color.DarkGray, modifier = Modifier.padding(top = 4.dp))
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            if (isMe) {
+                Text("Waiting for counterparty to respond...", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+            } else {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = { onAction("REJECT") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) { Text("REJECT", fontSize = 11.sp) }
+                    
+                    Button(
+                        onClick = { onAction("COUNTER") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000)),
+                        contentPadding = PaddingValues(0.dp)
+                    ) { Text("COUNTER", fontSize = 11.sp) }
+                    
+                    Button(
+                        onClick = { onAction("ACCEPT") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                        contentPadding = PaddingValues(0.dp)
+                    ) { Text("ACCEPT", fontSize = 11.sp) }
+                }
+            }
         }
     }
 }

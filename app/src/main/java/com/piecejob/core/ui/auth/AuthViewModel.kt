@@ -293,6 +293,10 @@ class AuthViewModel @Inject constructor(
     fun isLoggedIn(): Boolean {
         return sessionManager.getAuthToken() != null
     }
+
+    fun getUserId(): String? {
+        return sessionManager.getUserId()
+    }
 }
 
 sealed class AuthState {

@@ -37,6 +37,8 @@ data class JobDto(
     @SerializedName("taskPhotos") val taskPhotos: List<String>?,
     @SerializedName("agreedPrice") val agreedPrice: Double?,
     @SerializedName("priceStatus") val priceStatus: String?,
+    @SerializedName("negotiationRounds") val negotiationRounds: Int?,
+    @SerializedName("activeProposal") val activeProposal: PriceProposalDto?,
     @SerializedName("isForSomeoneElse") val isForSomeoneElse: Boolean?,
     @SerializedName("recipientName") val recipientName: String?,
     @SerializedName("recipientPhone") val recipientPhone: String?,

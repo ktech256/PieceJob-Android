@@ -142,6 +142,7 @@ fun CustomerTrackingScreen(
     }
 
     val isTerminalState = job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED"
+    val isNegotiating = job?.status == "PROVIDER_ACCEPTED" || job?.priceStatus == "PENDING"
 
     Box(modifier = Modifier.fillMaxSize()) {
         // MAP
@@ -150,18 +151,18 @@ fun CustomerTrackingScreen(
             cameraPositionState = cameraPositionState,
             uiSettings = MapUiSettings(
                 zoomControlsEnabled = false, 
-                myLocationButtonEnabled = !isTerminalState,
-                scrollGesturesEnabled = !isTerminalState,
-                zoomGesturesEnabled = !isTerminalState,
-                tiltGesturesEnabled = !isTerminalState,
-                rotationGesturesEnabled = !isTerminalState
+                myLocationButtonEnabled = !isTerminalState && !isNegotiating,
+                scrollGesturesEnabled = !isTerminalState && !isNegotiating,
+                zoomGesturesEnabled = !isTerminalState && !isNegotiating,
+                tiltGesturesEnabled = !isTerminalState && !isNegotiating,
+                rotationGesturesEnabled = !isTerminalState && !isNegotiating
             ),
-            properties = MapProperties(isMyLocationEnabled = !isTerminalState)
+            properties = MapProperties(isMyLocationEnabled = !isTerminalState && !isNegotiating)
         ) {
-            // ... same map logic ...
+            // ...
         }
 
-        if (job?.status == "PROVIDER_ACCEPTED") {
+        if (isNegotiating) {
             Box(
                 modifier = Modifier.fillMaxSize().background(Color.White),
                 contentAlignment = Alignment.Center
@@ -171,14 +172,18 @@ fun CustomerTrackingScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("Negotiating Price", fontWeight = FontWeight.Black, fontSize = 20.sp)
                     Text(
-                        "The provider is currently reviewing details. Please check Negotiation Session for proposals.",
+                        "A negotiation session is currently active for this job. Please finalize the agreement to proceed.",
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         color = Color.Gray,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                     Spacer(modifier = Modifier.height(24.dp))
-                    Button(onClick = { onChatOpen(job?.providerId ?: "") }) { // Using onChatOpen callback which parent maps to Negotiation
-                        Text("OPEN NEGOTIATION")
+                    Button(
+                        onClick = { onChatOpen(job?.providerId ?: "") },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
+                    ) {
+                        Text("RESUME NEGOTIATION", fontWeight = FontWeight.Black)
                     }
                 }
             }
@@ -262,6 +267,7 @@ fun CustomerTrackingScreen(
                         SearchingPanel(job?.serviceName ?: job?.serviceCode ?: "Service", nearbyProviders.size)
                     } else {
                         val isTerminalState = job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED"
+    val isNegotiating = job?.status == "PROVIDER_ACCEPTED" || job?.priceStatus == "PENDING"
                         AssignedProviderPanel(
                             job = job!!,
                             eta = eta,

@@ -157,8 +157,9 @@ fun ProviderTrackingScreen(
         val nav = navigator ?: return@LaunchedEffect
         val j = job ?: return@LaunchedEffect
         val status = j.status
+        val pricePending = j.priceStatus == "PENDING"
         
-        if (status == "COMPLETED" || status == "CANCELLED" || status == "PROVIDER_ACCEPTED") {
+        if (status == "COMPLETED" || status == "CANCELLED" || status == "PROVIDER_ACCEPTED" || pricePending) {
             nav.stopGuidance()
             nav.clearDestinations()
             return@LaunchedEffect
@@ -238,30 +239,36 @@ fun ProviderTrackingScreen(
         )
     }
 
+    val isNegotiating = job?.status == "PROVIDER_ACCEPTED" || job?.priceStatus == "PENDING"
+
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
             factory = { navigationView },
             modifier = Modifier.fillMaxSize()
         )
         
-        if (job?.status == "PROVIDER_ACCEPTED") {
+        if (isNegotiating) {
             Box(
                 modifier = Modifier.fillMaxSize().background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
-                    Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color.Gray)
+                    Icon(Icons.Default.HourglassEmpty, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFFFA000))
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Negotiation Pending", fontWeight = FontWeight.Black, fontSize = 20.sp)
+                    Text("Negotiation in Progress", fontWeight = FontWeight.Black, fontSize = 20.sp)
                     Text(
-                        "Navigation and exact location are locked until the price is agreed upon. Please return to Chat.",
+                        "You have an active negotiation session for this job. Navigation is locked until the agreement is finalized.",
                         textAlign = TextAlign.Center,
                         color = Color.Gray,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                     Spacer(modifier = Modifier.height(24.dp))
-                    Button(onClick = { onChatOpen(job?.customerId ?: "") }) {
-                        Text("OPEN CHAT")
+                    Button(
+                        onClick = { onChatOpen(job?.customerId ?: "") },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
+                    ) {
+                        Text("RESUME NEGOTIATION", fontWeight = FontWeight.Black)
                     }
                 }
             }

@@ -636,13 +636,3 @@ data class SubmitVerificationRequest(
     val documents: List<VerificationDocDto>,
     val extraData: Map<String, Any>? = null
 )
-
-data class FileUploadRequest(
-    val base64: String,
-    val mimeType: String,
-    val folder: String
-)
-
-data class FileUploadResponse(
-    val url: String
-)

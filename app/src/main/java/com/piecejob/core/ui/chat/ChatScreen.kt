@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -26,6 +27,7 @@ import com.piecejob.core.data.remote.dto.MessageDto
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.ui.layout.ContentScale
@@ -36,7 +38,8 @@ fun ChatScreen(
     jobId: String,
     otherUserId: String,
     viewModel: ChatViewModel = hiltViewModel(),
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNegotiationOpen: () -> Unit = {}
 ) {
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -49,12 +52,12 @@ fun ChatScreen(
     var priceNote by remember { mutableStateOf("") }
     
     val isProvider = com.piecejob.BuildConfig.FLAVOR == "provider"
+    val isNegotiating = jobState?.status == "PROVIDER_ACCEPTED" || jobState?.priceStatus == "PENDING"
 
-    LaunchedEffect(jobState?.status) {
-        if (jobState?.status == "PROVIDER_ACCEPTED") {
+    LaunchedEffect(jobState?.status, jobState?.priceStatus) {
+        if (isNegotiating) {
             // Strictly enforce the separation requested by the user.
-            // If we are in ChatScreen but the job is in negotiation, we should be in NegotiationScreen.
-            onBack() // Or navigate to Negotiation.
+            // But we keep the UI to show why it's locked.
         }
     }
 
@@ -122,32 +125,55 @@ fun ChatScreen(
         },
         bottomBar = {
             Surface(tonalElevation = 4.dp, shadowElevation = 8.dp) {
-                Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 12.dp, end = 12.dp, bottom = 12.dp, top = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                if (isNegotiating) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().background(Color(0xFFFFF9C4)).padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        OutlinedTextField(
-                            value = messageText,
-                            onValueChange = { messageText = it },
-                            modifier = Modifier.weight(1f),
-                            placeholder = { Text("Type a message...") },
-                            shape = RoundedCornerShape(24.dp)
+                        Text(
+                            "Normal messaging is locked until the negotiation phase is completed.",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF827717),
+                            textAlign = TextAlign.Center
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        IconButton(
-                            onClick = {
-                                if (messageText.isNotBlank()) {
-                                    viewModel.sendMessage(otherUserId, messageText)
-                                    messageText = ""
-                                }
-                            },
-                            enabled = messageText.isNotBlank(),
-                            colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(8.dp))
+                        Button(
+                            onClick = onNegotiationOpen,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFBC02D))
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
+                            Text("GO TO NEGOTIATION", color = Color.Black, fontSize = 11.sp)
+                        }
+                    }
+                } else {
+                    Column {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 12.dp, end = 12.dp, bottom = 12.dp, top = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedTextField(
+                                value = messageText,
+                                onValueChange = { messageText = it },
+                                modifier = Modifier.weight(1f),
+                                placeholder = { Text("Type a message...") },
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            IconButton(
+                                onClick = {
+                                    if (messageText.isNotBlank()) {
+                                        viewModel.sendMessage(otherUserId, messageText)
+                                        messageText = ""
+                                    }
+                                },
+                                enabled = messageText.isNotBlank(),
+                                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
+                            }
                         }
                     }
                 }

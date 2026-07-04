@@ -405,6 +405,7 @@ fun NavGraph(
             NegotiationScreen(
                 jobId = jobId,
                 otherUserId = otherUserId,
+                currentUserId = authViewModel.getUserId() ?: "",
                 onBack = { navController.popBackStack() },
                 onNegotiationComplete = { jId, oId ->
                     navController.navigate(Screen.Chat.passArgs(jId, oId)) {
@@ -426,7 +427,12 @@ fun NavGraph(
             ChatScreen(
                 jobId = jobId,
                 otherUserId = otherUserId,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onNegotiationOpen = {
+                    navController.navigate(Screen.Negotiation.passArgs(jobId, otherUserId)) {
+                        popUpTo(Screen.Chat.route) { inclusive = true }
+                    }
+                }
             )
         }
 

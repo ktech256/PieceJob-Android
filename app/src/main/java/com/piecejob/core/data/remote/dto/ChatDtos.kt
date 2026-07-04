@@ -38,3 +38,13 @@ data class ConversationDto(
     val lastMessageTime: String,
     val unreadCount: Int
 )
+
+data class FileUploadRequest(
+    val base64: String,
+    val mimeType: String,
+    val folder: String
+)
+
+data class FileUploadResponse(
+    val url: String
+)
