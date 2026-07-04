@@ -54,10 +54,18 @@ class ProviderMainViewModel @Inject constructor(
         viewModelScope.launch {
             notificationState.setAccepting(true)
             val res = jobRepository.acceptJob(jobId)
-            if (res.success) {
+            if (res.success && res.data != null) {
                 notificationState.dismissJobRequest()
                 alertManager.stop()
-                _navigationEvent.emit(jobId)
+                
+                val job = res.data
+                if (job.status == "PROVIDER_ACCEPTED") {
+                    // Navigate to Chat for Negotiation
+                    _navigationEvent.emit("CHAT:${jobId}:${job.customerId}")
+                } else {
+                    // Navigate to Tracking for Dispatch
+                    _navigationEvent.emit("TRACKING:${jobId}")
+                }
             } else {
                 notificationState.setAccepting(false)
             }

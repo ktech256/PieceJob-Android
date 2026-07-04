@@ -19,7 +19,8 @@ import com.piecejob.core.data.remote.dto.JobDto
 @Composable
 fun ProviderJobsScreen(
     viewModel: ProviderJobsViewModel = hiltViewModel(),
-    onNavigateToTracking: (String) -> Unit
+    onNavigateToTracking: (String) -> Unit,
+    onNavigateToSubScreen: (String) -> Unit
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Available", "Active", "Scheduled", "Completed", "Cancelled", "Disputed")
@@ -38,8 +39,18 @@ fun ProviderJobsScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.navigationEvent.collect { jobId ->
-            onNavigateToTracking(jobId)
+        viewModel.navigationEvent.collect { event ->
+            if (event.startsWith("CHAT:")) {
+                val parts = event.split(":")
+                if (parts.size >= 3) {
+                    onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Chat.passArgs(parts[1], parts[2]))
+                }
+            } else if (event.startsWith("TRACKING:")) {
+                val jobId = event.removePrefix("TRACKING:")
+                onNavigateToTracking(jobId)
+            } else {
+                onNavigateToTracking(event)
+            }
         }
     }
 
@@ -64,12 +75,12 @@ fun ProviderJobsScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 when (selectedTabIndex) {
-                    0 -> JobsList(availableJobs, isLoading) { viewModel.acceptJob(it) }
-                    1 -> JobsList(activeJobs, isLoading) { onNavigateToTracking(it) }
-                    2 -> JobsList(scheduledJobs, isLoading) { /* Detail */ }
-                    3 -> JobsList(completedJobs, isLoading) { onNavigateToTracking(it) }
-                    4 -> JobsList(cancelledJobs, isLoading) { onNavigateToTracking(it) }
-                    5 -> JobsList(disputedJobs, isLoading) { onNavigateToTracking(it) }
+                    0 -> JobsList(availableJobs, isLoading, onNavigateToSubScreen) { viewModel.acceptJob(it) }
+                    1 -> JobsList(activeJobs, isLoading, onNavigateToSubScreen) { onNavigateToTracking(it) }
+                    2 -> JobsList(scheduledJobs, isLoading, onNavigateToSubScreen) { /* Detail */ }
+                    3 -> JobsList(completedJobs, isLoading, onNavigateToSubScreen) { onNavigateToTracking(it) }
+                    4 -> JobsList(cancelledJobs, isLoading, onNavigateToSubScreen) { onNavigateToTracking(it) }
+                    5 -> JobsList(disputedJobs, isLoading, onNavigateToSubScreen) { onNavigateToTracking(it) }
                     else -> EmptyState(tabs[selectedTabIndex])
                 }
             }
@@ -78,7 +89,7 @@ fun ProviderJobsScreen(
 }
 
 @Composable
-fun JobsList(jobs: List<JobDto>, isLoading: Boolean, onAction: (String) -> Unit) {
+fun JobsList(jobs: List<JobDto>, isLoading: Boolean, onNavigateToSubScreen: (String) -> Unit, onAction: (String) -> Unit) {
     if (jobs.isEmpty()) {
         EmptyState("Jobs")
     } else {
@@ -88,14 +99,14 @@ fun JobsList(jobs: List<JobDto>, isLoading: Boolean, onAction: (String) -> Unit)
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(jobs) { job ->
-                JobCard(job, isLoading, onAction)
+                JobCard(job, isLoading, onNavigateToSubScreen, onAction)
             }
         }
     }
 }
 
 @Composable
-fun JobCard(job: JobDto, isLoading: Boolean, onAction: (String) -> Unit) {
+fun JobCard(job: JobDto, isLoading: Boolean, onNavigateToSubScreen: (String) -> Unit, onAction: (String) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -132,6 +143,15 @@ fun JobCard(job: JobDto, isLoading: Boolean, onAction: (String) -> Unit) {
                     } else {
                         Text("ACCEPT JOB")
                     }
+                }
+            } else if (job.status == "PROVIDER_ACCEPTED") {
+                Button(
+                    onClick = { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Chat.passArgs(job.id, job.customerId ?: "")) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
+                ) {
+                    Text("OPEN NEGOTIATION")
                 }
             } else {
                 val statusColor = when (job.status) {

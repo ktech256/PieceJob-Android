@@ -54,9 +54,20 @@ fun ProviderMainScreen(
     val isAccepting by viewModel.notificationState.isAccepting.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.navigationEvent.collect { jobId ->
-            Log.d("NavGraphTrace", "Auto-navigating to tracking for job $jobId")
-            onNavigateToSubScreen(Screen.ProviderTracking.passJobId(jobId))
+        viewModel.navigationEvent.collect { event ->
+            Log.d("NavGraphTrace", "Auto-navigating: $event")
+            if (event.startsWith("CHAT:")) {
+                val parts = event.split(":")
+                if (parts.size >= 3) {
+                    onNavigateToSubScreen(Screen.Chat.passArgs(parts[1], parts[2]))
+                }
+            } else if (event.startsWith("TRACKING:")) {
+                val jobId = event.removePrefix("TRACKING:")
+                onNavigateToSubScreen(Screen.ProviderTracking.passJobId(jobId))
+            } else {
+                // Backward compatibility for pure jobId
+                onNavigateToSubScreen(Screen.ProviderTracking.passJobId(event))
+            }
         }
     }
     
@@ -107,7 +118,8 @@ fun ProviderMainScreen(
                 }
                 composable(BottomBarScreen.Jobs.route) {
                     ProviderJobsScreen(
-                        onNavigateToTracking = { jobId -> onNavigateToSubScreen(Screen.ProviderTracking.passJobId(jobId)) }
+                        onNavigateToTracking = { jobId -> onNavigateToSubScreen(Screen.ProviderTracking.passJobId(jobId)) },
+                        onNavigateToSubScreen = onNavigateToSubScreen
                     )
                 }
                 composable(BottomBarScreen.Wallet.route) {

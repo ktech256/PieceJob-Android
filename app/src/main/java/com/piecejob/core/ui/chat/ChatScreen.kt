@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Sell
 import androidx.compose.material3.*
@@ -40,6 +41,7 @@ fun ChatScreen(
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val serviceConfig by viewModel.serviceConfig.collectAsState()
+    val jobState by viewModel.jobState.collectAsState()
     var messageText by remember { mutableStateOf("") }
     
     var showPriceDialog by remember { mutableStateOf(false) }
@@ -132,6 +134,13 @@ fun ChatScreen(
                                     onClick = { showPriceDialog = true },
                                     label = { Text("Propose Price", fontSize = 12.sp) },
                                     leadingIcon = { Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp)) }
+                                )
+                            } else if (jobState?.status == "PROVIDER_ACCEPTED") {
+                                // If negotiation NOT required but we are stuck in PROVIDER_ACCEPTED (likely due to photos)
+                                AssistChip(
+                                    onClick = { viewModel.confirmDispatch() },
+                                    label = { Text("Confirm Dispatch", fontSize = 12.sp) },
+                                    leadingIcon = { Icon(Icons.Default.LocalShipping, null, modifier = Modifier.size(16.dp)) }
                                 )
                             }
                         }

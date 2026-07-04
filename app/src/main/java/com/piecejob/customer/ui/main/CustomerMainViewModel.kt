@@ -25,7 +25,12 @@ class CustomerMainViewModel @Inject constructor(
         viewModelScope.launch {
             val response = jobRepository.getActiveJob()
             if (response.success && response.data != null) {
-                _navigationEvent.emit(response.data.id)
+                val job = response.data
+                if (job.status == "PROVIDER_ACCEPTED") {
+                    _navigationEvent.emit("CHAT:${job.id}:${job.providerId}")
+                } else {
+                    _navigationEvent.emit(job.id)
+                }
             }
         }
     }

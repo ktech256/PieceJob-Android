@@ -43,8 +43,15 @@ fun CustomerMainScreen(
     val navController = rememberNavController()
 
     LaunchedEffect(Unit) {
-        viewModel.navigationEvent.collect { jobId ->
-            onNavigateToSubScreen(Screen.CustomerTracking.passJobId(jobId))
+        viewModel.navigationEvent.collect { event ->
+            if (event.startsWith("CHAT:")) {
+                val parts = event.split(":")
+                if (parts.size >= 3) {
+                    onNavigateToSubScreen(Screen.Chat.passArgs(parts[1], parts[2]))
+                }
+            } else {
+                onNavigateToSubScreen(Screen.CustomerTracking.passJobId(event))
+            }
         }
     }
 

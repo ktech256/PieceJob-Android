@@ -250,6 +250,9 @@ interface PieceJobApi {
     @POST("jobs/{jobId}/upload-photos")
     suspend fun uploadPhotos(@Path("jobId") jobId: String, @Body request: UploadPhotosRequest): ApiResponse<Unit>
 
+    @POST("jobs/{jobId}/confirm-dispatch")
+    suspend fun confirmDispatch(@Path("jobId") jobId: String): ApiResponse<JobDto>
+
     @POST("negotiation/propose")
     suspend fun proposePrice(@Body request: ProposePriceRequest): ApiResponse<PriceProposalDto>
 

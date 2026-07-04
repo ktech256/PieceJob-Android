@@ -158,7 +158,7 @@ fun ProviderTrackingScreen(
         val j = job ?: return@LaunchedEffect
         val status = j.status
         
-        if (status == "COMPLETED" || status == "CANCELLED") {
+        if (status == "COMPLETED" || status == "CANCELLED" || status == "PROVIDER_ACCEPTED") {
             nav.stopGuidance()
             nav.clearDestinations()
             return@LaunchedEffect

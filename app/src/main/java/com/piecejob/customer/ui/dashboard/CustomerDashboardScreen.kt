@@ -134,7 +134,14 @@ fun CustomerDashboardScreen(
             item {
                 ActiveJobMiniCard(
                     job = activeJob!!,
-                    onClick = { onNavigateToTracking(activeJob!!.id) }
+                    onClick = { 
+                        if (activeJob!!.status == "PROVIDER_ACCEPTED") {
+                            // Go to Chat for negotiation
+                            onNavigateToTracking(com.piecejob.core.ui.navigation.Screen.Chat.passArgs(activeJob!!.id, activeJob!!.providerId ?: ""))
+                        } else {
+                            onNavigateToTracking(activeJob!!.id) 
+                        }
+                    }
                 )
             }
         }
@@ -612,17 +619,53 @@ fun RecentServiceAvatar(label: String, onClick: () -> Unit = {}) {
 @Composable
 fun ActiveJobMiniCard(job: com.piecejob.core.data.remote.dto.JobDto, onClick: () -> Unit) {
     val isCompleted = job.status == "COMPLETED"
+    val isNegotiation = job.status == "PROVIDER_ACCEPTED"
+    
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp).clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isCompleted) Color(0xFFE3F2FD) else Color(0xFFE8F5E9))
+        colors = CardDefaults.cardColors(
+            containerColor = when {
+                isCompleted -> Color(0xFFE3F2FD)
+                isNegotiation -> Color(0xFFFFF8E1)
+                else -> Color(0xFFE8F5E9)
+            }
+        )
     ) {
         Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(imageVector = if (isCompleted) Icons.Default.Grade else Icons.Default.Timer, contentDescription = null, tint = if (isCompleted) Color(0xFF1976D2) else Color(0xFF2E7D32))
+            Icon(
+                imageVector = when {
+                    isCompleted -> Icons.Default.Grade
+                    isNegotiation -> Icons.Default.Chat
+                    else -> Icons.Default.Timer
+                }, 
+                contentDescription = null, 
+                tint = when {
+                    isCompleted -> Color(0xFF1976D2)
+                    isNegotiation -> Color(0xFFFFA000)
+                    else -> Color(0xFF2E7D32)
+                }
+            )
             Spacer(modifier = Modifier.width(12.dp))
             Column {
-                Text(text = if (isCompleted) "Rate Your Experience" else "Active Job: ${job.serviceName ?: job.serviceCode}", fontWeight = FontWeight.Black, fontSize = 15.sp)
-                Text(text = if (isCompleted) "Tap to review" else "Status: ${job.status}", fontSize = 12.sp, color = Color.Gray)
+                Text(
+                    text = when {
+                        isCompleted -> "Rate Your Experience"
+                        isNegotiation -> "Negotiation Pending"
+                        else -> "Active Job: ${job.serviceName ?: job.serviceCode}"
+                    }, 
+                    fontWeight = FontWeight.Black, 
+                    fontSize = 15.sp
+                )
+                Text(
+                    text = when {
+                        isCompleted -> "Tap to review"
+                        isNegotiation -> "Provider waiting for price agreement"
+                        else -> "Status: ${job.status}"
+                    }, 
+                    fontSize = 12.sp, 
+                    color = Color.Gray
+                )
             }
             Spacer(modifier = Modifier.weight(1f))
             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)

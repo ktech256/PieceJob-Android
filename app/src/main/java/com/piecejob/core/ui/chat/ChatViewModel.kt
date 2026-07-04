@@ -31,6 +31,9 @@ class ChatViewModel @Inject constructor(
     private val _serviceConfig = MutableStateFlow<ServiceDto?>(null)
     val serviceConfig: StateFlow<ServiceDto?> = _serviceConfig
 
+    private val _jobState = MutableStateFlow<JobDto?>(null)
+    val jobState: StateFlow<JobDto?> = _jobState
+
     private var currentJobId: String? = null
 
     fun initChat(jobId: String) {
@@ -41,6 +44,14 @@ class ChatViewModel @Inject constructor(
         socketManager.joinJob(jobId)
         
         viewModelScope.launch {
+            socketManager.statusEventFlow.collect { event ->
+                if (event.jobId == jobId) {
+                    loadJobConfig(jobId)
+                }
+            }
+        }
+
+        viewModelScope.launch {
             socketManager.messageEventFlow.collect { json ->
                 handleIncomingMessage(json)
             }
@@ -50,10 +61,18 @@ class ChatViewModel @Inject constructor(
     private fun loadJobConfig(jobId: String) {
         viewModelScope.launch {
             val jobRes = jobRepository.getJobById(jobId)
-            if (jobRes.success && jobRes.data?.serviceCode != null) {
-                val servRes = serviceRepository.getServiceDetails(jobRes.data.serviceCode)
-                if (servRes.success) {
-                    _serviceConfig.value = servRes.data
+            if (jobRes.success && jobRes.data != null) {
+                _jobState.value = jobRes.data
+                val serviceCode = jobRes.data.serviceCode
+                android.util.Log.d("FORENSIC", "CHAT_LOAD_CONFIG | Job: $jobId | Service: $serviceCode")
+                if (serviceCode != null) {
+                    val servRes = serviceRepository.getServiceDetails(serviceCode)
+                    if (servRes.success && servRes.data != null) {
+                        android.util.Log.d("FORENSIC", "CHAT_CONFIG_LOADED | Photos: ${servRes.data.photoSharingRequired}, Neg: ${servRes.data.priceNegotiationRequired}")
+                        _serviceConfig.value = servRes.data
+                    } else {
+                        android.util.Log.e("FORENSIC", "CHAT_CONFIG_FAILED | Error: ${servRes.message}")
+                    }
                 }
             }
         }
@@ -114,6 +133,17 @@ class ChatViewModel @Inject constructor(
     fun respondToProposal(proposalId: String, action: String) {
         viewModelScope.launch {
             repository.respondToProposal(proposalId, action)
+        }
+    }
+
+    fun confirmDispatch() {
+        val jobId = currentJobId ?: return
+        viewModelScope.launch {
+            val res = jobRepository.confirmDispatch(jobId)
+            if (res.success) {
+                // Socket listener should catch the status update, but we refresh anyway
+                loadJobConfig(jobId)
+            }
         }
     }
 

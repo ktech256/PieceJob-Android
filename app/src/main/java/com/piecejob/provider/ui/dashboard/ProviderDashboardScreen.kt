@@ -186,6 +186,30 @@ fun ProviderDashboardScreen(
                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF2E7D32))
                 }
             }
+        } else if (currentJob != null && currentJob.status == "PROVIDER_ACCEPTED") {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clickable { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Chat.passArgs(currentJob.id, currentJob.customerId ?: "")) },
+                color = Color(0xFFFFF8E1),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFA000))
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.PendingActions, contentDescription = null, tint = Color(0xFFFFA000))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("NEGOTIATION REQUIRED", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFFE65100))
+                        Text("Open chat to propose price or request photos", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Text("NEGOTIATE", color = Color(0xFFE65100), fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFFFA000))
+                }
+            }
         }
 
         LazyColumn(
@@ -210,8 +234,20 @@ fun ProviderDashboardScreen(
                         isLoading = isLoading,
                         onStart = { viewModel.startJob(it) },
                         onComplete = { viewModel.completeJob(it) },
-                        onArrive = { viewModel.markArrival(it) },
-                        onClick = { onNavigateToTracking(currentJob.id) }
+                        onArrive = { id ->
+                            if (currentJob.status == "PROVIDER_ACCEPTED") {
+                                onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Chat.passArgs(currentJob.id, currentJob.customerId ?: ""))
+                            } else {
+                                viewModel.markArrival(id)
+                            }
+                        },
+                        onClick = { 
+                            if (currentJob.status == "PROVIDER_ACCEPTED") {
+                                onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Chat.passArgs(currentJob.id, currentJob.customerId ?: ""))
+                            } else {
+                                onNavigateToTracking(currentJob.id) 
+                            }
+                        }
                     )
                 }
             }
@@ -451,14 +487,25 @@ fun ShadowBanNotice() {
 @Composable
 fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, onStart: (String) -> Unit, onComplete: (String) -> Unit, onClick: () -> Unit) {
     val isCompleted = job.status == "COMPLETED"
+    val isNegotiationPending = job.status == "PROVIDER_ACCEPTED"
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable { 
+                if (isNegotiationPending) {
+                    onComplete(job.id) // Reuse the onClick path to go to Chat via parent navigation logic
+                } else {
+                    onClick() 
+                }
+            },
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(2.dp, if (isCompleted) Color(0xFF1976D2).copy(alpha = 0.5f) else Color(0xFF4CAF50))
+        border = androidx.compose.foundation.BorderStroke(2.dp, 
+            if (isCompleted) Color(0xFF1976D2).copy(alpha = 0.5f) 
+            else if (isNegotiationPending) Color(0xFFFFA000)
+            else Color(0xFF4CAF50))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(
@@ -467,19 +514,22 @@ fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, o
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(8.dp).background(if (isCompleted) Color(0xFF1976D2) else Color(0xFF4CAF50), CircleShape))
+                    Box(modifier = Modifier.size(8.dp).background(
+                        if (isCompleted) Color(0xFF1976D2) 
+                        else if (isNegotiationPending) Color(0xFFFFA000)
+                        else Color(0xFF4CAF50), CircleShape))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = if (isCompleted) "PENDING RATING" else "CURRENT ACTIVE JOB", fontWeight = FontWeight.Black, color = if (isCompleted) Color(0xFF1976D2) else Color(0xFF4CAF50), fontSize = 11.sp, letterSpacing = 1.sp)
+                    Text(text = if (isCompleted) "PENDING RATING" else if (isNegotiationPending) "NEGOTIATION PENDING" else "CURRENT ACTIVE JOB", fontWeight = FontWeight.Black, color = if (isCompleted) Color(0xFF1976D2) else if (isNegotiationPending) Color(0xFFE65100) else Color(0xFF4CAF50), fontSize = 11.sp, letterSpacing = 1.sp)
                 }
                 
                 Surface(
-                    color = (if (isCompleted) Color(0xFF1976D2) else Color(0xFF4CAF50)).copy(alpha = 0.1f),
+                    color = (if (isCompleted) Color(0xFF1976D2) else if (isNegotiationPending) Color(0xFFFFA000) else Color(0xFF4CAF50)).copy(alpha = 0.1f),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
                         text = job.status.replace("_", " "),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        color = if (isCompleted) Color(0xFF1565C0) else Color(0xFF2E7D32),
+                        color = if (isCompleted) Color(0xFF1565C0) else if (isNegotiationPending) Color(0xFFBF360C) else Color(0xFF2E7D32),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Black
                     )
@@ -508,6 +558,13 @@ fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, o
                 Box(modifier = Modifier.weight(1f)) {
                     val isActionLoading = isLoading
                     when (job.status) {
+                        "PROVIDER_ACCEPTED" -> Button(
+                            onClick = { onArrive(job.id) }, // Reuse callback but we will map it to Chat in the parent
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
+                        ) { Text("OPEN NEGOTIATION", fontWeight = FontWeight.Bold) }
+
                         "ACCEPTED" -> Button(
                             onClick = { onArrive(job.id) },
                             modifier = Modifier.fillMaxWidth(),

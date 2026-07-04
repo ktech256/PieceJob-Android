@@ -232,6 +232,7 @@ fun CustomerTrackingScreen(
                     val providerName = job?.providerInfo?.firstName ?: "Provider"
                     val statusText = when (job?.status) {
                         "BROADCASTED", "BROADCASTING" -> "Broadcasting request..."
+                        "PROVIDER_ACCEPTED" -> "Negotiating with $providerName..."
                         "ACCEPTED" -> "$providerName accepted your request!"
                         "EN_ROUTE" -> "$providerName is on the way"
                         "ARRIVED" -> "$providerName has arrived"

@@ -110,9 +110,15 @@ class ProviderJobsViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             val response = jobRepository.acceptJob(jobId)
-            if (response.success) {
+            if (response.success && response.data != null) {
                 loadJobs()
-                _navigationEvent.emit(jobId)
+                
+                val job = response.data
+                if (job.status == "PROVIDER_ACCEPTED") {
+                    _navigationEvent.emit("CHAT:${jobId}:${job.customerId}")
+                } else {
+                    _navigationEvent.emit("TRACKING:${jobId}")
+                }
             } else {
                 _isLoading.value = false
             }

@@ -150,4 +150,12 @@ class JobRepository @Inject constructor(
             handleError(e)
         }
     }
+
+    suspend fun confirmDispatch(jobId: String): ApiResponse<JobDto> {
+        return try {
+            api.confirmDispatch(jobId)
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
 }
