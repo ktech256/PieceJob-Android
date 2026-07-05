@@ -183,37 +183,41 @@ fun NegotiationScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            if (photoRequired && !photosRequested) {
-                                Button(
-                                    onClick = { viewModel.requestPhotos() },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Icon(Icons.Default.PhotoCamera, null, modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Request Task Photos", fontSize = 11.sp)
+                            val inPhotoPhase = photoRequired && !photosSeen
+                            val inPricePhase = negRequired && jobState?.priceStatus != "ACCEPTED"
+                            
+                            if (inPhotoPhase) {
+                                if (!photosRequested) {
+                                    Button(
+                                        onClick = { viewModel.requestPhotos() },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Icon(Icons.Default.PhotoCamera, null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("Request Task Photos", fontSize = 11.sp)
+                                    }
+                                } else if (hasPhotos) {
+                                    Button(
+                                        onClick = { viewModel.markPhotosSeen() },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                                    ) {
+                                        Icon(Icons.Default.Visibility, null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("I've Seen the Photos", fontSize = 11.sp)
+                                    }
+                                } else {
+                                    // Photos requested but not uploaded. Show nothing or a disabled button?
+                                    // Requirement says: Status becomes: Waiting for customer...
                                 }
-                            } else if (photoRequired && hasPhotos && !photosSeen) {
-                                Button(
-                                    onClick = { viewModel.markPhotosSeen() },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
-                                ) {
-                                    Icon(Icons.Default.Visibility, null, modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("I've Seen the Photos", fontSize = 11.sp)
-                                }
-                            } else if (negRequired && jobState?.priceStatus != "ACCEPTED") {
-                                val canPropose = if (photoRequired) photosSeen else true
+                            } else if (inPricePhase) {
                                 Button(
                                     onClick = { showPriceDialog = true },
                                     modifier = Modifier.weight(1f),
-                                    enabled = canPropose,
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (canPropose) Color(0xFFFFA000) else Color.LightGray
-                                    )
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
                                 ) {
                                     Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(4.dp))
@@ -462,7 +466,13 @@ fun NegotiationProgressTracker(job: JobDto?, service: ServiceDto?) {
             }
             
             // Step 4: Provider Dispatched
-            val isDispatched = !listOf("DRAFT", "REQUEST_CREATED", "PAYMENT_PENDING", "BOOKING_FEE_PAID", "BROADCASTING", "BROADCASTED", "PROVIDER_ACCEPTED", "ACCEPTED").contains(job.status)
+            // Statuses where the provider is NOT yet dispatched
+            val preDispatchStatuses = listOf(
+                "DRAFT", "REQUEST_CREATED", "PAYMENT_PENDING", 
+                "BOOKING_FEE_PAID", "BROADCASTING", "BROADCASTED", 
+                "PROVIDER_ACCEPTED", "ACCEPTED"
+            )
+            val isDispatched = !preDispatchStatuses.contains(job.status)
             add(NegotiationStep("Provider Dispatched", isDispatched))
         }
     }
