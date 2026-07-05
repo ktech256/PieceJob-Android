@@ -46,6 +46,15 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import coil.compose.rememberAsyncImagePainter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,13 +79,37 @@ fun NegotiationScreen(
     var initialPhotoIndex by remember { mutableIntStateOf(0) }
     
     var showPhotoPicker by remember { mutableStateOf(false) }
+    var stagingUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
+    val context = LocalContext.current
     val isProvider = com.piecejob.BuildConfig.FLAVOR == "provider"
 
-    val photoPickerLauncher = rememberLauncherForActivityResult(
+    val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris ->
-        if (uris.isNotEmpty()) {
-            viewModel.uploadTaskPhotos(uris.take(4))
+        stagingUris = (stagingUris + uris).take(4)
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempCameraUri != null) {
+            stagingUris = (stagingUris + tempCameraUri!!).take(4)
+            tempCameraUri = null
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            try {
+                val uri = createTempUri(context)
+                tempCameraUri = uri
+                cameraLauncher.launch(uri)
+            } catch (e: Exception) {
+                android.util.Log.e("CAMERA_ERROR", "Failed to create temp uri", e)
+            }
         }
     }
 
@@ -86,11 +119,11 @@ fun NegotiationScreen(
                 Text("Select Photo Source", fontWeight = FontWeight.Black, modifier = Modifier.padding(bottom = 16.dp))
                 PickerOption(androidx.compose.material.icons.Icons.Default.CameraAlt, "Take Photo") {
                     showPhotoPicker = false
-                    photoPickerLauncher.launch("image/*")
+                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
                 }
                 PickerOption(androidx.compose.material.icons.Icons.Default.PhotoLibrary, "Choose From Gallery") {
                     showPhotoPicker = false
-                    photoPickerLauncher.launch("image/*")
+                    galleryLauncher.launch("image/*")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedButton(onClick = { showPhotoPicker = false }, modifier = Modifier.fillMaxWidth()) {
@@ -173,8 +206,6 @@ fun NegotiationScreen(
             Surface(tonalElevation = 8.dp, shadowElevation = 12.dp) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     val phase = jobState?.currentNegotiationPhase ?: "NEUTRAL"
-                    val negRequired = jobState?.priceNegotiationRequired == true
-                    val photoRequired = jobState?.photoSharingRequired == true
                     
                     if (isProvider) {
                         Row(
@@ -191,6 +222,17 @@ fun NegotiationScreen(
                                         Icon(Icons.Default.PhotoCamera, null, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(4.dp))
                                         Text("Request Task Photos", fontSize = 11.sp)
+                                    }
+                                }
+                                "WAITING_FOR_PHOTOS" -> {
+                                    Button(
+                                        onClick = { },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        enabled = false,
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+                                    ) {
+                                        Text("Waiting for Photos...", fontSize = 11.sp)
                                     }
                                 }
                                 "PHOTOS_UPLOADED" -> {
@@ -217,6 +259,17 @@ fun NegotiationScreen(
                                         Text(if (phase == "WAITING_FOR_PROVIDER") "Send Counter Offer" else "Propose Price", fontSize = 11.sp)
                                     }
                                 }
+                                "WAITING_FOR_CUSTOMER" -> {
+                                    Button(
+                                        onClick = { },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        enabled = false,
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+                                    ) {
+                                        Text("Waiting for Customer...", fontSize = 11.sp)
+                                    }
+                                }
                                 "PRICE_ACCEPTED" -> {
                                     Button(
                                         onClick = { viewModel.confirmDispatch() },
@@ -235,11 +288,12 @@ fun NegotiationScreen(
                         // Status Text
                         val statusHint = when (phase) {
                             "PHOTO_REQUEST" -> "Ask for photos to see the task detail."
-                            "WAITING_FOR_PHOTOS" -> "Waiting for customer to upload photos..."
+                            "WAITING_FOR_PHOTOS" -> "Customer is currently selecting/uploading photos."
                             "PHOTOS_UPLOADED" -> "Review the photos above then mark as reviewed."
-                            "WAITING_FOR_CUSTOMER" -> "Waiting for customer to respond to proposal..."
+                            "PRICE_PROPOSAL" -> "Ready to propose a price agreement."
+                            "WAITING_FOR_CUSTOMER" -> "Provider sent proposal. Waiting for customer response."
                             "WAITING_FOR_PROVIDER" -> "Review the counter-offer then respond."
-                            "PRICE_ACCEPTED" -> "Price agreed! Tap dispatch to start navigation."
+                            "PRICE_ACCEPTED" -> "Agreement complete! Tap dispatch to start."
                             else -> ""
                         }
                         if (statusHint.isNotEmpty()) {
@@ -254,13 +308,13 @@ fun NegotiationScreen(
                     } else {
                         // Customer View
                         val customerHint = when (phase) {
-                            "PHOTO_REQUEST" -> "Waiting for provider to review request..."
-                            "WAITING_FOR_PHOTOS" -> "Provider requested photos. Use UPLOAD button below."
-                            "PHOTOS_UPLOADED" -> "Photos uploaded. Waiting for provider review..."
-                            "PRICE_PROPOSAL" -> "Waiting for provider to propose a price..."
-                            "WAITING_FOR_CUSTOMER" -> "Provider sent a proposal. Please review above."
-                            "WAITING_FOR_PROVIDER" -> "Counter-offer sent. Waiting for provider..."
-                            "PRICE_ACCEPTED" -> "Price agreed! Waiting for provider to dispatch."
+                            "PHOTO_REQUEST" -> "Provider is reviewing your request."
+                            "WAITING_FOR_PHOTOS" -> "Provider requested photos. Use SELECT button below."
+                            "PHOTOS_UPLOADED" -> "Photos sent. Waiting for provider review."
+                            "PRICE_PROPOSAL" -> "Provider is preparing a price proposal."
+                            "WAITING_FOR_CUSTOMER" -> "Proposal received. Please review and respond."
+                            "WAITING_FOR_PROVIDER" -> "Counter-offer sent. Waiting for provider."
+                            "PRICE_ACCEPTED" -> "Agreement complete! Waiting for provider dispatch."
                             else -> ""
                         }
                         if (customerHint.isNotEmpty()) {
@@ -269,8 +323,20 @@ fun NegotiationScreen(
                                 textAlign = TextAlign.Center,
                                 fontSize = 12.sp,
                                 color = Color.Gray,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth().padding(bottom = if (phase == "WAITING_FOR_PHOTOS" && stagingUris.isEmpty()) 8.dp else 0.dp)
                             )
+                        }
+                        
+                        if (phase == "WAITING_FOR_PHOTOS" && stagingUris.isEmpty()) {
+                            Button(
+                                onClick = { showPhotoPicker = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.PhotoCamera, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("SELECT PHOTOS")
+                            }
                         }
                     }
                 }
@@ -318,6 +384,21 @@ fun NegotiationScreen(
                                 else if (action == "REJECT") viewModel.respondToProposal(proposal.id, "REJECT")
                                 else if (action == "COUNTER") showPriceDialog = true
                             }
+                        }
+                    }
+
+                    if (stagingUris.isNotEmpty() && !isProvider) {
+                        item {
+                            PhotoStagingCard(
+                                uris = stagingUris,
+                                onRemove = { uri -> stagingUris = stagingUris.filter { it != uri } },
+                                onAddMore = { showPhotoPicker = true },
+                                onSend = {
+                                    viewModel.uploadTaskPhotos(stagingUris)
+                                    stagingUris = emptyList()
+                                },
+                                isLoading = isLoading
+                            )
                         }
                     }
                     
@@ -619,4 +700,92 @@ fun ActiveProposalHeader(proposal: PriceProposalDto, currentUserId: String, onAc
             }
         }
     }
+}
+
+@Composable
+fun PhotoStagingCard(
+    uris: List<Uri>,
+    onRemove: (Uri) -> Unit,
+    onAddMore: () -> Unit,
+    onSend: () -> Unit,
+    isLoading: Boolean
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Photos to Upload (${uris.size}/4)", fontWeight = FontWeight.Black, fontSize = 14.sp)
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.height(240.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(uris.size) { index ->
+                    val uri = uris[index]
+                    Box(modifier = Modifier.fillMaxSize().aspectRatio(1f).clip(RoundedCornerShape(12.dp))) {
+                        Image(
+                            painter = rememberAsyncImagePainter(uri),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                        IconButton(
+                            onClick = { onRemove(uri) },
+                            modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape).size(24.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+                
+                if (uris.size < 4) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFF5F5F5))
+                                .clickable { onAddMore() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.AddAPhoto, contentDescription = null, tint = Color.Gray)
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Button(
+                onClick = onSend,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading && uris.isNotEmpty(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text("SEND ${uris.size} PHOTOS", fontWeight = FontWeight.Black)
+                }
+            }
+        }
+    }
+}
+
+fun createTempUri(context: android.content.Context): Uri {
+    val tempFile = java.io.File.createTempFile("captured_image_", ".jpg", context.cacheDir).apply {
+        createNewFile()
+        deleteOnExit()
+    }
+    return androidx.core.content.FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        tempFile
+    )
 }
