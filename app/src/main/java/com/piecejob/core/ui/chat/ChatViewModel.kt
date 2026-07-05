@@ -35,6 +35,15 @@ class ChatViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _uploadProgress = MutableStateFlow("")
+    val uploadProgress: StateFlow<String> = _uploadProgress
+
+    private val _uploadError = MutableStateFlow<String?>(null)
+    val uploadError: StateFlow<String?> = _uploadError
+
+    private val _uploadSuccess = MutableStateFlow(false)
+    val uploadSuccess: StateFlow<Boolean> = _uploadSuccess
+
     private val _serviceConfig = MutableStateFlow<ServiceDto?>(null)
     val serviceConfig: StateFlow<ServiceDto?> = _serviceConfig
 
@@ -144,12 +153,17 @@ class ChatViewModel @Inject constructor(
         val jobId = currentJobId ?: return
         viewModelScope.launch {
             _isLoading.value = true
+            _uploadError.value = null
+            _uploadSuccess.value = false
             try {
                 val uploadedUrls = mutableListOf<String>()
-                for (uri in uris) {
+                val total = uris.size
+                uris.forEachIndexed { index, uri ->
+                    _uploadProgress.value = "Uploading ${index + 1} of $total..."
+                    
                     val bitmap = context.contentResolver.openInputStream(uri)?.use { 
                         BitmapFactory.decodeStream(it)
-                    } ?: continue
+                    } ?: throw Exception("Failed to decode image")
 
                     // Compression
                     val out = ByteArrayOutputStream()
@@ -161,14 +175,24 @@ class ChatViewModel @Inject constructor(
                     
                     if (res.success && res.data != null) {
                         uploadedUrls.add(res.data.url)
+                    } else {
+                        throw Exception(res.message ?: "File upload failed")
                     }
                 }
 
                 if (uploadedUrls.isNotEmpty()) {
-                    repository.uploadTaskPhotos(jobId, uploadedUrls)
+                    _uploadProgress.value = "Saving metadata..."
+                    val res = repository.uploadTaskPhotos(jobId, uploadedUrls)
+                    if (res.success) {
+                        _uploadSuccess.value = true
+                        _uploadProgress.value = "Photos Uploaded Successfully"
+                    } else {
+                        throw Exception(res.message ?: "Failed to save photo metadata")
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("FORENSIC", "CHAT_UPLOAD_FAILED", e)
+                _uploadError.value = e.message ?: "Upload failed"
             } finally {
                 _isLoading.value = false
                 loadJobConfig(jobId)

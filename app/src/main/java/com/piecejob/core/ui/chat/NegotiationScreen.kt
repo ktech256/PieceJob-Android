@@ -68,6 +68,9 @@ fun NegotiationScreen(
 ) {
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val uploadProgress by viewModel.uploadProgress.collectAsState()
+    val uploadError by viewModel.uploadError.collectAsState()
+    val uploadSuccess by viewModel.uploadSuccess.collectAsState()
     val serviceConfig by viewModel.serviceConfig.collectAsState()
     val jobState by viewModel.jobState.collectAsState()
     
@@ -395,9 +398,12 @@ fun NegotiationScreen(
                                 onAddMore = { showPhotoPicker = true },
                                 onSend = {
                                     viewModel.uploadTaskPhotos(stagingUris)
-                                    stagingUris = emptyList()
                                 },
-                                isLoading = isLoading
+                                onClear = { stagingUris = emptyList() },
+                                isLoading = isLoading,
+                                progressText = uploadProgress,
+                                error = uploadError,
+                                isSuccess = uploadSuccess
                             )
                         }
                     }
@@ -708,7 +714,11 @@ fun PhotoStagingCard(
     onRemove: (Uri) -> Unit,
     onAddMore: () -> Unit,
     onSend: () -> Unit,
-    isLoading: Boolean
+    onClear: () -> Unit,
+    isLoading: Boolean,
+    progressText: String,
+    error: String?,
+    isSuccess: Boolean
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
@@ -716,7 +726,14 @@ fun PhotoStagingCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Photos to Upload (${uris.size}/4)", fontWeight = FontWeight.Black, fontSize = 14.sp)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Photos to Upload (${uris.size}/4)", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                if (!isLoading && !isSuccess) {
+                    IconButton(onClick = onClear) {
+                        Icon(Icons.Default.Delete, contentDescription = "Clear all", tint = Color.Gray)
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(12.dp))
             
             LazyVerticalGrid(
@@ -734,16 +751,18 @@ fun PhotoStagingCard(
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
-                        IconButton(
-                            onClick = { onRemove(uri) },
-                            modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape).size(24.dp)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        if (!isLoading && !isSuccess) {
+                            IconButton(
+                                onClick = { onRemove(uri) },
+                                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape).size(24.dp)
+                            ) {
+                                Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            }
                         }
                     }
                 }
                 
-                if (uris.size < 4) {
+                if (uris.size < 4 && !isLoading && !isSuccess) {
                     item {
                         Box(
                             modifier = Modifier
@@ -761,16 +780,45 @@ fun PhotoStagingCard(
             }
             
             Spacer(modifier = Modifier.height(16.dp))
-            
-            Button(
-                onClick = onSend,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading && uris.isNotEmpty(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                } else {
+
+            if (isSuccess) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().background(Color(0xFFE8F5E9), RoundedCornerShape(8.dp)).padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF2E7D32))
+                    Spacer(Modifier.width(8.dp))
+                    Text(progressText, color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+                LaunchedEffect(Unit) {
+                    kotlinx.coroutines.delay(2000)
+                    onClear()
+                }
+            } else if (error != null) {
+                Column(modifier = Modifier.fillMaxWidth().background(Color(0xFFFFEBEE), RoundedCornerShape(8.dp)).padding(12.dp)) {
+                    Text("Upload Failed", color = Color(0xFFD32F2F), fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    Text(error, color = Color(0xFFD32F2F), fontSize = 11.sp)
+                    Button(
+                        onClick = onSend,
+                        modifier = Modifier.padding(top = 8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                    ) {
+                        Text("RETRY", fontSize = 10.sp)
+                    }
+                }
+            } else if (isLoading) {
+                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth().clip(CircleShape))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(progressText, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+            } else {
+                Button(
+                    onClick = onSend,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = uris.isNotEmpty(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
                     Text("SEND ${uris.size} PHOTOS", fontWeight = FontWeight.Black)
                 }
             }
