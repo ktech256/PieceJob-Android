@@ -274,18 +274,16 @@ fun StructuredMessageCard(type: String, metadata: Map<String, Any>, isMe: Boolea
                 "PHOTO_UPLOAD" -> {
                     Text("✅ Photos Uploaded", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
                     val photos = (metadata["allPhotos"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
-                    androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-                        columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(2),
-                        modifier = Modifier.height(120.dp).padding(top = 8.dp),
+                    androidx.compose.foundation.lazy.LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        modifier = Modifier.height(100.dp).padding(top = 8.dp)
                     ) {
                         items(photos.size) { index ->
                             coil.compose.AsyncImage(
                                 model = photos[index],
                                 contentDescription = null,
                                 modifier = Modifier
-                                    .fillMaxSize()
+                                    .size(100.dp)
                                     .background(Color.Gray)
                                     .clickable { 
                                         onAction("VIEW_PHOTOS", mapOf("photos" to photos, "index" to index)) 
@@ -306,8 +304,8 @@ fun StructuredMessageCard(type: String, metadata: Map<String, Any>, isMe: Boolea
                     }
                 }
                 "PRICE_PROPOSAL" -> {
-                    val amount = metadata["amount"] as? Double ?: 0.0
-                    val round = (metadata["round"] as? Double)?.toInt() ?: 1
+                    val amount = (metadata["amount"] as? Number)?.toDouble() ?: 0.0
+                    val round = (metadata["round"] as? Number)?.toInt() ?: 1
                     Text("💰 Price Proposal (Round $round)", fontWeight = FontWeight.Bold)
                     Text("Proposed Amount: R$amount", fontSize = 18.sp, fontWeight = FontWeight.Black)
                     if (!isMe) {
@@ -332,7 +330,7 @@ fun StructuredMessageCard(type: String, metadata: Map<String, Any>, isMe: Boolea
                     }
                 }
                 "PRICE_ACCEPTED" -> {
-                    val amount = metadata["amount"] as? Double ?: 0.0
+                    val amount = (metadata["amount"] as? Number)?.toDouble() ?: 0.0
                     Text("🤝 Price Agreed", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
                     Text("Agreed Price: R$amount", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Text("Negotiation concluded.", fontSize = 12.sp, color = Color.Gray)

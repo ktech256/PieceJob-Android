@@ -3,6 +3,7 @@ package com.piecejob.core.ui.chat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -281,7 +282,7 @@ fun NegotiationScreen(
                                     ) {
                                         Icon(Icons.Default.LocalShipping, null, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(4.dp))
-                                        Text("Confirm Dispatch", fontSize = 11.sp)
+                                        Text("START JOURNEY", fontSize = 11.sp)
                                     }
                                 }
                             }
@@ -381,7 +382,7 @@ fun NegotiationScreen(
 
                     if (!jobState?.taskPhotos.isNullOrEmpty()) {
                         item {
-                            TaskPhotosGrid(
+                            TaskPhotosRow(
                                 photos = jobState?.taskPhotos!!,
                                 label = if (isProvider) "Inspect Task Photos" else "Photos Sent"
                             ) { index ->
@@ -847,7 +848,7 @@ fun createTempUri(context: android.content.Context): Uri {
 }
 
 @Composable
-fun TaskPhotosGrid(photos: List<String>, label: String, onClick: (Int) -> Unit) {
+fun TaskPhotosRow(photos: List<String>, label: String, onClick: (Int) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -856,18 +857,16 @@ fun TaskPhotosGrid(photos: List<String>, label: String, onClick: (Int) -> Unit) 
         Column(modifier = Modifier.padding(16.dp)) {
             Text(label, fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(12.dp))
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.height(200.dp),
+            androidx.compose.foundation.lazy.LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 items(photos.size) { index ->
                     coil.compose.AsyncImage(
                         model = photos[index],
                         contentDescription = null,
                         modifier = Modifier
-                            .fillMaxSize()
+                            .size(100.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color.LightGray)
                             .clickable { onClick(index) },
