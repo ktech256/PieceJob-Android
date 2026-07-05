@@ -173,6 +173,8 @@ fun NegotiationScreen(
             Surface(tonalElevation = 8.dp, shadowElevation = 12.dp) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     val phase = jobState?.currentNegotiationPhase ?: "NEUTRAL"
+                    val negRequired = jobState?.priceNegotiationRequired == true
+                    val photoRequired = jobState?.photoSharingRequired == true
                     
                     if (isProvider) {
                         Row(
@@ -236,6 +238,7 @@ fun NegotiationScreen(
                             "WAITING_FOR_PHOTOS" -> "Waiting for customer to upload photos..."
                             "PHOTOS_UPLOADED" -> "Review the photos above then mark as reviewed."
                             "WAITING_FOR_CUSTOMER" -> "Waiting for customer to respond to proposal..."
+                            "WAITING_FOR_PROVIDER" -> "Review the counter-offer then respond."
                             "PRICE_ACCEPTED" -> "Price agreed! Tap dispatch to start navigation."
                             else -> ""
                         }
@@ -255,6 +258,7 @@ fun NegotiationScreen(
                             "WAITING_FOR_PHOTOS" -> "Provider requested photos. Use UPLOAD button below."
                             "PHOTOS_UPLOADED" -> "Photos uploaded. Waiting for provider review..."
                             "PRICE_PROPOSAL" -> "Waiting for provider to propose a price..."
+                            "WAITING_FOR_CUSTOMER" -> "Provider sent a proposal. Please review above."
                             "WAITING_FOR_PROVIDER" -> "Counter-offer sent. Waiting for provider..."
                             "PRICE_ACCEPTED" -> "Price agreed! Waiting for provider to dispatch."
                             else -> ""
