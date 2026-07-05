@@ -79,6 +79,7 @@ fun CustomerTrackingScreen(
     val error by viewModel.error.collectAsState()
 
     var showCancelDialog by remember { mutableStateOf(false) }
+    var hasAutoNavigatedToNegotiation by remember { mutableStateOf(false) }
 
     val customerLatLng = remember(job) {
         job?.location?.coordinates?.let { LatLng(it[1], it[0]) } ?: LatLng(0.0, 0.0)
@@ -110,7 +111,12 @@ fun CustomerTrackingScreen(
         viewModel.initTracking(jobId)
     }
 
-    LaunchedEffect(job?.status) {
+    LaunchedEffect(job?.status, phase) {
+        if (isNegotiating && !hasAutoNavigatedToNegotiation) {
+            hasAutoNavigatedToNegotiation = true
+            onChatOpen(job?.providerId ?: "")
+        }
+
         if (job?.status == "CANCELLED") {
             android.util.Log.d("FORENSIC", "TRACKING_EXIT | Job Cancelled. Returning to dashboard.")
             delay(1000)
@@ -160,7 +166,35 @@ fun CustomerTrackingScreen(
             ),
             properties = MapProperties(isMyLocationEnabled = !isTerminalState && !isNegotiating)
         ) {
-            // ...
+            // Customer Destination Marker
+            if (customerLatLng.latitude != 0.0) {
+                Marker(
+                    state = MarkerState(position = customerLatLng),
+                    title = "Your Location",
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                )
+            }
+
+            // Provider Live Marker
+            if (providerLocation != null) {
+                val providerLatLng = LatLng(providerLocation!!.first, providerLocation!!.second)
+                Marker(
+                    state = MarkerState(position = providerLatLng),
+                    title = "Your Provider",
+                    rotation = animatedHeading,
+                    anchor = androidx.compose.ui.geometry.Offset(0.5f, 0.5f),
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                )
+            }
+
+            // Route Polyline
+            if (routePoints.isNotEmpty()) {
+                Polyline(
+                    points = routePoints,
+                    color = Color(0xFFD32F2F),
+                    width = 12f
+                )
+            }
         }
 
         if (isNegotiating) {

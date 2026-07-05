@@ -74,6 +74,7 @@ fun NegotiationScreen(
     val uploadSuccess by viewModel.uploadSuccess.collectAsState()
     val serviceConfig by viewModel.serviceConfig.collectAsState()
     val jobState by viewModel.jobState.collectAsState()
+    val phase = jobState?.currentNegotiationPhase ?: "NEUTRAL"
     
     var showPriceDialog by remember { mutableStateOf(false) }
     var priceAmount by remember { mutableStateOf("") }
@@ -146,10 +147,16 @@ fun NegotiationScreen(
         }
     }
 
+    LaunchedEffect(phase) {
+        if (isProvider && phase == "PRICE_PROPOSAL" && jobState?.activeProposal == null) {
+            showPriceDialog = true
+        }
+    }
+
     if (showPriceDialog) {
         AlertDialog(
             onDismissRequest = { showPriceDialog = false },
-            title = { Text("Propose Price") },
+            title = { Text("What is your price?") },
             text = {
                 Column {
                     OutlinedTextField(
@@ -259,7 +266,7 @@ fun NegotiationScreen(
                                     ) {
                                         Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(4.dp))
-                                        Text(if (phase == "WAITING_FOR_PROVIDER") "Send Counter Offer" else "Propose Price", fontSize = 11.sp)
+                                        Text(if (phase == "WAITING_FOR_PROVIDER") "Send Counter Offer" else "What is your price?", fontSize = 11.sp)
                                     }
                                 }
                                 "WAITING_FOR_CUSTOMER" -> {
@@ -689,12 +696,17 @@ fun ActiveProposalHeader(proposal: PriceProposalDto, currentUserId: String, onAc
                 Text("Waiting for counterparty to respond...", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
             } else {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
-                        onClick = { onAction("REJECT") },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(0.dp)
-                    ) { Text("REJECT", fontSize = 11.sp) }
+                    val currentRound = proposal.round
+                    val isFinalRound = currentRound >= 4
+
+                    if (isFinalRound) {
+                        OutlinedButton(
+                            onClick = { onAction("REJECT") },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) { Text("REJECT", fontSize = 11.sp) }
+                    }
                     
                     Button(
                         onClick = { onAction("COUNTER") },
@@ -702,7 +714,7 @@ fun ActiveProposalHeader(proposal: PriceProposalDto, currentUserId: String, onAc
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000)),
                         contentPadding = PaddingValues(0.dp)
-                    ) { Text("COUNTER", fontSize = 11.sp) }
+                    ) { Text("BARGAIN", fontSize = 11.sp) }
                     
                     Button(
                         onClick = { onAction("ACCEPT") },

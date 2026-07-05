@@ -208,8 +208,15 @@ fun ProviderTrackingScreen(
     if (showCancelDialog) {
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
-            title = { Text("Cancel Job?", fontWeight = FontWeight.Black) },
-            text = { Text("Are you sure you want to cancel this job? This may affect your performance rating.") },
+            title = { Text("Cancel this job?", fontWeight = FontWeight.Black) },
+            text = { 
+                Text(
+                    "Cancelling after accepting a customer request negatively affects your reliability score.\n\n" +
+                    "Repeated cancellations may reduce future job opportunities and can result in temporary account suspension for up to 24 hours.\n\n" +
+                    "Only cancel if you genuinely cannot complete this job.",
+                    fontSize = 13.sp
+                ) 
+            },
             confirmButton = {
                 Button(
                     onClick = {
@@ -217,10 +224,10 @@ fun ProviderTrackingScreen(
                         viewModel.cancelJob()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
-                ) { Text("YES, CANCEL") }
+                ) { Text("CANCEL JOB") }
             },
             dismissButton = {
-                TextButton(onClick = { showCancelDialog = false }) { Text("NO, KEEP IT") }
+                TextButton(onClick = { showCancelDialog = false }) { Text("KEEP JOB") }
             }
         )
     }
@@ -447,9 +454,22 @@ fun ProviderTrackingScreen(
                         Spacer(modifier = Modifier.height(24.dp))
                         
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            when (currentJob.status) {
-                                "ACCEPTED", "ARRIVED" -> {
-                                    val isArrived = currentJob.status == "ARRIVED"
+                            val status = currentJob.status
+                            val isJourneyStarted = status == "EN_ROUTE" || status == "ARRIVED" || status == "STARTED" || status == "IN_PROGRESS"
+
+                            when (status) {
+                                "ACCEPTED" -> {
+                                    Button(
+                                        onClick = { viewModel.confirmDispatch() },
+                                        modifier = Modifier.weight(1f).height(56.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ) {
+                                        Text("START JOURNEY", fontWeight = FontWeight.Black)
+                                    }
+                                }
+                                "EN_ROUTE", "ARRIVED" -> {
+                                    val isArrived = status == "ARRIVED"
                                     Button(
                                         onClick = { 
                                             if (isArrived) viewModel.startJob() 
@@ -463,7 +483,7 @@ fun ProviderTrackingScreen(
                                         enabled = isArrived
                                     ) {
                                         Text(
-                                            text = if (isArrived) "START JOB" else "DRIVING TO CUSTOMER", 
+                                            text = if (isArrived) "START WORK" else "DRIVING TO CUSTOMER", 
                                             fontWeight = FontWeight.Black,
                                             color = if (isArrived) Color.White else Color.Gray
                                         )
@@ -481,7 +501,7 @@ fun ProviderTrackingScreen(
                                 }
                             }
                             
-                            if (currentJob.status != "COMPLETED" && currentJob.status != "CANCELLED") {
+                            if (!isJourneyStarted && status != "COMPLETED" && status != "CANCELLED") {
                                 OutlinedButton(
                                     onClick = { showCancelDialog = true },
                                     modifier = Modifier.weight(0.6f).height(56.dp),

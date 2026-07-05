@@ -13,8 +13,10 @@ import com.piecejob.core.data.repository.ChatRepository
 import com.piecejob.core.socket.SocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
@@ -70,6 +72,16 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             socketManager.messageEventFlow.collect { json ->
                 handleIncomingMessage(json)
+            }
+        }
+
+        // Fallback polling every 5 seconds for negotiation stability
+        viewModelScope.launch {
+            while (isActive) {
+                delay(5000)
+                if (currentJobId == jobId) {
+                    loadJobConfig(jobId)
+                }
             }
         }
     }

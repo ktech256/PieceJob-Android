@@ -75,6 +75,20 @@ class ProviderTrackingViewModel @Inject constructor(
         }
     }
 
+    fun confirmDispatch() {
+        val jobId = _job.value?.id ?: return
+        viewModelScope.launch {
+            _isLoading.value = true
+            val res = jobRepository.confirmDispatch(jobId)
+            if (res.success && res.data != null) {
+                _job.value = res.data
+            } else {
+                _error.value = res.message ?: "Failed to confirm dispatch"
+            }
+            _isLoading.value = false
+        }
+    }
+
     private fun startLocationTracking() {
         trackingJob?.cancel()
         trackingJob = viewModelScope.launch {
@@ -96,6 +110,11 @@ class ProviderTrackingViewModel @Inject constructor(
 
     private fun calculateEtaAndDistance(providerLatLng: LatLng) {
         val dest = _job.value?.location?.coordinates ?: return
+        if (dest.size < 2 || (dest[0] == 0.0 && dest[1] == 0.0)) {
+            _eta.value = "Calculating..."
+            _distance.value = "..."
+            return
+        }
         val destLatLng = LatLng(dest[1], dest[0])
         
         val distMeters = calculateDistance(providerLatLng, destLatLng)
@@ -109,9 +128,10 @@ class ProviderTrackingViewModel @Inject constructor(
     }
 
     private fun checkArrival(currentLatLng: LatLng) {
-        if (_job.value?.status != "ACCEPTED") return
+        if (_job.value?.status != "EN_ROUTE") return
         
         val dest = _job.value?.location?.coordinates ?: return
+        if (dest.size < 2 || (dest[0] == 0.0 && dest[1] == 0.0)) return
         val destLatLng = LatLng(dest[1], dest[0])
         
         val dist = calculateDistance(currentLatLng, destLatLng)
@@ -154,30 +174,21 @@ class ProviderTrackingViewModel @Inject constructor(
 
     fun startJob() {
         android.util.Log.d("ForensicLog", "PROVIDER_STARTED_JOB | Job: ${_job.value?.id}")
-        Log.d("TrackingFlow", "startJob() called")
         _showStartReminder.value = false
         autoStartTimer?.cancel()
         reminderTimer?.cancel()
         
         viewModelScope.launch {
-            val jobId = _job.value?.id ?: run {
-                Log.e("TrackingFlow", "jobId is null")
-                return@launch
-            }
-            // Need coordinates for proximity check on backend
+            val jobId = _job.value?.id ?: return@launch
             val loc = _providerLocation.value
             val providerCoords = if (loc != null) listOf(loc.longitude, loc.latitude) else null
             
-            Log.d("TrackingFlow", "Sending startJob request for job $jobId with coords $providerCoords")
             val res = jobRepository.startJob(jobId, providerCoords)
             if (res.success && res.data != null) {
-                Log.d("TrackingFlow", "startJob success")
                 _job.value = res.data
                 _error.value = null
             } else {
-                val errorMsg = res.message ?: res.error?.message ?: "Failed to start job"
-                Log.e("TrackingFlow", "startJob failed: $errorMsg")
-                _error.value = errorMsg
+                _error.value = res.message ?: "Failed to start job"
             }
         }
     }
@@ -193,8 +204,7 @@ class ProviderTrackingViewModel @Inject constructor(
                 LocationService.activeJobId = null
                 socketManager.leaveJob(jobId)
             } else {
-                val errorMsg = res.message ?: res.error?.message ?: "Failed to complete job"
-                _error.value = errorMsg
+                _error.value = res.message ?: "Failed to complete job"
             }
         }
     }
@@ -204,7 +214,6 @@ class ProviderTrackingViewModel @Inject constructor(
             val jobId = _job.value?.id ?: return@launch
             val res = jobRepository.cancelJob(jobId)
             if (res.success) {
-                // If the backend returns ApiResponse<Unit>, we just update the status manually
                 _job.value = _job.value?.copy(status = "CANCELLED")
                 LocationService.activeJobId = null
             } else {
