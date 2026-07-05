@@ -2,8 +2,7 @@ package com.piecejob.core.data.remote.dto
 
 data class ProposePriceRequest(
     val jobId: String,
-    val amount: Double,
-    val note: String? = null
+    val amount: Double
 )
 
 data class RespondProposalRequest(
@@ -16,7 +15,6 @@ data class PriceProposalDto(
     val senderId: String,
     val receiverId: String,
     val amount: Double,
-    val note: String?,
     val status: String,
     val round: Int,
     val countryCode: String,

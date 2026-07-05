@@ -407,9 +407,15 @@ fun NavGraph(
                 otherUserId = otherUserId,
                 currentUserId = authViewModel.getUserId() ?: "",
                 onBack = { navController.popBackStack() },
-                onNegotiationComplete = { jId, oId ->
-                    navController.navigate(Screen.Chat.passArgs(jId, oId)) {
-                        popUpTo(Screen.Negotiation.route) { inclusive = true }
+                onNegotiationComplete = { jId, _ ->
+                    if (BuildConfig.FLAVOR == "provider") {
+                        navController.navigate(Screen.ProviderTracking.passJobId(jId)) {
+                            popUpTo(Screen.Negotiation.route) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Screen.CustomerTracking.passJobId(jId)) {
+                            popUpTo(Screen.Negotiation.route) { inclusive = true }
+                        }
                     }
                 }
             )

@@ -76,7 +76,6 @@ fun NegotiationScreen(
     
     var showPriceDialog by remember { mutableStateOf(false) }
     var priceAmount by remember { mutableStateOf("") }
-    var priceNote by remember { mutableStateOf("") }
 
     var selectedPhotosForGallery by remember { mutableStateOf<List<String>?>(null) }
     var initialPhotoIndex by remember { mutableIntStateOf(0) }
@@ -159,13 +158,6 @@ fun NegotiationScreen(
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = priceNote,
-                        onValueChange = { priceNote = it },
-                        label = { Text("Optional Note") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
             },
             confirmButton = {
@@ -173,10 +165,9 @@ fun NegotiationScreen(
                     onClick = {
                         val amount = priceAmount.toDoubleOrNull()
                         if (amount != null) {
-                            viewModel.proposePrice(amount, priceNote)
+                            viewModel.proposePrice(amount)
                             showPriceDialog = false
                             priceAmount = ""
-                            priceNote = ""
                         }
                     },
                     enabled = priceAmount.isNotBlank()
@@ -185,6 +176,14 @@ fun NegotiationScreen(
             dismissButton = {
                 TextButton(onClick = { showPriceDialog = false }) { Text("Cancel") }
             }
+        )
+    }
+
+    if (selectedPhotosForGallery != null) {
+        FullscreenPhotoGallery(
+            photos = selectedPhotosForGallery!!,
+            initialIndex = initialPhotoIndex,
+            onDismiss = { selectedPhotosForGallery = null }
         )
     }
 
@@ -245,9 +244,9 @@ fun NegotiationScreen(
                                         shape = RoundedCornerShape(12.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
                                     ) {
-                                        Icon(Icons.Default.Visibility, null, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(4.dp))
-                                        Text("I've Seen the Photos", fontSize = 11.sp)
+                                        Text("CONTINUE", fontSize = 11.sp)
                                     }
                                 }
                                 "PRICE_PROPOSAL", "WAITING_FOR_PROVIDER" -> {
@@ -292,7 +291,7 @@ fun NegotiationScreen(
                         val statusHint = when (phase) {
                             "PHOTO_REQUEST" -> "Ask for photos to see the task detail."
                             "WAITING_FOR_PHOTOS" -> "Customer is currently selecting/uploading photos."
-                            "PHOTOS_UPLOADED" -> "Review the photos above then mark as reviewed."
+                            "PHOTOS_UPLOADED" -> "Review the photos above then tap CONTINUE."
                             "PRICE_PROPOSAL" -> "Ready to propose a price agreement."
                             "WAITING_FOR_CUSTOMER" -> "Provider sent proposal. Waiting for customer response."
                             "WAITING_FOR_PROVIDER" -> "Review the counter-offer then respond."
@@ -378,6 +377,18 @@ fun NegotiationScreen(
 
                     item {
                         NegotiationInfoCard(jobState, serviceConfig)
+                    }
+
+                    if (!jobState?.taskPhotos.isNullOrEmpty()) {
+                        item {
+                            TaskPhotosGrid(
+                                photos = jobState?.taskPhotos!!,
+                                label = if (isProvider) "Inspect Task Photos" else "Photos Sent"
+                            ) { index ->
+                                selectedPhotosForGallery = jobState?.taskPhotos
+                                initialPhotoIndex = index
+                            }
+                        }
                     }
 
                     jobState?.activeProposal?.let { proposal ->
@@ -670,9 +681,6 @@ fun ActiveProposalHeader(proposal: PriceProposalDto, currentUserId: String, onAc
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text("Amount: R${proposal.amount}", fontSize = 24.sp, fontWeight = FontWeight.Black)
-            if (!proposal.note.isNullOrBlank()) {
-                Text("Note: ${proposal.note}", fontSize = 12.sp, color = Color.DarkGray, modifier = Modifier.padding(top = 4.dp))
-            }
             
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -836,4 +844,37 @@ fun createTempUri(context: android.content.Context): Uri {
         "${context.packageName}.fileprovider",
         tempFile
     )
+}
+
+@Composable
+fun TaskPhotosGrid(photos: List<String>, label: String, onClick: (Int) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFEEEEEE))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(label, fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(12.dp))
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.height(200.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(photos.size) { index ->
+                    coil.compose.AsyncImage(
+                        model = photos[index],
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.LightGray)
+                            .clickable { onClick(index) },
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+        }
+    }
 }

@@ -69,9 +69,9 @@ class ChatRepository @Inject constructor(
         }
     }
 
-    suspend fun proposePrice(jobId: String, amount: Double, note: String?): ApiResponse<PriceProposalDto> {
+    suspend fun proposePrice(jobId: String, amount: Double): ApiResponse<PriceProposalDto> {
         return try {
-            api.proposePrice(ProposePriceRequest(jobId, amount, note))
+            api.proposePrice(ProposePriceRequest(jobId, amount))
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }

@@ -49,7 +49,6 @@ fun ChatScreen(
     
     var showPriceDialog by remember { mutableStateOf(false) }
     var priceAmount by remember { mutableStateOf("") }
-    var priceNote by remember { mutableStateOf("") }
     
     val isProvider = com.piecejob.BuildConfig.FLAVOR == "provider"
     val isNegotiating = jobState?.status == "PROVIDER_ACCEPTED" || jobState?.status == "ACCEPTED" || jobState?.priceStatus == "PENDING"
@@ -82,13 +81,6 @@ fun ChatScreen(
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = priceNote,
-                        onValueChange = { priceNote = it },
-                        label = { Text("Optional Note") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
             },
             confirmButton = {
@@ -96,10 +88,9 @@ fun ChatScreen(
                     onClick = {
                         val amount = priceAmount.toDoubleOrNull()
                         if (amount != null) {
-                            viewModel.proposePrice(amount, priceNote)
+                            viewModel.proposePrice(amount)
                             showPriceDialog = false
                             priceAmount = ""
-                            priceNote = ""
                         }
                     },
                     enabled = priceAmount.isNotBlank()
@@ -310,7 +301,7 @@ fun StructuredMessageCard(type: String, metadata: Map<String, Any>, isMe: Boolea
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
                             contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("Mark as Seen", fontSize = 12.sp)
+                            Text("CONTINUE", fontSize = 12.sp)
                         }
                     }
                 }
@@ -319,9 +310,6 @@ fun StructuredMessageCard(type: String, metadata: Map<String, Any>, isMe: Boolea
                     val round = (metadata["round"] as? Double)?.toInt() ?: 1
                     Text("💰 Price Proposal (Round $round)", fontWeight = FontWeight.Bold)
                     Text("Proposed Amount: R$amount", fontSize = 18.sp, fontWeight = FontWeight.Black)
-                    if (metadata["note"] != null) {
-                        Text("Note: ${metadata["note"]}", fontSize = 12.sp, color = Color.Gray)
-                    }
                     if (!isMe) {
                         Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(

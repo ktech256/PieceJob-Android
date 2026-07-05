@@ -207,16 +207,19 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun proposePrice(amount: Double, note: String?) {
+    fun proposePrice(amount: Double) {
         val jobId = currentJobId ?: return
         viewModelScope.launch {
-            repository.proposePrice(jobId, amount, note)
+            repository.proposePrice(jobId, amount)
+            loadJobConfig(jobId)
         }
     }
 
     fun respondToProposal(proposalId: String, action: String) {
+        val jobId = currentJobId ?: return
         viewModelScope.launch {
             repository.respondToProposal(proposalId, action)
+            loadJobConfig(jobId)
         }
     }
 
