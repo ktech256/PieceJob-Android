@@ -104,8 +104,10 @@ class ChatViewModel @Inject constructor(
         
         // UI Side Lock
         val job = _jobState.value
-        if (job?.status == "PROVIDER_ACCEPTED" || job?.priceStatus == "PENDING") {
-            Log.w("FORENSIC", "CHAT_LOCKED | Free text blocked during negotiation")
+        val isNegotiating = listOf("PROVIDER_ACCEPTED", "ACCEPTED").contains(job?.status) || job?.priceStatus == "PENDING"
+        
+        if (isNegotiating) {
+            Log.w("FORENSIC", "CHAT_LOCKED | Free text blocked during negotiation/pre-dispatch")
             return
         }
 

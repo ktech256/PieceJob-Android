@@ -239,7 +239,8 @@ fun ProviderTrackingScreen(
         )
     }
 
-    val isNegotiating = job?.status == "PROVIDER_ACCEPTED" || job?.priceStatus == "PENDING"
+    val phase = job?.currentNegotiationPhase ?: "NEUTRAL"
+    val isNegotiating = listOf("PHOTO_REQUEST", "WAITING_FOR_PHOTOS", "PHOTOS_UPLOADED", "PRICE_PROPOSAL", "WAITING_FOR_CUSTOMER", "WAITING_FOR_PROVIDER", "PRICE_ACCEPTED").contains(phase)
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(

@@ -105,7 +105,7 @@ fun NegotiationScreen(
     }
 
     LaunchedEffect(jobState?.status) {
-        if (jobState?.status == "ACCEPTED" || jobState?.status == "EN_ROUTE") {
+        if (jobState?.status == "EN_ROUTE" || jobState?.status == "ARRIVED" || jobState?.status == "STARTED") {
             onNegotiationComplete(jobId, otherUserId)
         }
     }
@@ -172,22 +172,15 @@ fun NegotiationScreen(
         bottomBar = {
             Surface(tonalElevation = 8.dp, shadowElevation = 12.dp) {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    val phase = jobState?.currentNegotiationPhase ?: "NEUTRAL"
+                    
                     if (isProvider) {
-                        val hasPhotos = !jobState?.taskPhotos.isNullOrEmpty()
-                        val photosRequested = jobState?.taskPhotosRequested == true
-                        val photosSeen = jobState?.taskPhotosSeen == true
-                        val negRequired = serviceConfig?.priceNegotiationRequired == true
-                        val photoRequired = serviceConfig?.photoSharingRequired == true
-
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            val inPhotoPhase = photoRequired && !photosSeen
-                            val inPricePhase = negRequired && jobState?.priceStatus != "ACCEPTED"
-                            
-                            if (inPhotoPhase) {
-                                if (!photosRequested) {
+                            when (phase) {
+                                "PHOTO_REQUEST" -> {
                                     Button(
                                         onClick = { viewModel.requestPhotos() },
                                         modifier = Modifier.weight(1f),
@@ -197,7 +190,8 @@ fun NegotiationScreen(
                                         Spacer(Modifier.width(4.dp))
                                         Text("Request Task Photos", fontSize = 11.sp)
                                     }
-                                } else if (hasPhotos) {
+                                }
+                                "PHOTOS_UPLOADED" -> {
                                     Button(
                                         onClick = { viewModel.markPhotosSeen() },
                                         modifier = Modifier.weight(1f),
@@ -208,42 +202,41 @@ fun NegotiationScreen(
                                         Spacer(Modifier.width(4.dp))
                                         Text("I've Seen the Photos", fontSize = 11.sp)
                                     }
-                                } else {
-                                    // Photos requested but not uploaded. Show nothing or a disabled button?
-                                    // Requirement says: Status becomes: Waiting for customer...
                                 }
-                            } else if (inPricePhase) {
-                                Button(
-                                    onClick = { showPriceDialog = true },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
-                                ) {
-                                    Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Propose Price", fontSize = 11.sp)
+                                "PRICE_PROPOSAL", "WAITING_FOR_PROVIDER" -> {
+                                    Button(
+                                        onClick = { showPriceDialog = true },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
+                                    ) {
+                                        Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(if (phase == "WAITING_FOR_PROVIDER") "Send Counter Offer" else "Propose Price", fontSize = 11.sp)
+                                    }
                                 }
-                            } else if (jobState?.status == "ACCEPTED") {
-                                // Price agreed or not required, but dispatch pending
-                                Button(
-                                    onClick = { viewModel.confirmDispatch() },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
-                                ) {
-                                    Icon(Icons.Default.LocalShipping, null, modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Confirm Dispatch", fontSize = 11.sp)
+                                "PRICE_ACCEPTED" -> {
+                                    Button(
+                                        onClick = { viewModel.confirmDispatch() },
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                                    ) {
+                                        Icon(Icons.Default.LocalShipping, null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("Confirm Dispatch", fontSize = 11.sp)
+                                    }
                                 }
                             }
                         }
                         
                         // Status Text
-                        val statusHint = when {
-                            photoRequired && !photosRequested -> "Ask for photos to see the task detail."
-                            photoRequired && photosRequested && !hasPhotos -> "Waiting for customer to upload photos..."
-                            photoRequired && hasPhotos && !photosSeen -> "Review the photos above then mark as reviewed."
-                            negRequired && jobState?.priceStatus == "PENDING" -> "Waiting for counter-party to respond..."
+                        val statusHint = when (phase) {
+                            "PHOTO_REQUEST" -> "Ask for photos to see the task detail."
+                            "WAITING_FOR_PHOTOS" -> "Waiting for customer to upload photos..."
+                            "PHOTOS_UPLOADED" -> "Review the photos above then mark as reviewed."
+                            "WAITING_FOR_CUSTOMER" -> "Waiting for customer to respond to proposal..."
+                            "PRICE_ACCEPTED" -> "Price agreed! Tap dispatch to start navigation."
                             else -> ""
                         }
                         if (statusHint.isNotEmpty()) {
@@ -256,14 +249,25 @@ fun NegotiationScreen(
                             )
                         }
                     } else {
-                        // Customer View - Just informative text
-                        Text(
-                            "Waiting for provider actions. You can upload photos if requested.",
-                            textAlign = TextAlign.Center,
-                            fontSize = 12.sp,
-                            color = Color.Gray,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        // Customer View
+                        val customerHint = when (phase) {
+                            "PHOTO_REQUEST" -> "Waiting for provider to review request..."
+                            "WAITING_FOR_PHOTOS" -> "Provider requested photos. Use UPLOAD button below."
+                            "PHOTOS_UPLOADED" -> "Photos uploaded. Waiting for provider review..."
+                            "PRICE_PROPOSAL" -> "Waiting for provider to propose a price..."
+                            "WAITING_FOR_PROVIDER" -> "Counter-offer sent. Waiting for provider..."
+                            "PRICE_ACCEPTED" -> "Price agreed! Waiting for provider to dispatch."
+                            else -> ""
+                        }
+                        if (customerHint.isNotEmpty()) {
+                            Text(
+                                customerHint,
+                                textAlign = TextAlign.Center,
+                                fontSize = 12.sp,
+                                color = Color.Gray,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }
@@ -447,33 +451,29 @@ fun NegotiationInfoCard(job: JobDto?, service: ServiceDto?) {
 fun NegotiationProgressTracker(job: JobDto?, service: ServiceDto?) {
     if (job == null) return
     
-    val photoRequired = service?.photoSharingRequired == true
-    val negRequired = service?.priceNegotiationRequired == true
+    val phase = job.currentNegotiationPhase ?: "NEUTRAL"
+    val photoRequired = job.photoSharingRequired == true
+    val negRequired = job.priceNegotiationRequired == true
     
-    val steps = remember(job.status, job.priceStatus, job.taskPhotosSeen, photoRequired, negRequired) {
+    val steps = remember(job.status, phase, photoRequired, negRequired) {
         mutableListOf<NegotiationStep>().apply {
             // Step 1: Request Accepted
             add(NegotiationStep("Request Accepted", true))
             
             // Step 2: Photos Shared (only if required)
             if (photoRequired) {
-                add(NegotiationStep("Photos Shared", job.taskPhotosSeen == true))
+                val photosDone = !listOf("PHOTO_REQUEST", "WAITING_FOR_PHOTOS", "PHOTOS_UPLOADED").contains(phase)
+                add(NegotiationStep("Photos Shared", photosDone))
             }
             
             // Step 3: Price Agreed (only if required)
             if (negRequired) {
-                add(NegotiationStep("Price Agreed", job.priceStatus == "ACCEPTED"))
+                val priceDone = phase == "PRICE_ACCEPTED" || phase == "DISPATCHED"
+                add(NegotiationStep("Price Agreed", priceDone))
             }
             
             // Step 4: Provider Dispatched
-            // Statuses where the provider is NOT yet dispatched
-            val preDispatchStatuses = listOf(
-                "DRAFT", "REQUEST_CREATED", "PAYMENT_PENDING", 
-                "BOOKING_FEE_PAID", "BROADCASTING", "BROADCASTED", 
-                "PROVIDER_ACCEPTED", "ACCEPTED"
-            )
-            val isDispatched = !preDispatchStatuses.contains(job.status)
-            add(NegotiationStep("Provider Dispatched", isDispatched))
+            add(NegotiationStep("Provider Dispatched", phase == "DISPATCHED"))
         }
     }
 
