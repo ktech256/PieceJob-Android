@@ -150,6 +150,7 @@ class ChatViewModel @Inject constructor(
     }
 
     fun uploadTaskPhotos(uris: List<android.net.Uri>) {
+        if (_isLoading.value) return
         val jobId = currentJobId ?: return
         viewModelScope.launch {
             _isLoading.value = true
@@ -171,6 +172,10 @@ class ChatViewModel @Inject constructor(
                     val bytes = out.toByteArray()
                     
                     val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                    
+                    // Trace Log
+                    android.util.Log.d("FORENSIC", "CHAT_UPLOAD_PIPELINE | Uploading Part ${index + 1} to generic endpoint")
+                    
                     val res = repository.uploadFile(base64, "image/jpeg", "task-photos/$jobId")
                     
                     if (res.success && res.data != null) {
@@ -182,16 +187,18 @@ class ChatViewModel @Inject constructor(
 
                 if (uploadedUrls.isNotEmpty()) {
                     _uploadProgress.value = "Saving metadata..."
+                    android.util.Log.d("FORENSIC", "CHAT_UPLOAD_PIPELINE | All files uploaded. Saving metadata for Job: $jobId")
                     val res = repository.uploadTaskPhotos(jobId, uploadedUrls)
                     if (res.success) {
                         _uploadSuccess.value = true
                         _uploadProgress.value = "Photos Uploaded Successfully"
+                        android.util.Log.d("FORENSIC", "CHAT_UPLOAD_PIPELINE | Metadata saved successfully. Refreshing config.")
                     } else {
                         throw Exception(res.message ?: "Failed to save photo metadata")
                     }
                 }
             } catch (e: Exception) {
-                Log.e("FORENSIC", "CHAT_UPLOAD_FAILED", e)
+                android.util.Log.e("FORENSIC", "CHAT_UPLOAD_PIPELINE | FAILED", e)
                 _uploadError.value = e.message ?: "Upload failed"
             } finally {
                 _isLoading.value = false
