@@ -260,16 +260,16 @@ fun ProviderWalletTabScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(text = statusText, color = statusColor, fontSize = 14.sp, fontWeight = FontWeight.Black)
-                            Text(text = displayBalance, fontSize = 32.sp, fontWeight = FontWeight.Black, color = Color(0xFF121212))
+                            Text(text = "$statusText Service Fee", color = statusColor, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text(text = displayBalance, fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color(0xFF121212))
                         }
                         Button(
                             onClick = { showPayServiceFeeDialog = true },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF121212)),
-                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                         ) {
-                            Text("PAY SERVICE FEE", fontSize = 11.sp, fontWeight = FontWeight.Black)
+                            Text("PAY SERVICE FEE", fontSize = 10.sp, fontWeight = FontWeight.Black)
                         }
                     }
 
@@ -278,7 +278,7 @@ fun ProviderWalletTabScreen(
                         Divider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp, color = Color(0xFFEEEEEE))
                         
                         BreakdownRow("Service Fee %", "${details.serviceFeePercentage}%")
-                        BreakdownRow("Booking Fee Contribution", String.format(Locale.getDefault(), "%s %.2f", currencySymbol, details.bookingFeePaid))
+                        BreakdownRow("Customer Booking Fee Contribution", String.format(Locale.getDefault(), "%s %.2f", currencySymbol, details.bookingFeePaid))
                         BreakdownRow("Negotiated Price", String.format(Locale.getDefault(), "%s %.2f", currencySymbol, details.acceptedPrice))
                         BreakdownRow("Platform Share", String.format(Locale.getDefault(), "%s %.2f", currencySymbol, details.serviceFeeAmount))
                         BreakdownRow("Provider Keeps", String.format(Locale.getDefault(), "%s %.2f", currencySymbol, details.providerKeeps), isHighlight = true)
