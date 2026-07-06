@@ -247,7 +247,7 @@ fun ProviderTrackingScreen(
     }
 
     val phase = job?.currentNegotiationPhase ?: "NEUTRAL"
-    val isNegotiating = listOf("PHOTO_REQUEST", "WAITING_FOR_PHOTOS", "PHOTOS_UPLOADED", "PRICE_PROPOSAL", "WAITING_FOR_CUSTOMER", "WAITING_FOR_PROVIDER", "PRICE_ACCEPTED").contains(phase)
+    val isNegotiating = false // Removed RESUME NEGOTIATION overlay as per Issue 2 requirement
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
@@ -255,6 +255,8 @@ fun ProviderTrackingScreen(
             modifier = Modifier.fillMaxSize()
         )
         
+        /* 
+        // Issue 2: Remove RESUME NEGOTIATION overlay from tracking screens
         if (isNegotiating) {
             Box(
                 modifier = Modifier.fillMaxSize().background(Color.White),
@@ -281,6 +283,7 @@ fun ProviderTrackingScreen(
                 }
             }
         }
+        */
 
         // Overlay: Top Header
         Column(

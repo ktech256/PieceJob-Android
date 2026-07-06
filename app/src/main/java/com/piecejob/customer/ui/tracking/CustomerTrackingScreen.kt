@@ -81,7 +81,7 @@ fun CustomerTrackingScreen(
 
     val isTerminalState = job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED"
     val phase = job?.currentNegotiationPhase ?: "NEUTRAL"
-    val isNegotiating = listOf("PHOTO_REQUEST", "WAITING_FOR_PHOTOS", "PHOTOS_UPLOADED", "PRICE_PROPOSAL", "WAITING_FOR_CUSTOMER", "WAITING_FOR_PROVIDER", "PRICE_ACCEPTED").contains(phase)
+    val isNegotiating = false // Removed RESUME NEGOTIATION overlay as per Issue 2 requirement
 
     var showCancelDialog by remember { mutableStateOf(false) }
     var hasAutoNavigatedToNegotiation by remember { mutableStateOf(false) }
@@ -198,6 +198,8 @@ fun CustomerTrackingScreen(
             }
         }
 
+        /* 
+        // Issue 2: Remove RESUME NEGOTIATION overlay from tracking screens
         if (isNegotiating) {
             Box(
                 modifier = Modifier.fillMaxSize().background(Color.White),
@@ -224,6 +226,7 @@ fun CustomerTrackingScreen(
                 }
             }
         }
+        */
 
         // Top Status Bar (Mirroring Provider Layout with Back Arrow inside)
         AnimatedVisibility(
