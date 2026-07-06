@@ -140,7 +140,7 @@ fun ServiceFeeTable(records: List<com.piecejob.core.data.remote.dto.RecentServic
                     color = Color.Gray
                 )
                 Text(
-                    text = String.format(Locale.getDefault(), "%s%.0f", currency, record.acceptedPrice),
+                    text = if (record.acceptedPrice > 0) String.format(Locale.getDefault(), "%s%.0f", currency, record.acceptedPrice) else "N/A",
                     modifier = Modifier.weight(1f),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
