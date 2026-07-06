@@ -27,14 +27,14 @@ data class UploadPhotosRequest(
     val photos: List<String>
 )
 
-data class PayCommissionRequest(
+data class PayServiceFeeRequest(
     val vendor: String,
     val voucherNumber: String
 )
 
-data class PayCommissionResponse(
+data class PayServiceFeeResponse(
     val paymentAmount: Double,
-    val outstandingCommission: Double,
+    val serviceFeeBalance: Double,
     val balanceMain: Double,
     val isSuspended: Boolean
 )

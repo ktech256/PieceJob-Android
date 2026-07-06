@@ -140,7 +140,7 @@ data class WalletDto(
     val balanceCredit: Double,
     val balanceReferral: Double,
     val balanceBonus: Double,
-    val outstandingCommission: Double = 0.0,
+    val serviceFeeBalance: Double = 0.0,
     val isSuspended: Boolean = false,
     val currency: String
 )
@@ -173,7 +173,7 @@ data class StatementDto(
 
 data class StatementSummaryDto(
     val grossEarnings: Double,
-    val platformCommission: Double,
+    val platformServiceFee: Double,
     val netEarnings: Double,
     val jobCount: Int
 )

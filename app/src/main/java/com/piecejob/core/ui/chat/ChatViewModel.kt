@@ -49,6 +49,12 @@ class ChatViewModel @Inject constructor(
     private val _jobState = MutableStateFlow<JobDto?>(null)
     val jobState: StateFlow<JobDto?> = _jobState
 
+    private val _eta = MutableStateFlow("-- mins")
+    val eta: StateFlow<String> = _eta
+
+    private val _distance = MutableStateFlow("-- km away")
+    val distance: StateFlow<String> = _distance
+
     private var currentJobId: String? = null
 
     fun initChat(jobId: String) {
@@ -57,6 +63,9 @@ class ChatViewModel @Inject constructor(
         loadMessages(jobId)
         loadJobConfig(jobId)
         socketManager.joinJob(jobId)
+        
+        // Setup Live Metrics (ETA/Distance)
+        setupLiveMetrics()
         
         viewModelScope.launch {
             socketManager.statusEventFlow.collect { event ->
@@ -91,6 +100,50 @@ class ChatViewModel @Inject constructor(
                 android.util.Log.d("FORENSIC", "CHAT_CONFIG_LOADED | Photos: ${jobRes.data.photoSharingRequired}, Neg: ${jobRes.data.priceNegotiationRequired}")
             }
         }
+    }
+
+    private fun setupLiveMetrics() {
+        val isProvider = com.piecejob.BuildConfig.FLAVOR == "provider"
+        
+        if (isProvider) {
+            viewModelScope.launch {
+                com.piecejob.core.location.LocationService.currentLocation.collect { location ->
+                    location?.let {
+                        calculateLiveMetrics(it.latitude, it.longitude)
+                    }
+                }
+            }
+        } else {
+            socketManager.onLocationUpdated { lat, lng, _ ->
+                calculateLiveMetrics(lat, lng)
+            }
+        }
+    }
+
+    private fun calculateLiveMetrics(lat: Double, lng: Double) {
+        val dest = _jobState.value?.location?.coordinates ?: return
+        if (dest.size < 2) return
+        val destLat = dest[1]
+        val destLng = dest[0]
+
+        // Reusing standard Haversine from tracking logic
+        val r = 6371e3
+        val phi1 = lat * Math.PI / 180
+        val phi2 = destLat * Math.PI / 180
+        val deltaPhi = (destLat - lat) * Math.PI / 180
+        val deltaLambda = (destLng - lng) * Math.PI / 180
+
+        val a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+                Math.cos(phi1) * Math.cos(phi2) *
+                Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2)
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        val distMeters = r * c
+
+        _distance.value = if (distMeters < 1000) "${distMeters.toInt()} m away" else String.format("%.1f km away", distMeters / 1000)
+
+        // Same ETA logic as tracking screen: 40km/h average
+        val timeSeconds = distMeters / 11.1
+        _eta.value = if (timeSeconds < 60) "1 min" else "${(timeSeconds / 60).toInt()} mins"
     }
 
     private fun loadMessages(jobId: String) {

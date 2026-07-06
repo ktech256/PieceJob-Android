@@ -34,14 +34,14 @@ fun ProviderWalletScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
     
-    var showPayCommissionDialog by remember { mutableStateOf(false) }
+    var showPayServiceFeeDialog by remember { mutableStateOf(false) }
     var voucherNumber by remember { mutableStateOf("") }
     var selectedVendor by remember { mutableStateOf("OTT") }
 
-    if (showPayCommissionDialog) {
+    if (showPayServiceFeeDialog) {
         AlertDialog(
-            onDismissRequest = { showPayCommissionDialog = false },
-            title = { Text("Pay Commission") },
+            onDismissRequest = { showPayServiceFeeDialog = false },
+            title = { Text("Pay Service Fee") },
             text = {
                 Column {
                     Text("Select Voucher Vendor", fontSize = 12.sp, color = Color.Gray)
@@ -66,15 +66,15 @@ fun ProviderWalletScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.payCommission(selectedVendor, voucherNumber)
-                        showPayCommissionDialog = false
+                        viewModel.payServiceFee(selectedVendor, voucherNumber)
+                        showPayServiceFeeDialog = false
                         voucherNumber = ""
                     },
                     enabled = voucherNumber.isNotBlank()
                 ) { Text("Redeem & Pay") }
             },
             dismissButton = {
-                TextButton(onClick = { showPayCommissionDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showPayServiceFeeDialog = false }) { Text("Cancel") }
             }
         )
     }
@@ -129,28 +129,38 @@ fun ProviderWalletScreen(
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                if ((wallet?.outstandingCommission ?: 0.0) > 0.0) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF333333)),
-                        border = BorderStroke(1.dp, if (wallet?.isSuspended == true) Color.Red else Color.Gray)
-                    ) {
+                // SERVICE FEE Section
+                val serviceFeeBalance = wallet?.serviceFeeBalance ?: 0.0
+                val (statusText, statusColor, displayAmount) = when {
+                    serviceFeeBalance > 0 -> Triple("Outstanding", Color.Red, String.format(Locale.getDefault(), "%s %.2f", currencySymbol, serviceFeeBalance))
+                    serviceFeeBalance < 0 -> Triple("Credit", Color(0xFF2E7D32), String.format(Locale.getDefault(), "%s +%.2f", currencySymbol, -serviceFeeBalance))
+                    else -> Triple("Settled", Color(0xFF1976D2), String.format(Locale.getDefault(), "%s 0.00", currencySymbol))
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF333333)),
+                    border = BorderStroke(1.dp, if (wallet?.isSuspended == true) Color.Red else Color.Gray)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("SERVICE FEE", color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
                         Row(
-                            modifier = Modifier.padding(16.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text("Outstanding Commission", color = Color.LightGray, fontSize = 11.sp)
+                                Text(statusText, color = statusColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                 Text(
-                                    text = String.format(Locale.getDefault(), "%s %.2f", currencySymbol, wallet?.outstandingCommission ?: 0.0),
-                                    color = if (wallet?.isSuspended == true) Color.Red else Color.White,
+                                    text = displayAmount,
+                                    color = if (wallet?.isSuspended == true && serviceFeeBalance > 0) Color.Red else Color.White,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                             Button(
-                                onClick = { showPayCommissionDialog = true },
+                                onClick = { showPayServiceFeeDialog = true },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                             ) {
@@ -230,6 +240,10 @@ fun EmptyState(message: String) {
 
 @Composable
 fun TransactionItem(tx: WalletTransactionDto, currency: String) {
+    val displayType = when (tx.type) {
+        "COMMISSION" -> "SERVICE FEE"
+        else -> tx.type.replace("_", " ")
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -241,7 +255,7 @@ fun TransactionItem(tx: WalletTransactionDto, currency: String) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = tx.type.replace("_", " "), fontWeight = FontWeight.Black, fontSize = 14.sp)
+                Text(text = displayType, fontWeight = FontWeight.Black, fontSize = 14.sp)
                 Text(text = tx.description ?: "", fontSize = 11.sp, color = Color.Gray, maxLines = 1)
                 Text(text = tx.createdAt.take(10), fontSize = 9.sp, color = Color.LightGray)
             }

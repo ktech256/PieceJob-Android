@@ -4,15 +4,15 @@ import com.piecejob.core.data.remote.PieceJobApi
 import com.piecejob.core.data.remote.dto.*
 import com.piecejob.core.data.remote.ApiResponse
 import com.piecejob.core.data.remote.ApiError
-import com.piecejob.core.data.remote.CommissionRateDto
+import com.piecejob.core.data.remote.ServiceFeeRateDto
 import javax.inject.Inject
 
-class CommissionRepository @Inject constructor(
+class ServiceFeeRepository @Inject constructor(
     private val api: PieceJobApi
 ) {
-    suspend fun getCommissionRate(): ApiResponse<CommissionRateDto> {
+    suspend fun getServiceFeeRate(): ApiResponse<ServiceFeeRateDto> {
         return try {
-            api.getCommissionRate()
+            api.getServiceFeeRate()
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }

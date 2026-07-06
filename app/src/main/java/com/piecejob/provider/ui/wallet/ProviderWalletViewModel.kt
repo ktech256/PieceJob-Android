@@ -90,14 +90,14 @@ class ProviderWalletViewModel @Inject constructor(
         }
     }
 
-    fun payCommission(vendor: String, voucherNumber: String) {
+    fun payServiceFee(vendor: String, voucherNumber: String) {
         viewModelScope.launch {
             _isLoading.value = true
-            val response = walletRepository.payCommission(vendor, voucherNumber)
+            val response = walletRepository.payServiceFee(vendor, voucherNumber)
             if (response.success) {
-                loadWalletData() // Refresh balance and outstanding commission
+                loadWalletData() // Refresh balance and service fee balance
             } else {
-                _error.value = response.message ?: "Commission payment failed"
+                _error.value = response.message ?: "Service fee payment failed"
             }
             _isLoading.value = false
         }

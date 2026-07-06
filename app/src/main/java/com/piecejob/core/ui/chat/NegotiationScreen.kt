@@ -9,14 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.LocalShipping
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Sell
-import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,7 +21,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.piecejob.core.data.remote.ServiceDto
 import com.piecejob.core.data.remote.dto.MessageDto
 import com.piecejob.core.data.remote.dto.JobDto
 import com.piecejob.core.data.remote.dto.PriceProposalDto
@@ -44,18 +36,14 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.material.icons.filled.AddAPhoto
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.clip
 import coil.compose.rememberAsyncImagePainter
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,6 +61,8 @@ fun NegotiationScreen(
     val uploadError by viewModel.uploadError.collectAsState()
     val uploadSuccess by viewModel.uploadSuccess.collectAsState()
     val jobState by viewModel.jobState.collectAsState()
+    val eta by viewModel.eta.collectAsState()
+    val distance by viewModel.distance.collectAsState()
     val phase = jobState?.currentNegotiationPhase ?: "NEUTRAL"
     
     var showPriceDialog by remember { mutableStateOf(false) }
@@ -120,11 +110,11 @@ fun NegotiationScreen(
         ModalBottomSheet(onDismissRequest = { showPhotoPicker = false }) {
             Column(modifier = Modifier.padding(16.dp).padding(bottom = 32.dp)) {
                 Text("Select Photo Source", fontWeight = FontWeight.Black, modifier = Modifier.padding(bottom = 16.dp))
-                PickerOption(androidx.compose.material.icons.Icons.Default.CameraAlt, "Take Photo") {
+                PickerOption(Icons.Default.CameraAlt, "Take Photo") {
                     showPhotoPicker = false
                     cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
                 }
-                PickerOption(androidx.compose.material.icons.Icons.Default.PhotoLibrary, "Choose From Gallery") {
+                PickerOption(Icons.Default.PhotoLibrary, "Choose From Gallery") {
                     showPhotoPicker = false
                     galleryLauncher.launch("image/*")
                 }
@@ -367,14 +357,17 @@ fun NegotiationScreen(
                             colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9C4)),
                             border = BorderStroke(1.dp, Color(0xFFFBC02D))
                         ) {
-                            Text(
-                                "Locked Session: Normal messaging is disabled until the price is agreed upon and the job is dispatched.",
-                                modifier = Modifier.padding(12.dp),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF827717),
-                                textAlign = TextAlign.Center
-                            )
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                if (isProvider) {
+                                    NegotiationHeaderItem("Service:", jobState?.serviceName ?: "General Service")
+                                    NegotiationHeaderItem("Location:", formatNegotiationAddress(jobState?.location?.address))
+                                    NegotiationHeaderItem("Distance:", distance)
+                                } else {
+                                    val providerName = jobState?.providerInfo?.firstName ?: "Provider"
+                                    NegotiationHeaderItem("Service:", jobState?.serviceName ?: "General Service")
+                                    NegotiationHeaderItem("ETA:", "$providerName is $eta away")
+                                }
+                            }
                         }
                     }
                     
@@ -455,6 +448,7 @@ fun NegotiationScreen(
         }
     }
 }
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FullscreenPhotoGallery(
@@ -891,5 +885,24 @@ fun TaskPhotosRow(photos: List<String>, label: String, onClick: (Int) -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun NegotiationHeaderItem(label: String, value: String) {
+    Row(modifier = Modifier.padding(vertical = 2.dp)) {
+        Text(text = label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF827717), modifier = Modifier.width(65.dp))
+        Text(text = value, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF827717))
+    }
+}
+
+fun formatNegotiationAddress(address: String?): String {
+    if (address == null) return "Client Location"
+    val parts = address.split(",")
+    return if (parts.size >= 3) {
+        // Example: "139 Erasmus St, Flora Park, Polokwane" -> "Flora Park, Polokwane"
+        "${parts[1].trim()}, ${parts[2].trim()}"
+    } else {
+        address
     }
 }

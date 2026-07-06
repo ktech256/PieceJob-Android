@@ -145,14 +145,14 @@ interface PieceJobApi {
     @GET("wallets/invoices")
     suspend fun getInvoices(): ApiResponse<List<InvoiceDto>>
 
-    @GET("wallets/commission-rate")
-    suspend fun getCommissionRate(): ApiResponse<CommissionRateDto>
+    @GET("wallets/service-fee-rate")
+    suspend fun getServiceFeeRate(): ApiResponse<ServiceFeeRateDto>
 
     @POST("wallets/withdraw")
     suspend fun requestWithdrawal(@Body request: WithdrawRequest): ApiResponse<Unit>
 
-    @POST("wallets/pay-commission")
-    suspend fun payCommission(@Body request: PayCommissionRequest): ApiResponse<PayCommissionResponse>
+    @POST("wallets/pay-service-fee")
+    suspend fun payServiceFee(@Body request: PayServiceFeeRequest): ApiResponse<PayServiceFeeResponse>
 
     @GET("providers/dashboard")
     suspend fun getProviderDashboard(): ApiResponse<ProviderDashboardDto>
@@ -470,8 +470,8 @@ data class SurchargeDto(
     val amount: Double
 )
 
-data class CommissionRateDto(
-    val commissionRate: Double
+data class ServiceFeeRateDto(
+    val serviceFeeRate: Double
 )
 
 data class WorkspaceConfigDto(

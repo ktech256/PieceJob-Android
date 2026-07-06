@@ -49,9 +49,9 @@ class WalletRepository @Inject constructor(
         }
     }
 
-    suspend fun payCommission(vendor: String, voucherNumber: String): ApiResponse<PayCommissionResponse> {
+    suspend fun payServiceFee(vendor: String, voucherNumber: String): ApiResponse<PayServiceFeeResponse> {
         return try {
-            api.payCommission(PayCommissionRequest(vendor, voucherNumber))
+            api.payServiceFee(PayServiceFeeRequest(vendor, voucherNumber))
         } catch (e: Exception) {
             ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
         }
