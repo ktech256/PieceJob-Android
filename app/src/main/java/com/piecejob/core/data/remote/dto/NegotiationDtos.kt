@@ -29,7 +29,8 @@ data class UploadPhotosRequest(
 
 data class PayServiceFeeRequest(
     val vendor: String,
-    val voucherNumber: String
+    val voucherNumber: String,
+    val amount: Double
 )
 
 data class PayServiceFeeResponse(

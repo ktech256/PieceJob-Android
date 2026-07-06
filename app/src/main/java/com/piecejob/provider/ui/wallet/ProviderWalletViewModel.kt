@@ -90,10 +90,10 @@ class ProviderWalletViewModel @Inject constructor(
         }
     }
 
-    fun payServiceFee(vendor: String, voucherNumber: String) {
+    fun payServiceFee(vendor: String, voucherNumber: String, amount: Double) {
         viewModelScope.launch {
             _isLoading.value = true
-            val response = walletRepository.payServiceFee(vendor, voucherNumber)
+            val response = walletRepository.payServiceFee(vendor, voucherNumber, amount)
             if (response.success) {
                 loadWalletData() // Refresh balance and service fee balance
             } else {
