@@ -45,6 +45,10 @@ data class JobDto(
     @SerializedName("isForSomeoneElse") val isForSomeoneElse: Boolean?,
     @SerializedName("recipientName") val recipientName: String?,
     @SerializedName("recipientPhone") val recipientPhone: String?,
+    @SerializedName("customerRated") val customerRated: Boolean?,
+    @SerializedName("providerRated") val providerRated: Boolean?,
+    @SerializedName("customerRatingDismissed") val customerRatingDismissed: Boolean?,
+    @SerializedName("providerRatingDismissed") val providerRatingDismissed: Boolean?,
     @SerializedName("createdAt") val createdAt: String?,
     @SerializedName("paymentReference") val paymentReference: String? = null
 )

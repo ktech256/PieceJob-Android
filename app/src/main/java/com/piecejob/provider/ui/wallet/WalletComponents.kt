@@ -76,6 +76,114 @@ fun BreakdownRow(label: String, value: String, isHighlight: Boolean = false) {
 }
 
 @Composable
+fun ServiceFeeTable(records: List<com.piecejob.core.data.remote.dto.RecentServiceFeeDto>, currency: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        // Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("JOB ID", modifier = Modifier.weight(1.2f), fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+            Text("DATE", modifier = Modifier.weight(0.8f), fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+            Text("TOTAL", modifier = Modifier.weight(1f), fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, textAlign = androidx.compose.ui.text.style.TextAlign.End)
+            Text("FEE", modifier = Modifier.weight(1f), fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, textAlign = androidx.compose.ui.text.style.TextAlign.End)
+            Text("STATUS", modifier = Modifier.weight(1.3f), fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray, textAlign = androidx.compose.ui.text.style.TextAlign.End)
+        }
+        
+        HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFEEEEEE))
+
+        records.forEach { record ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "PJ-${record.jobId.takeLast(4).uppercase()}",
+                    modifier = Modifier.weight(1.2f),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = try {
+                        val parts = record.date.split("T")[0].split("-")
+                        val day = parts[2]
+                        val month = when(parts[1]) {
+                            "01" -> "Jan"
+                            "02" -> "Feb"
+                            "03" -> "Mar"
+                            "04" -> "Apr"
+                            "05" -> "May"
+                            "06" -> "Jun"
+                            "07" -> "Jul"
+                            "08" -> "Aug"
+                            "09" -> "Sep"
+                            "10" -> "Oct"
+                            "11" -> "Nov"
+                            "12" -> "Dec"
+                            else -> parts[1]
+                        }
+                        "$day $month"
+                    } catch (e: Exception) {
+                        record.date.take(10)
+                    },
+                    modifier = Modifier.weight(0.8f),
+                    fontSize = 11.sp,
+                    color = Color.Gray
+                )
+                Text(
+                    text = String.format(Locale.getDefault(), "%s%.0f", currency, record.acceptedPrice),
+                    modifier = Modifier.weight(1f),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End
+                )
+                Text(
+                    text = String.format(Locale.getDefault(), "%s%.0f", currency, record.serviceFeeAmount),
+                    modifier = Modifier.weight(1f),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF121212),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End
+                )
+                
+                val (displayText, statusColor) = when(record.status) {
+                    "PAID" -> "PAID" to Color(0xFF2E7D32)
+                    "PARTIAL" -> "PARTIAL" to Color(0xFFFFA000)
+                    "WAIVED" -> "WAIVED" to Color(0xFF1976D2)
+                    "OUTSTANDING" -> "UNPAID" to Color(0xFFD32F2F)
+                    else -> record.status to Color.Gray
+                }
+                
+                Surface(
+                    color = statusColor.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.weight(1.3f).wrapContentWidth(Alignment.End)
+                ) {
+                    Text(
+                        text = displayText,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black,
+                        color = statusColor,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+            HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFF5F5F5))
+        }
+    }
+}
+
+@Composable
 fun EmptyState(message: String) {
     Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
         Text(message, color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)

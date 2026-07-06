@@ -272,29 +272,26 @@ fun ProviderWalletTabScreen(
                         }
                     }
 
-                    // Financial Breakdown (from last job)
-                    wallet?.lastServiceFeeDetails?.let { details ->
-                        Divider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp, color = Color(0xFFEEEEEE))
+                    // Recent Service Fees Table
+                    if (!wallet?.recentServiceFees.isNullOrEmpty()) {
+                        Spacer(Modifier.height(16.dp))
+                        Text("RECENT SERVICE FEES", fontWeight = FontWeight.Black, fontSize = 11.sp, color = Color.Gray)
+                        Spacer(Modifier.height(8.dp))
                         
-                        BreakdownRow("Service Fee %", "${details.serviceFeePercentage}%")
-                        BreakdownRow("Customer Booking Fee Contribution", String.format(Locale.getDefault(), "%s %.2f", currencySymbol, details.bookingFeePaid))
-                        BreakdownRow("Negotiated Price", String.format(Locale.getDefault(), "%s %.2f", currencySymbol, details.acceptedPrice))
-                        BreakdownRow("Platform Share", String.format(Locale.getDefault(), "%s %.2f", currencySymbol, details.serviceFeeAmount))
-                        BreakdownRow("Provider Keeps", String.format(Locale.getDefault(), "%s %.2f", currencySymbol, details.providerKeeps), isHighlight = true)
-                        
+                        ServiceFeeTable(wallet?.recentServiceFees!!, currencySymbol)
+
                         if (balance < 0) {
                             Spacer(Modifier.height(16.dp))
                             Text("Payment methods supported", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
                             Text("• OTT Voucher\n• Blue Voucher\n• 1Voucher\n• Bank Card", fontSize = 10.sp, color = Color.Gray, lineHeight = 14.sp)
                         }
-
-                    } ?: run {
+                    } else {
                         // Placeholder if no last job details
                         Text(
                             text = "No recent job details available.",
                             fontSize = 11.sp,
                             color = Color.LightGray,
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }

@@ -51,6 +51,16 @@ fun RatingScreen(
         if (isSuccess) onSuccess()
     }
 
+    LaunchedEffect(job) {
+        val isProviderApp = BuildConfig.FLAVOR == "provider"
+        val alreadyRated = if (isProviderApp) job?.providerRated == true else job?.customerRated == true
+        val alreadyDismissed = if (isProviderApp) job?.providerRatingDismissed == true else job?.customerRatingDismissed == true
+        if (alreadyRated || alreadyDismissed) {
+            android.util.Log.d("FORENSIC", "RATING_SCREEN | Job already rated or dismissed. Closing.")
+            onSuccess()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
