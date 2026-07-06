@@ -239,8 +239,8 @@ fun ProviderWalletTabScreen(
         item {
             val balance = wallet?.serviceFeeBalance ?: 0.0
             val (statusText, statusColor, displayBalance) = when {
-                balance < 0 -> Triple("Outstanding", Color(0xFFD32F2F), String.format(Locale.getDefault(), "%s %.2f", currencySymbol, balance))
-                balance > 0 -> Triple("Credit", Color(0xFF2E7D32), String.format(Locale.getDefault(), "+%s %.2f", currencySymbol, balance))
+                balance < 0 -> Triple("PLEASE PAY A SERVICE FEE OF", Color(0xFFD32F2F), String.format(Locale.getDefault(), "-%s %.2f", currencySymbol, Math.abs(balance)))
+                balance > 0 -> Triple("Credit Service Fee", Color(0xFF2E7D32), String.format(Locale.getDefault(), "+%s %.2f", currencySymbol, balance))
                 else -> Triple("Settled", Color(0xFF1976D2), String.format(Locale.getDefault(), "%s 0.00", currencySymbol))
             }
 
@@ -259,8 +259,8 @@ fun ProviderWalletTabScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(text = "$statusText Service Fee", color = statusColor, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = statusText, color = statusColor, fontSize = 13.sp, fontWeight = FontWeight.Black)
                             Text(text = displayBalance, fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color(0xFF121212))
                         }
                         Button(
@@ -288,9 +288,14 @@ fun ProviderWalletTabScreen(
                             modifier = Modifier.fillMaxWidth().background(statusColor.copy(alpha = 0.05f), RoundedCornerShape(8.dp)).padding(12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Outstanding Service Fee", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = statusColor)
+                            Text("Please pay a service fee of:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = statusColor)
                             Text(String.format(Locale.getDefault(), "%s %.2f", currencySymbol, details.outstandingBalance), fontSize = 11.sp, fontWeight = FontWeight.Black, color = statusColor)
                         }
+                        
+                        Spacer(Modifier.height(16.dp))
+                        Text("Supported payment methods", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                        Text("• OTT Voucher\n• Blue Voucher\n• 1Voucher\n• Bank Card", fontSize = 10.sp, color = Color.Gray, lineHeight = 14.sp)
+
                     } ?: run {
                         // Placeholder if no last job details
                         Text(
