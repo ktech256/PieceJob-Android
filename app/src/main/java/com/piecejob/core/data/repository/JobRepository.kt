@@ -119,6 +119,14 @@ class JobRepository @Inject constructor(
         }
     }
 
+    suspend fun dismissRating(jobId: String): ApiResponse<Unit> {
+        return try {
+            api.dismissRating(jobId)
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
     suspend fun resolveZone(lat: Double, lng: Double): ApiResponse<ZoneDto> {
         return try {
             api.resolveZone(lat, lng)

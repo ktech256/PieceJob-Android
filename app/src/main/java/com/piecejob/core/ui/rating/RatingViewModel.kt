@@ -51,7 +51,25 @@ class RatingViewModel @Inject constructor(
             if (res.success) {
                 _isSuccess.value = true
             } else {
-                _error.value = res.message ?: "Failed to submit rating"
+                if (res.message?.contains("already rated", ignoreCase = true) == true) {
+                    _isSuccess.value = true
+                } else {
+                    _error.value = res.message ?: "Failed to submit rating"
+                }
+            }
+            _isSubmitting.value = false
+        }
+    }
+
+    fun dismissRating(jobId: String) {
+        viewModelScope.launch {
+            _isSubmitting.value = true
+            val res = jobRepository.dismissRating(jobId)
+            if (res.success) {
+                _isSuccess.value = true
+            } else {
+                // If it fails, we still want to close the screen locally to avoid the loop
+                _isSuccess.value = true
             }
             _isSubmitting.value = false
         }

@@ -268,6 +268,9 @@ interface PieceJobApi {
     @POST("jobs/{jobId}/rate")
     suspend fun rateJob(@Path("jobId") jobId: String, @Body request: RatingRequest): ApiResponse<Unit>
 
+    @POST("jobs/{jobId}/dismiss-rating")
+    suspend fun dismissRating(@Path("jobId") jobId: String): ApiResponse<Unit>
+
     @GET("payments/verify/{reference}")
     suspend fun verifyPayment(@Path("reference") reference: String): ApiResponse<JobDto>
 

@@ -30,7 +30,6 @@ fun ProviderWalletTabScreen(
     onNavigate: (com.piecejob.core.ui.navigation.Screen) -> Unit = {}
 ) {
     val wallet by viewModel.wallet.collectAsState()
-    val transactions by viewModel.transactions.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val withdrawSuccess by viewModel.withdrawSuccess.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -311,22 +310,11 @@ fun ProviderWalletTabScreen(
         }
 
         item {
-            Text(text = "Recent Transactions", fontSize = 18.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 16.dp))
-        }
-
-        if (transactions.isEmpty()) {
-            item { EmptyState("No transaction history.") }
-        } else {
-            items(transactions) { tx ->
-                ProviderTransactionRow(tx, currencySymbol)
-            }
-        }
-
-        item {
             Text(text = "Wallet Menu", fontSize = 18.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 16.dp))
         }
 
         val menuItems = listOf(
+            "Recent Transactions" to Screen.RecentTransactions,
             "Payout History" to Screen.ProviderStatements, 
             "Tax Documents" to Screen.ProviderStatements,
             "Invoices" to Screen.ProviderStatements,
@@ -355,73 +343,5 @@ fun ProviderWalletTabScreen(
         item {
             Spacer(modifier = Modifier.height(80.dp))
         }
-    }
-}
-
-@Composable
-fun ProviderTransactionRow(tx: WalletTransactionDto, currency: String) {
-    val displayType = when (tx.type) {
-        "COMMISSION", "SERVICE_FEE" -> "SERVICE FEE"
-        "VOUCHER_PAYMENT", "CREDIT_TOPUP" -> "VOUCHER PAYMENT"
-        else -> tx.type.replace("_", " ")
-    }
-    
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFF1F1F1))
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = displayType, fontWeight = FontWeight.Black, fontSize = 13.sp, letterSpacing = 0.5.sp)
-                Text(text = tx.description ?: "", fontSize = 10.sp, color = Color.Gray, maxLines = 1)
-                Text(text = tx.createdAt.take(10), color = Color.LightGray, fontSize = 9.sp)
-            }
-            Text(
-                text = String.format(Locale.getDefault(), "%s%s %.2f", if (tx.amount >= 0) "+" else "-", currency, Math.abs(tx.amount)),
-                fontWeight = FontWeight.Black,
-                fontSize = 15.sp,
-                color = if (tx.amount >= 0) Color(0xFF2E7D32) else Color(0xFFD32F2F)
-            )
-        }
-    }
-}
-
-@Composable
-fun ProviderBalanceCard(title: String, amount: String, color: Color, modifier: Modifier) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFEEEEEE))
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = title.uppercase(), fontSize = 9.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-            Spacer(Modifier.height(4.dp))
-            Text(text = amount, fontSize = 18.sp, fontWeight = FontWeight.Black, color = color)
-        }
-    }
-}
-
-@Composable
-fun BreakdownRow(label: String, value: String, isHighlight: Boolean = false) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = label, fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
-        Text(text = value, fontSize = 11.sp, fontWeight = if (isHighlight) FontWeight.Black else FontWeight.Bold, color = if (isHighlight) Color(0xFF2E7D32) else Color(0xFF121212))
-    }
-}
-
-@Composable
-fun EmptyState(message: String) {
-    Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-        Text(message, color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     }
 }

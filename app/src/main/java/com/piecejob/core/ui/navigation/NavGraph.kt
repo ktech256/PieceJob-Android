@@ -260,6 +260,9 @@ fun NavGraph(
         composable(route = Screen.ProviderStatements.route) {
             ProviderStatementsScreen(onBack = { navController.popBackStack() })
         }
+        composable(route = Screen.RecentTransactions.route) {
+            com.piecejob.provider.ui.wallet.RecentTransactionsScreen(onBack = { navController.popBackStack() })
+        }
         composable(route = Screen.Support.route) {
             ProviderSupportScreen(
                 onBack = { navController.popBackStack() },

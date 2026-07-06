@@ -38,9 +38,9 @@ fun RatingScreen(
     var rating by remember { mutableIntStateOf(0) }
     var comment by remember { mutableStateOf("") }
 
-    // Prevent going back to tracking screen
+    // Prevent going back to tracking screen, mark as dismissed if user tries to back out
     BackHandler {
-        onSuccess()
+        viewModel.dismissRating(jobId)
     }
 
     LaunchedEffect(jobId) {
@@ -172,7 +172,7 @@ fun RatingScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         TextButton(
-            onClick = { onSuccess() },
+            onClick = { viewModel.dismissRating(jobId) },
             modifier = Modifier.fillMaxWidth(),
             enabled = !isSubmitting
         ) {
