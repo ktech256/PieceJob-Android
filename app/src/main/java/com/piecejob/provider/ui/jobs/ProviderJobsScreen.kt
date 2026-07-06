@@ -45,6 +45,11 @@ fun ProviderJobsScreen(
                 if (parts.size >= 3) {
                     onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Chat.passArgs(parts[1], parts[2]))
                 }
+            } else if (event.startsWith("NEGOTIATION:")) {
+                val parts = event.split(":")
+                if (parts.size >= 3) {
+                    onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(parts[1], parts[2]))
+                }
             } else if (event.startsWith("TRACKING:")) {
                 val jobId = event.removePrefix("TRACKING:")
                 onNavigateToTracking(jobId)
@@ -144,7 +149,7 @@ fun JobCard(job: JobDto, isLoading: Boolean, onNavigateToSubScreen: (String) -> 
                         Text("ACCEPT JOB")
                     }
                 }
-            } else if (job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING") {
+            } else if (job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.priceStatus == "PENDING") {
                 Button(
                     onClick = { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.customerId ?: "")) },
                     modifier = Modifier.fillMaxWidth(),

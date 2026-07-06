@@ -26,7 +26,7 @@ class CustomerMainViewModel @Inject constructor(
             val response = jobRepository.getActiveJob()
             if (response.success && response.data != null) {
                 val job = response.data
-                if (job.status == "PROVIDER_ACCEPTED") {
+                if (job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true) {
                     _navigationEvent.emit("NEGOTIATION:${job.id}:${job.providerId}")
                 } else {
                     _navigationEvent.emit(job.id)

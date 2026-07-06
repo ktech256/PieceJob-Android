@@ -77,9 +77,10 @@ class CustomerJobsViewModel @Inject constructor(
 
     fun openJob(job: JobDto) {
         viewModelScope.launch {
-            val route = when (job.status) {
-                "COMPLETED" -> "rating/${job.id}"
-                "CANCELLED" -> "customer_tracking/${job.id}" // Show cancellation details
+            val route = when {
+                job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.priceStatus == "PENDING" -> 
+                    com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.providerId ?: "")
+                job.status == "COMPLETED" -> "rating/${job.id}"
                 else -> "customer_tracking/${job.id}"
             }
             _navigationEvent.emit(job.id to route)

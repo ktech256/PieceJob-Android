@@ -46,9 +46,6 @@ class ChatViewModel @Inject constructor(
     private val _uploadSuccess = MutableStateFlow(false)
     val uploadSuccess: StateFlow<Boolean> = _uploadSuccess
 
-    private val _serviceConfig = MutableStateFlow<ServiceDto?>(null)
-    val serviceConfig: StateFlow<ServiceDto?> = _serviceConfig
-
     private val _jobState = MutableStateFlow<JobDto?>(null)
     val jobState: StateFlow<JobDto?> = _jobState
 
@@ -91,17 +88,7 @@ class ChatViewModel @Inject constructor(
             val jobRes = jobRepository.getJobById(jobId)
             if (jobRes.success && jobRes.data != null) {
                 _jobState.value = jobRes.data
-                val serviceCode = jobRes.data.serviceCode
-                android.util.Log.d("FORENSIC", "CHAT_LOAD_CONFIG | Job: $jobId | Service: $serviceCode")
-                if (serviceCode != null) {
-                    val servRes = serviceRepository.getServiceDetails(serviceCode)
-                    if (servRes.success && servRes.data != null) {
-                        android.util.Log.d("FORENSIC", "CHAT_CONFIG_LOADED | Photos: ${servRes.data.photoSharingRequired}, Neg: ${servRes.data.priceNegotiationRequired}")
-                        _serviceConfig.value = servRes.data
-                    } else {
-                        android.util.Log.e("FORENSIC", "CHAT_CONFIG_FAILED | Error: ${servRes.message}")
-                    }
-                }
+                android.util.Log.d("FORENSIC", "CHAT_CONFIG_LOADED | Photos: ${jobRes.data.photoSharingRequired}, Neg: ${jobRes.data.priceNegotiationRequired}")
             }
         }
     }

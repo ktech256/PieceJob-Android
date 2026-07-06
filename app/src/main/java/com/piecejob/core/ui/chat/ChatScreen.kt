@@ -43,7 +43,6 @@ fun ChatScreen(
 ) {
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val serviceConfig by viewModel.serviceConfig.collectAsState()
     val jobState by viewModel.jobState.collectAsState()
     var messageText by remember { mutableStateOf("") }
     
@@ -51,7 +50,9 @@ fun ChatScreen(
     var priceAmount by remember { mutableStateOf("") }
     
     val isProvider = com.piecejob.BuildConfig.FLAVOR == "provider"
-    val isNegotiating = jobState?.status == "PROVIDER_ACCEPTED" || jobState?.status == "ACCEPTED" || jobState?.priceStatus == "PENDING"
+    val isNegotiating = jobState?.status == "PROVIDER_ACCEPTED" || 
+                       jobState?.priceNegotiationRequired == true || 
+                       jobState?.priceStatus == "PENDING"
 
     LaunchedEffect(jobState?.status, jobState?.priceStatus) {
         if (isNegotiating) {
@@ -308,26 +309,7 @@ fun StructuredMessageCard(type: String, metadata: Map<String, Any>, isMe: Boolea
                     val round = (metadata["round"] as? Number)?.toInt() ?: 1
                     Text("💰 Price Proposal (Round $round)", fontWeight = FontWeight.Bold)
                     Text("Proposed Amount: R$amount", fontSize = 18.sp, fontWeight = FontWeight.Black)
-                    if (!isMe) {
-                        Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(
-                                onClick = { onAction("REJECT_PROPOSAL", metadata) },
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(0.dp)
-                            ) { Text("Reject", fontSize = 11.sp) }
-                            Button(
-                                onClick = { onAction("ACCEPT_PROPOSAL", metadata) },
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(0.dp)
-                            ) { Text("Accept", fontSize = 11.sp) }
-                        }
-                        Button(
-                            onClick = { onAction("COUNTER_PROPOSAL", metadata) },
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000)),
-                            contentPadding = PaddingValues(0.dp)
-                        ) { Text("Counter Offer", fontSize = 11.sp) }
-                    }
+                    Text("Details and response are available in the negotiation session.", fontSize = 11.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp))
                 }
                 "PRICE_ACCEPTED" -> {
                     val amount = (metadata["amount"] as? Number)?.toDouble() ?: 0.0

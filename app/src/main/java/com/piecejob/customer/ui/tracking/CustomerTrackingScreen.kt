@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
@@ -77,6 +78,10 @@ fun CustomerTrackingScreen(
     val distance by viewModel.distance.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+
+    val isTerminalState = job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED"
+    val phase = job?.currentNegotiationPhase ?: "NEUTRAL"
+    val isNegotiating = listOf("PHOTO_REQUEST", "WAITING_FOR_PHOTOS", "PHOTOS_UPLOADED", "PRICE_PROPOSAL", "WAITING_FOR_CUSTOMER", "WAITING_FOR_PROVIDER", "PRICE_ACCEPTED").contains(phase)
 
     var showCancelDialog by remember { mutableStateOf(false) }
     var hasAutoNavigatedToNegotiation by remember { mutableStateOf(false) }
@@ -146,10 +151,6 @@ fun CustomerTrackingScreen(
             }
         )
     }
-
-    val isTerminalState = job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED"
-    val phase = job?.currentNegotiationPhase ?: "NEUTRAL"
-    val isNegotiating = listOf("PHOTO_REQUEST", "WAITING_FOR_PHOTOS", "PHOTOS_UPLOADED", "PRICE_PROPOSAL", "WAITING_FOR_CUSTOMER", "WAITING_FOR_PROVIDER", "PRICE_ACCEPTED").contains(phase)
 
     Box(modifier = Modifier.fillMaxSize()) {
         // MAP

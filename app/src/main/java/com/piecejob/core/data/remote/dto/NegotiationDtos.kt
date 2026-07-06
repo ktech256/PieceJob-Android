@@ -1,5 +1,7 @@
 package com.piecejob.core.data.remote.dto
 
+import com.google.gson.annotations.SerializedName
+
 data class ProposePriceRequest(
     val jobId: String,
     val amount: Double
@@ -10,7 +12,7 @@ data class RespondProposalRequest(
 )
 
 data class PriceProposalDto(
-    val id: String,
+    @SerializedName("_id", alternate = ["id"]) val id: String,
     val jobId: String,
     val senderId: String,
     val receiverId: String,

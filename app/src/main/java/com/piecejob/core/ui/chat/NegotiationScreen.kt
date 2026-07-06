@@ -72,7 +72,6 @@ fun NegotiationScreen(
     val uploadProgress by viewModel.uploadProgress.collectAsState()
     val uploadError by viewModel.uploadError.collectAsState()
     val uploadSuccess by viewModel.uploadSuccess.collectAsState()
-    val serviceConfig by viewModel.serviceConfig.collectAsState()
     val jobState by viewModel.jobState.collectAsState()
     val phase = jobState?.currentNegotiationPhase ?: "NEUTRAL"
     
@@ -380,11 +379,11 @@ fun NegotiationScreen(
                     }
                     
                     item {
-                        NegotiationProgressTracker(jobState, serviceConfig)
+                        NegotiationProgressTracker(jobState)
                     }
 
                     item {
-                        NegotiationInfoCard(jobState, serviceConfig)
+                        NegotiationInfoCard(jobState)
                     }
 
                     if (!jobState?.taskPhotos.isNullOrEmpty()) {
@@ -402,9 +401,14 @@ fun NegotiationScreen(
                     jobState?.activeProposal?.let { proposal ->
                         item {
                             ActiveProposalHeader(proposal, currentUserId) { action ->
-                                if (action == "ACCEPT") viewModel.respondToProposal(proposal.id, "ACCEPT")
-                                else if (action == "REJECT") viewModel.respondToProposal(proposal.id, "REJECT")
-                                else if (action == "COUNTER") showPriceDialog = true
+                                when (action) {
+                                    "ACCEPT" -> viewModel.respondToProposal(proposal.id, "ACCEPT")
+                                    "REJECT" -> viewModel.respondToProposal(proposal.id, "REJECT")
+                                    "COUNTER" -> {
+                                        priceAmount = "" // Reset to prevent old value crash
+                                        showPriceDialog = true
+                                    }
+                                }
                             }
                         }
                     }
@@ -439,9 +443,9 @@ fun NegotiationScreen(
                                         initialPhotoIndex = meta?.get("index") as? Int ?: 0
                                     }
                                     "MARK_SEEN" -> viewModel.markPhotosSeen()
-                                    "ACCEPT_PROPOSAL" -> viewModel.respondToProposal(meta?.get("proposalId") as? String ?: "", "ACCEPT")
-                                    "REJECT_PROPOSAL" -> viewModel.respondToProposal(meta?.get("proposalId") as? String ?: "", "REJECT")
-                                    "COUNTER_PROPOSAL" -> showPriceDialog = true
+                                    "ACCEPT_PROPOSAL" -> { /* No longer handled here */ }
+                                    "REJECT_PROPOSAL" -> { /* No longer handled here */ }
+                                    "COUNTER_PROPOSAL" -> { /* No longer handled here */ }
                                 }
                             }
                         )
@@ -529,7 +533,7 @@ fun PickerOption(
 }
 
 @Composable
-fun NegotiationInfoCard(job: JobDto?, service: ServiceDto?) {
+fun NegotiationInfoCard(job: JobDto?) {
     if (job == null) return
     
     Card(
@@ -558,7 +562,7 @@ fun NegotiationInfoCard(job: JobDto?, service: ServiceDto?) {
 }
 
 @Composable
-fun NegotiationProgressTracker(job: JobDto?, service: ServiceDto?) {
+fun NegotiationProgressTracker(job: JobDto?) {
     if (job == null) return
     
     val phase = job.currentNegotiationPhase ?: "NEUTRAL"

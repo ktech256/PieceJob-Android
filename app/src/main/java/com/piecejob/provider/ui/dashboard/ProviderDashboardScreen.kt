@@ -186,7 +186,7 @@ fun ProviderDashboardScreen(
                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF2E7D32))
                 }
             }
-        } else if (currentJob != null && (currentJob.status == "PROVIDER_ACCEPTED" || currentJob.status == "ACCEPTED")) {
+        } else if (currentJob != null && (currentJob.status == "PROVIDER_ACCEPTED" || currentJob.priceNegotiationRequired == true || currentJob.priceStatus == "PENDING")) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -492,7 +492,7 @@ fun ShadowBanNotice() {
 @Composable
 fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, onStart: (String) -> Unit, onComplete: (String) -> Unit, onNavigateToSubScreen: (String) -> Unit, onClick: () -> Unit) {
     val isCompleted = job.status == "COMPLETED"
-    val isNegotiationPending = job.status == "PROVIDER_ACCEPTED" || job.status == "ACCEPTED"
+    val isNegotiationPending = job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.priceStatus == "PENDING"
     
     Card(
         modifier = Modifier
@@ -563,25 +563,28 @@ fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, o
                 Box(modifier = Modifier.weight(1f)) {
                     val isActionLoading = isLoading
                     when (job.status) {
-                        "PROVIDER_ACCEPTED", "ACCEPTED" -> Button(
-                            onClick = { 
-                                onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.customerId ?: ""))
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
-                        ) { Text("RESUME NEGOTIATION", fontWeight = FontWeight.Bold) }
-// ...
-
-                        "ACCEPTED" -> Button(
-                            onClick = { onArrive(job.id) },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !isActionLoading,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
-                        ) { 
-                            if (isActionLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
-                            else Text("MARK ARRIVED", fontWeight = FontWeight.Bold) 
+                        "PROVIDER_ACCEPTED", "ACCEPTED" -> {
+                            if (isNegotiationPending) {
+                                Button(
+                                    onClick = { 
+                                        onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.customerId ?: ""))
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
+                                ) { Text("RESUME NEGOTIATION", fontWeight = FontWeight.Bold) }
+                            } else {
+                                Button(
+                                    onClick = { onArrive(job.id) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = !isActionLoading,
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
+                                ) { 
+                                    if (isActionLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
+                                    else Text("MARK ARRIVED", fontWeight = FontWeight.Bold) 
+                                }
+                            }
                         }
                         
                         "ARRIVED" -> Button(
