@@ -32,12 +32,25 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
+    fun provideTokenAuthenticator(
+        sessionManager: SessionManager,
+        apiProvider: javax.inject.Provider<PieceJobApi>
+    ): com.piecejob.core.data.remote.TokenAuthenticator {
+        return com.piecejob.core.data.remote.TokenAuthenticator(sessionManager, apiProvider)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        authInterceptor: AuthInterceptor,
+        tokenAuthenticator: com.piecejob.core.data.remote.TokenAuthenticator
+    ): OkHttpClient {
         val logging = okhttp3.logging.HttpLoggingInterceptor().apply {
             level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
         }
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
+            .authenticator(tokenAuthenticator)
             .addInterceptor(logging)
             .addInterceptor { chain ->
                 val request = chain.request()

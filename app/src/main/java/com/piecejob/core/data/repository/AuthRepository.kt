@@ -147,4 +147,12 @@ class AuthRepository @Inject constructor(
             handleError(e)
         }
     }
+
+    suspend fun refreshToken(request: RefreshRequest): ApiResponse<RefreshResponse> {
+        return try {
+            api.refreshToken(request)
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
 }
