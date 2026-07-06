@@ -142,7 +142,17 @@ data class WalletDto(
     val balanceBonus: Double,
     val serviceFeeBalance: Double = 0.0,
     val isSuspended: Boolean = false,
-    val currency: String
+    val currency: String,
+    val lastServiceFeeDetails: ServiceFeeDetailsDto? = null
+)
+
+data class ServiceFeeDetailsDto(
+    val serviceFeePercentage: Double,
+    val bookingFeePaid: Double,
+    val acceptedPrice: Double,
+    val serviceFeeAmount: Double,
+    val providerKeeps: Double,
+    val outstandingBalance: Double
 )
 
 data class WalletTransactionDto(
