@@ -1,24 +1,26 @@
 package com.piecejob.core.data.remote.dto
 
+import com.google.gson.annotations.SerializedName
+
 data class MessageDto(
-    val id: String,
-    val jobId: String,
-    val senderId: UserSummaryDto,
-    val receiverId: String,
-    val text: String?,
-    val mediaUrl: String?,
-    val mediaType: String?,
-    val isRead: Boolean,
-    val metadata: Map<String, Any>? = null,
-    val createdAt: String
+    @SerializedName("_id", alternate = ["id"]) val id: String,
+    @SerializedName("jobId") val jobId: String,
+    @SerializedName("senderId") val senderId: UserSummaryDto,
+    @SerializedName("receiverId") val receiverId: String,
+    @SerializedName("text") val text: String?,
+    @SerializedName("mediaUrl") val mediaUrl: String?,
+    @SerializedName("mediaType") val mediaType: String?,
+    @SerializedName("isRead") val isRead: Boolean,
+    @SerializedName("metadata") val metadata: Map<String, Any>? = null,
+    @SerializedName("createdAt") val createdAt: String
 )
 
 data class UserSummaryDto(
-    val _id: String,
-    val firstName: String,
-    val lastName: String,
-    val role: String,
-    val profilePicture: String? = null
+    @SerializedName("_id", alternate = ["id"]) val _id: String,
+    @SerializedName("firstName") val firstName: String,
+    @SerializedName("lastName") val lastName: String,
+    @SerializedName("role") val role: String,
+    @SerializedName("profilePicture") val profilePicture: String? = null
 )
 
 data class SendMessageRequest(

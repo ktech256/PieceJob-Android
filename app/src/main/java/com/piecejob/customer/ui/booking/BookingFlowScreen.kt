@@ -76,7 +76,12 @@ fun BookingFlowScreen(
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .navigationBarsPadding()
+        ) {
             when (currentStep) {
                 BookingStep.ADDRESS_SELECTION -> AddressSelectionStep(viewModel, initialLat, initialLng)
                 BookingStep.RECIPIENT_SELECTION -> RecipientSelectionStep(viewModel)

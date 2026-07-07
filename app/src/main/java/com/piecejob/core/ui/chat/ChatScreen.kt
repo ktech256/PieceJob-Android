@@ -46,13 +46,23 @@ fun ChatScreen(
     val jobState by viewModel.jobState.collectAsState()
     var messageText by remember { mutableStateOf("") }
     
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+    
     var showPriceDialog by remember { mutableStateOf(false) }
     var priceAmount by remember { mutableStateOf("") }
     
     val isProvider = com.piecejob.BuildConfig.FLAVOR == "provider"
-    val isNegotiating = jobState?.status == "PROVIDER_ACCEPTED" || 
-                       jobState?.priceNegotiationRequired == true || 
-                       jobState?.priceStatus == "PENDING"
+    
+    // ISSUE 2 FIX: Refine negotiating logic. 
+    // If status has progressed past PROVIDER_ACCEPTED, negotiation is permanently closed.
+    val isNegotiating = jobState?.status == "PROVIDER_ACCEPTED" && 
+                       (jobState?.priceNegotiationRequired == true || jobState?.priceStatus == "PENDING")
 
     LaunchedEffect(jobState?.status, jobState?.priceStatus) {
         if (isNegotiating) {
@@ -116,7 +126,11 @@ fun ChatScreen(
             )
         },
         bottomBar = {
-            Surface(tonalElevation = 4.dp, shadowElevation = 8.dp) {
+            Surface(
+                tonalElevation = 4.dp, 
+                shadowElevation = 8.dp,
+                modifier = Modifier.navigationBarsPadding()
+            ) {
                 if (isNegotiating) {
                     Column(
                         modifier = Modifier.fillMaxWidth().background(Color(0xFFFFF9C4)).padding(16.dp),
@@ -177,6 +191,7 @@ fun ChatScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
                     reverseLayout = false

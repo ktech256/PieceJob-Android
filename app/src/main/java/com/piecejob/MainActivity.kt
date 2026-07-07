@@ -88,6 +88,18 @@ class MainActivity : AppCompatActivity() {
         setIntent(intent)
         incomingIntentQueue.value = intent
         android.util.Log.d("FORENSIC", "MAIN_ACTIVITY_ON_NEW_INTENT | Type: ${intent.getStringExtra("type")}")
+        
+        // ISSUE 3: Ensure screen wakes up and activity is shown for broadcasts
+        if (intent.getStringExtra("type") == "NEW_JOB_BROADCAST" || intent.getStringExtra("type") == "INCOMING_CALL") {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                setShowWhenLocked(true)
+                setTurnScreenOn(true)
+            }
+            val km = getSystemService(android.content.Context.KEYGUARD_SERVICE) as android.app.KeyguardManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                km.requestDismissKeyguard(this, null)
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,6 +119,14 @@ class MainActivity : AppCompatActivity() {
                         android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
                         android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
             )
+        }
+
+        // ISSUE 3: Handle cold start with NEW_JOB_BROADCAST intent
+        if (intent.getStringExtra("type") == "NEW_JOB_BROADCAST" || intent.getStringExtra("type") == "INCOMING_CALL") {
+            val km = getSystemService(android.content.Context.KEYGUARD_SERVICE) as android.app.KeyguardManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                km.requestDismissKeyguard(this, null)
+            }
         }
 
         // Request Critical Permissions for Real Life Testing
@@ -145,7 +165,10 @@ class MainActivity : AppCompatActivity() {
                         "NEW_JOB_BROADCAST" -> {
                             if (jobId != null) {
                                 android.util.Log.d("FCM_NAV", "Navigating to Dashboard for broadcast $jobId")
-                                navController.navigate(Screen.Dashboard.route)
+                                // Re-navigate to ensure the ProviderMainScreen is active and can show the popup
+                                navController.navigate(Screen.Dashboard.route) {
+                                    launchSingleTop = true
+                                }
                             }
                         }
                         "INCOMING_CALL" -> {
@@ -237,6 +260,17 @@ class MainActivity : AppCompatActivity() {
                     socketManager.statusEventFlow.collect { event ->
                         android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Job: ${event.jobId} Status: ${event.status}")
                         
+                        // ISSUE 1: Auto-navigate customer to negotiation when provider accepts
+                        if (!isProvider && event.status == "PROVIDER_ACCEPTED") {
+                            val providerId = event.providerInfo?.optString("_id") 
+                                ?: event.providerInfo?.optString("id") 
+                                ?: ""
+                            if (providerId.isNotEmpty()) {
+                                android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Provider Accepted! Auto-navigating to Negotiation.")
+                                navController.navigate(Screen.Negotiation.passArgs(event.jobId, providerId))
+                            }
+                        }
+
                         // Handle Location Service for Customers (Terminal States Only - Safety Net)
                         if (!isProvider) {
                             when (event.status) {

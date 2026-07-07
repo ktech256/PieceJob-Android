@@ -149,7 +149,7 @@ fun JobCard(job: JobDto, isLoading: Boolean, onNavigateToSubScreen: (String) -> 
                         Text("ACCEPT JOB")
                     }
                 }
-            } else if (job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true || job.priceStatus == "PENDING") {
+            } else if (job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING") {
                 Button(
                     onClick = { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.customerId ?: "")) },
                     modifier = Modifier.fillMaxWidth(),

@@ -307,7 +307,7 @@ class ProviderDashboardViewModel @Inject constructor(
                 socketManager.joinJob(jobId)
 
                 // FORENSIC FIX: Trigger navigation based on negotiation requirement
-                if (job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true) {
+                if (job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING") {
                     _navigationEvent.emit("NEGOTIATION:${job.id}:${job.customerId}")
                 } else {
                     _navigationEvent.emit("TRACKING:${job.id}")

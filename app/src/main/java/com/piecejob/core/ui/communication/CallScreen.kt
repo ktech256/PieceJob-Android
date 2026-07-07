@@ -71,7 +71,8 @@ fun CallScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121212)),
+            .background(Color(0xFF121212))
+            .navigationBarsPadding(),
         contentAlignment = Alignment.Center
     ) {
         Column(

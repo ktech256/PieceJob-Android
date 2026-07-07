@@ -50,6 +50,7 @@ fun RegisterPhoneScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .navigationBarsPadding()
                 .padding(24.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {

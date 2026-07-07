@@ -77,8 +77,12 @@ class CustomerJobsViewModel @Inject constructor(
 
     fun openJob(job: JobDto) {
         viewModelScope.launch {
+            // ISSUE 2 FIX: Only go to Negotiation if the status is exactly PROVIDER_ACCEPTED or price is PENDING.
+            // Once agreed and dispatched (EN_ROUTE), navigation must point to Tracking.
+            val isInNegotiation = job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING"
+            
             val route = when {
-                job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true || job.priceStatus == "PENDING" ->
+                isInNegotiation ->
                     com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.providerId ?: "")
                 job.status == "COMPLETED" -> "rating/${job.id}"
                 else -> "customer_tracking/${job.id}"

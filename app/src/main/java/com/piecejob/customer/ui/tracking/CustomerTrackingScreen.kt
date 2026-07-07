@@ -286,10 +286,11 @@ fun CustomerTrackingScreen(
         AnimatedVisibility(
             visible = job != null,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
         ) {
             Card(
-                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 24.dp)

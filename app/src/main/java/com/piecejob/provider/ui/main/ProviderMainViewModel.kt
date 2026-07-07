@@ -59,7 +59,7 @@ class ProviderMainViewModel @Inject constructor(
                 alertManager.stop()
                 
                 val job = res.data
-                if (job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true) {
+                if (job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING") {
                     // Navigate to Negotiation Session
                     _navigationEvent.emit("NEGOTIATION:${jobId}:${job.customerId}")
                 } else {

@@ -202,7 +202,11 @@ fun NegotiationScreen(
             )
         },
         bottomBar = {
-            Surface(tonalElevation = 8.dp, shadowElevation = 12.dp) {
+            Surface(
+                tonalElevation = 8.dp, 
+                shadowElevation = 12.dp,
+                modifier = Modifier.navigationBarsPadding()
+            ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     val phase = jobState?.currentNegotiationPhase ?: "NEUTRAL"
                     

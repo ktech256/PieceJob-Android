@@ -202,7 +202,7 @@ fun ProviderDashboardScreen(
                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF2E7D32))
                 }
             }
-        } else if (currentJob != null && (currentJob.status == "PROVIDER_ACCEPTED" || currentJob.priceNegotiationRequired == true || currentJob.photoSharingRequired == true || currentJob.priceStatus == "PENDING")) {
+        } else if (currentJob != null && (currentJob.status == "PROVIDER_ACCEPTED" || currentJob.priceStatus == "PENDING")) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -221,7 +221,7 @@ fun ProviderDashboardScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text("RESUME NEGOTIATION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFFE65100))
                         Text(
-                            text = if (currentJob.status == "ACCEPTED") "Price agreed. Please confirm dispatch." else "Propose price or request photos for ${currentJob.serviceName ?: currentJob.serviceCode}",
+                            text = if (currentJob.priceStatus == "ACCEPTED") "Price agreed. Please confirm dispatch." else "Propose price or request photos for ${currentJob.serviceName ?: currentJob.serviceCode}",
                             fontSize = 13.sp, 
                             fontWeight = FontWeight.Bold
                         )
@@ -255,7 +255,7 @@ fun ProviderDashboardScreen(
                         onStart = { viewModel.startJob(it) },
                         onComplete = { viewModel.completeJob(it) },
                         onArrive = { id ->
-                            if (currentJob.status == "PROVIDER_ACCEPTED" || currentJob.priceNegotiationRequired == true || currentJob.photoSharingRequired == true) {
+                            if (currentJob.status == "PROVIDER_ACCEPTED" || currentJob.priceStatus == "PENDING") {
                                 onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(currentJob.id, currentJob.customerId ?: ""))
                             } else {
                                 viewModel.markArrival(id)
@@ -263,7 +263,7 @@ fun ProviderDashboardScreen(
                         },
                         onNavigateToSubScreen = onNavigateToSubScreen,
                         onClick = { 
-                            if (currentJob.status == "PROVIDER_ACCEPTED" || currentJob.priceNegotiationRequired == true || currentJob.photoSharingRequired == true) {
+                            if (currentJob.status == "PROVIDER_ACCEPTED" || currentJob.priceStatus == "PENDING") {
                                 onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(currentJob.id, currentJob.customerId ?: ""))
                             } else {
                                 onNavigateToTracking(currentJob.id) 
@@ -508,7 +508,7 @@ fun ShadowBanNotice() {
 @Composable
 fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, onStart: (String) -> Unit, onComplete: (String) -> Unit, onNavigateToSubScreen: (String) -> Unit, onClick: () -> Unit) {
     val isCompleted = job.status == "COMPLETED"
-    val isNegotiationPending = job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true || job.priceStatus == "PENDING"
+    val isNegotiationPending = job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING"
     
     Card(
         modifier = Modifier

@@ -137,7 +137,7 @@ fun CustomerDashboardScreen(
                 ActiveJobMiniCard(
                     job = activeJob!!,
                     onClick = { 
-                        if (activeJob!!.status == "PROVIDER_ACCEPTED" || activeJob!!.priceNegotiationRequired == true || activeJob!!.photoSharingRequired == true) {
+                        if (activeJob!!.status == "PROVIDER_ACCEPTED" || activeJob!!.priceStatus == "PENDING") {
                             // Go to Negotiation Session
                             onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(activeJob!!.id, activeJob!!.providerId ?: ""))
                         } else {
@@ -272,6 +272,7 @@ fun CustomerDashboardScreen(
             onClick = onRequestServiceClick,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
                 .padding(bottom = 24.dp)
                 .fillMaxWidth(0.85f)
                 .height(64.dp),
