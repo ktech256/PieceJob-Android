@@ -114,7 +114,7 @@ class ProviderJobsViewModel @Inject constructor(
                 loadJobs()
                 
                 val job = response.data
-                if (job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true) {
+                if (job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true) {
                     _navigationEvent.emit("NEGOTIATION:${jobId}:${job.customerId}")
                 } else {
                     _navigationEvent.emit("TRACKING:${jobId}")

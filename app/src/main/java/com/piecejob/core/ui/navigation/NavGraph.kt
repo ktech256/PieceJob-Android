@@ -305,9 +305,9 @@ fun NavGraph(
             CustomerTrackingScreen(
                 jobId = jobId,
                 onChatOpen = { otherUserId ->
-                    // Always try negotiation first if status might be PROVIDER_ACCEPTED
-                    // The NegotiationScreen itself handles redirecting back if already accepted.
-                    navController.navigate(Screen.Negotiation.passArgs(jobId, otherUserId))
+                    // Forensic Fix: Navigate to Chat instead of Negotiation. 
+                    // ChatScreen handles state-based locking and provides a link to Negotiation if needed.
+                    navController.navigate(Screen.Chat.passArgs(jobId, otherUserId))
                 },
                 onCallOpen = { receiverId, name, phone, photo ->
                     val route = Screen.Call.passArgs(jobId, receiverId, name, phone, photo)
@@ -334,7 +334,9 @@ fun NavGraph(
             ProviderTrackingScreen(
                 jobId = jobId,
                 onChatOpen = { otherUserId ->
-                    navController.navigate(Screen.Negotiation.passArgs(jobId, otherUserId))
+                    // Forensic Fix: Navigate to Chat instead of Negotiation.
+                    // ChatScreen handles state-based locking and provides a link to Negotiation if needed.
+                    navController.navigate(Screen.Chat.passArgs(jobId, otherUserId))
                 },
                 onCallOpen = { receiverId, name, phone, photo ->
                     val route = Screen.Call.passArgs(jobId, receiverId, name, phone, photo)

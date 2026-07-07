@@ -23,6 +23,7 @@ import com.piecejob.core.ui.navigation.NavGraph
 import com.piecejob.core.ui.navigation.Screen
 import com.piecejob.core.ui.theme.PieceJobTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
@@ -46,6 +47,30 @@ class MainActivity : AppCompatActivity() {
     
     @Inject
     lateinit var sessionManager: SessionManager
+
+    private val lifecycleScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main + kotlinx.coroutines.SupervisorJob())
+
+    override fun onResume() {
+        super.onResume()
+        // FORENSIC REPAIR: Force token sync whenever app returns to foreground
+        if (authViewModel.isLoggedIn()) {
+            syncFcmToken()
+        }
+    }
+
+    private fun syncFcmToken() {
+        lifecycleScope.launch {
+            try {
+                android.util.Log.d("FCM_AUDIT", "Force syncing FCM token...")
+                val token = FirebaseMessaging.getInstance().token.await()
+                if (!token.isNullOrBlank()) {
+                    userRepository.updateFcmToken(token)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("FCM_AUDIT", "Manual token sync failed: ${e.message}")
+            }
+        }
+    }
 
     // Forensic: Intent queue to ensure no signals are lost during UI transitions
     private val incomingIntentQueue = MutableStateFlow<Intent?>(null)
@@ -178,11 +203,7 @@ class MainActivity : AppCompatActivity() {
                                 android.util.Log.d("SOCKET_AUDIT", "Joined workspace room: workspace_$code")
                             }
 
-                            val token = FirebaseMessaging.getInstance().token.await()
-                            if (!token.isNullOrBlank()) {
-                                android.util.Log.d("FCM_AUDIT", "Syncing token with backend...")
-                                userRepository.updateFcmToken(token)
-                            }
+                            syncFcmToken()
                         } catch (e: Exception) {
                             android.util.Log.e("GLOBAL_SYNC", "Startup sync failed: ${e.message}")
                         }

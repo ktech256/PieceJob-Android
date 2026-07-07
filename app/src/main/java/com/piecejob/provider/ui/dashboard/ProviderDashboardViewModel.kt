@@ -12,15 +12,19 @@ import com.piecejob.core.socket.SocketManager
 import com.piecejob.core.data.local.SessionManager
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @HiltViewModel
 class ProviderDashboardViewModel @Inject constructor(
     private val repository: ProviderRepository,
+    private val userRepository: com.piecejob.core.data.repository.UserRepository,
     private val jobRepository: JobRepository,
     private val dashboardRepository: com.piecejob.core.data.repository.DashboardRepository,
     private val configRepository: com.piecejob.core.data.repository.ConfigRepository,
@@ -61,6 +65,9 @@ class ProviderDashboardViewModel @Inject constructor(
     val error: StateFlow<String?> = _error
 
     private var locationTrackingJob: kotlinx.coroutines.Job? = null
+
+    private val _navigationEvent = MutableSharedFlow<String>()
+    val navigationEvent: SharedFlow<String> = _navigationEvent
 
     init {
         loadDashboard()
@@ -216,6 +223,18 @@ class ProviderDashboardViewModel @Inject constructor(
                         return@launch
                     }
 
+                    // FORENSIC FIX: Ensure FCM Token is valid and synced BEFORE going online
+                    try {
+                        val token = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+                        if (!token.isNullOrBlank()) {
+                            android.util.Log.d("FCM_AUDIT", "Syncing token before going online...")
+                            userRepository.updateFcmToken(token)
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("FCM_AUDIT", "Failed to refresh token during online toggle: ${e.message}")
+                        // We don't block going online if FCM fails (might have socket), but we log it.
+                    }
+
                     val fusedLocationClient = com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context)
                     // Try to get last location first, then current location if needed
                     val location = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -279,12 +298,20 @@ class ProviderDashboardViewModel @Inject constructor(
         viewModelScope.launch {
             val response = jobRepository.acceptJob(jobId)
             if (response.success && response.data != null) {
-                _activeJob.value = response.data
+                val job = response.data
+                _activeJob.value = job
                 _availableJobs.value = _availableJobs.value.filter { it.id != jobId }
                 
                 // Track this job in the location service for live updates
                 LocationService.activeJobId = jobId
                 socketManager.joinJob(jobId)
+
+                // FORENSIC FIX: Trigger navigation based on negotiation requirement
+                if (job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true) {
+                    _navigationEvent.emit("NEGOTIATION:${job.id}:${job.customerId}")
+                } else {
+                    _navigationEvent.emit("TRACKING:${job.id}")
+                }
             }
         }
     }

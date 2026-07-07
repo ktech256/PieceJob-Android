@@ -137,7 +137,7 @@ fun CustomerDashboardScreen(
                 ActiveJobMiniCard(
                     job = activeJob!!,
                     onClick = { 
-                        if (activeJob!!.status == "PROVIDER_ACCEPTED") {
+                        if (activeJob!!.status == "PROVIDER_ACCEPTED" || activeJob!!.priceNegotiationRequired == true || activeJob!!.photoSharingRequired == true) {
                             // Go to Negotiation Session
                             onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(activeJob!!.id, activeJob!!.providerId ?: ""))
                         } else {
@@ -621,7 +621,7 @@ fun RecentServiceAvatar(label: String, onClick: () -> Unit = {}) {
 @Composable
 fun ActiveJobMiniCard(job: com.piecejob.core.data.remote.dto.JobDto, onClick: () -> Unit) {
     val isCompleted = job.status == "COMPLETED"
-    val isNegotiation = job.status == "PROVIDER_ACCEPTED" || job.status == "ACCEPTED"
+    val isNegotiation = job.status == "PROVIDER_ACCEPTED" || job.status == "ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true
     
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp).clickable { onClick() },
