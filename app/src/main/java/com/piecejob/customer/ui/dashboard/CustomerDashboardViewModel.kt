@@ -53,6 +53,9 @@ class CustomerDashboardViewModel @Inject constructor(
     private val _categories = MutableStateFlow<List<com.piecejob.core.data.remote.ServiceCategoryDto>>(emptyList())
     val categories: StateFlow<List<com.piecejob.core.data.remote.ServiceCategoryDto>> = _categories
 
+    private val _activeJobs = MutableStateFlow<List<JobDto>>(emptyList())
+    val activeJobs: StateFlow<List<JobDto>> = _activeJobs
+
     private val _activeJob = MutableStateFlow<JobDto?>(null)
     val activeJob: StateFlow<JobDto?> = _activeJob
 
@@ -164,6 +167,7 @@ class CustomerDashboardViewModel @Inject constructor(
                     
                     _dashboardData.value = data
                     _activeJob.value = data.activeJob
+                    _activeJobs.value = data.activeJobs ?: if (data.activeJob != null) listOf(data.activeJob) else emptyList()
                     _realtimePromotions.value = data.promotions
                     
                     // ISSUE 2: Sync Location Service for Provider or stop if null for customer

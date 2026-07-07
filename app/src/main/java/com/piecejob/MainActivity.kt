@@ -284,7 +284,9 @@ class MainActivity : AppCompatActivity() {
 
                         if (event.status == "COMPLETED") {
                             callManager.disconnect("Ended")
+                            android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Job Completed! Force navigating to Rating.")
                             navController.navigate(Screen.Rating.passJobId(event.jobId)) {
+                                popUpTo(Screen.Dashboard.route)
                                 launchSingleTop = true
                             }
                         }

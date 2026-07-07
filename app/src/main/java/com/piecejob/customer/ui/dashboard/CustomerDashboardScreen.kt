@@ -25,6 +25,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.filled.Handyman
+import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material.icons.filled.RateReview
+import androidx.compose.material.icons.filled.OpenInNew
 import com.piecejob.core.data.remote.ServiceDto
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,6 +52,7 @@ fun CustomerDashboardScreen(
     val categoriesList by viewModel.categories.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val activeJob by viewModel.activeJob.collectAsState()
+    val activeJobs by viewModel.activeJobs.collectAsState()
     val dashboardData by viewModel.dashboardData.collectAsState()
     val realtimePromotions by viewModel.realtimePromotions.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
@@ -131,24 +139,26 @@ fun CustomerDashboardScreen(
         // SECTION 5: POPULAR CATEGORIES
         item { PopularCategories(categoriesList) }
 
-        // SECTION 11: CURRENT ACTIVE JOB CARD
-        if (activeJob != null) {
+        // SECTION 11: CURRENT ACTIVE JOBS
+        if (activeJobs.isNotEmpty()) {
             item {
-                ActiveJobMiniCard(
-                    job = activeJob!!,
-                    onClick = { 
-                        if (activeJob!!.status == "PROVIDER_ACCEPTED" || activeJob!!.priceStatus == "PENDING") {
-                            // Go to Negotiation Session
-                            onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(activeJob!!.id, activeJob!!.providerId ?: ""))
-                        } else {
-                            onNavigateToTracking(activeJob!!.id) 
-                        }
+                Text(
+                    text = "Active PieceJobs",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 12.dp)
+                )
+            }
+            items(activeJobs) { job ->
+                ActiveJobCard(
+                    job = job,
+                    onTrack = { onNavigateToTracking(job.id) },
+                    onResume = {
+                        onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.providerId ?: ""))
                     }
                 )
             }
         }
-
-        // SECTION 7: BOOK AGAIN
         item { SectionTitle("Book Again") }
         item {
             LazyRow(
@@ -620,69 +630,162 @@ fun RecentServiceAvatar(label: String, onClick: () -> Unit = {}) {
 }
 
 @Composable
-fun ActiveJobMiniCard(job: com.piecejob.core.data.remote.dto.JobDto, onClick: () -> Unit) {
-    val isCompleted = job.status == "COMPLETED"
-    val isNegotiation = job.status == "PROVIDER_ACCEPTED" || job.status == "ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true
+fun ActiveJobCard(
+    job: com.piecejob.core.data.remote.dto.JobDto,
+    onTrack: () -> Unit,
+    onResume: () -> Unit
+) {
+    val isNegotiation = job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING"
     
+    var statusLabel = ""
+    var statusIcon = Icons.Default.Timer
+    var statusColor = Color.Gray
+    var actionLabel = "OPEN"
+    var actionIcon = Icons.Default.ChevronRight
+
+    when {
+        isNegotiation -> {
+            statusLabel = "Negotiation"
+            statusIcon = Icons.Default.Chat
+            statusColor = Color(0xFFFFA000)
+            actionLabel = "RESUME"
+            actionIcon = Icons.Default.OpenInNew
+        }
+        job.status == "ACCEPTED" -> {
+            statusLabel = "Provider Assigned"
+            statusIcon = Icons.Default.CheckCircle
+            statusColor = Color(0xFF1976D2)
+            actionLabel = "TRACK"
+            actionIcon = Icons.Default.Navigation
+        }
+        job.status == "EN_ROUTE" -> {
+            statusLabel = "Provider Travelling"
+            statusIcon = Icons.Default.DirectionsCar
+            statusColor = Color(0xFFE65100)
+            actionLabel = "TRACK"
+            actionIcon = Icons.Default.Navigation
+        }
+        job.status == "ARRIVED" -> {
+            statusLabel = "Provider Arrived"
+            statusIcon = Icons.Default.LocationOn
+            statusColor = Color(0xFF4CAF50)
+            actionLabel = "TRACK"
+            actionIcon = Icons.Default.Navigation
+        }
+        job.status == "STARTED" || job.status == "IN_PROGRESS" -> {
+            statusLabel = "Work In Progress"
+            statusIcon = Icons.Default.Handyman
+            statusColor = Color(0xFF2E7D32)
+            actionLabel = "TRACK"
+            actionIcon = Icons.Default.Navigation
+        }
+        job.status == "COMPLETED" -> {
+            statusLabel = "Waiting For Your Confirmation"
+            statusIcon = Icons.Default.Verified
+            statusColor = Color(0xFF1976D2)
+            actionLabel = "OPEN"
+            actionIcon = Icons.Default.RateReview
+        }
+        else -> {
+            statusLabel = job.status
+            statusIcon = Icons.Default.Timer
+            statusColor = Color.Gray
+            actionLabel = "OPEN"
+            actionIcon = Icons.Default.ChevronRight
+        }
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp).clickable { onClick() },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = when {
-                isCompleted -> Color(0xFFE3F2FD)
-                isNegotiation -> Color(0xFFFFF8E1)
-                else -> Color(0xFFE8F5E9)
-            }
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = when {
-                    isCompleted -> Icons.Default.Grade
-                    isNegotiation -> Icons.Default.Chat
-                    else -> Icons.Default.Timer
-                }, 
-                contentDescription = null, 
-                tint = when {
-                    isCompleted -> Color(0xFF1976D2)
-                    isNegotiation -> Color(0xFFFFA000)
-                    else -> Color(0xFF2E7D32)
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = statusIcon,
+                        contentDescription = null,
+                        tint = statusColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = statusLabel,
+                        fontWeight = FontWeight.Black,
+                        color = statusColor,
+                        fontSize = 11.sp,
+                        letterSpacing = 1.sp
+                    )
                 }
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = when {
-                        isCompleted -> "Rate Your Experience"
-                        isNegotiation -> "Negotiation Session"
-                        else -> "Active Job: ${job.serviceName ?: job.serviceCode}"
-                    }, 
-                    fontWeight = FontWeight.Black, 
-                    fontSize = 15.sp
-                )
-                Text(
-                    text = when {
-                        isCompleted -> "Tap to review"
-                        isNegotiation -> "Finalize agreement to proceed"
-                        else -> "Status: ${job.status}"
-                    }, 
-                    fontSize = 12.sp, 
-                    color = Color.Gray
+                
+                // Subtle Progress Indicator
+                val progress = when(job.status) {
+                    "PROVIDER_ACCEPTED" -> 0.1f
+                    "ACCEPTED" -> 0.3f
+                    "EN_ROUTE" -> 0.5f
+                    "ARRIVED" -> 0.7f
+                    "STARTED", "IN_PROGRESS" -> 0.9f
+                    "COMPLETED" -> 1.0f
+                    else -> 0.0f
+                }
+                LinearProgressIndicator(
+                    progress = progress,
+                    modifier = Modifier.width(40.dp).height(4.dp).clip(CircleShape),
+                    color = statusColor,
+                    trackColor = statusColor.copy(alpha = 0.1f)
                 )
             }
-            if (isNegotiation) {
-                Spacer(modifier = Modifier.weight(1f))
-                Button(
-                    onClick = onClick,
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000)),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    modifier = Modifier.size(44.dp),
+                    shape = CircleShape,
+                    color = Color(0xFFF8F9FA)
                 ) {
-                    Text("RESUME", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.LightGray)
+                    }
                 }
-            } else {
-                Spacer(modifier = Modifier.weight(1f))
-                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = job.serviceName ?: job.serviceCode ?: "Active Job",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 16.sp
+                    )
+                    Text(
+                        text = if (job.providerInfo != null) "${job.providerInfo.firstName} ${job.providerInfo.lastName.take(1)}." else "Provider assigned",
+                        fontSize = 13.sp,
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                
+                Button(
+                    onClick = { if (isNegotiation) onResume() else onTrack() },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF121212)),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Icon(actionIcon, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.White)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = actionLabel,
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
             }
         }
     }

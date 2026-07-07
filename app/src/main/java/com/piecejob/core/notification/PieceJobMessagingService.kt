@@ -71,6 +71,11 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         } else if (type == "BROADCAST_CANCELLED" || type == "JOB_ASSIGNED_ELSEWHERE") {
             Log.d("FCM_AUDIT", "Processing Termination Signal: $type")
             handleBroadcastTermination(jobId)
+        } else if (type == "PRICE_PROPOSAL" || type == "PRICE_ACCEPTED" || type == "PRICE_REJECTED" || type == "NEW_CHAT_MESSAGE") {
+            val title = message.notification?.title ?: message.data["title"] ?: "New Message"
+            val body = message.notification?.body ?: message.data["body"] ?: "You have a new message."
+            Log.d("FCM_AUDIT", "Showing urgent chat notification: $title")
+            showStandardNotification(title, body, message.data, isUrgent = true)
         } else {
             val title = message.notification?.title ?: message.data["title"] ?: "PieceJob"
             val body = message.notification?.body ?: message.data["body"] ?: ""
@@ -243,7 +248,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         notificationManager.notify(job.jobId.hashCode(), builder.build())
     }
 
-    private fun showStandardNotification(title: String, body: String, data: Map<String, String>) {
+    private fun showStandardNotification(title: String, body: String, data: Map<String, String>, isUrgent: Boolean = false) {
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             data.forEach { (key, value) -> putExtra(key, value) }
@@ -253,19 +258,32 @@ class PieceJobMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val channelId = "piecejob_notifications"
+        val channelId = if (isUrgent) "piecejob_urgent_notifications" else "piecejob_notifications"
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(body)
             .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(if (isUrgent) NotificationCompat.PRIORITY_MAX else NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setContentIntent(pendingIntent)
+
+        if (isUrgent) {
+            builder.setVibrate(longArrayOf(0, 300, 200, 300))
+        }
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "PieceJob Notifications", NotificationManager.IMPORTANCE_HIGH)
+            val name = if (isUrgent) "Urgent Notifications" else "PieceJob Notifications"
+            val importance = if (isUrgent) NotificationManager.IMPORTANCE_HIGH else NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(channelId, name, importance).apply {
+                if (isUrgent) {
+                    enableLights(true)
+                    enableVibration(true)
+                    vibrationPattern = longArrayOf(0, 300, 200, 300)
+                }
+            }
             notificationManager.createNotificationChannel(channel)
         }
 

@@ -7,6 +7,7 @@ data class CustomerDashboardDto(
     val profile: DashboardProfileDto,
     val wallet: WalletDto,
     val activeJob: JobDto?,
+    val activeJobs: List<JobDto>? = emptyList(),
     val promotions: List<PromotionDto>,
     val referralCampaign: ReferralCampaignDto?,
     val latestActivity: List<ActivityDto>,
