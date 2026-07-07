@@ -41,7 +41,15 @@ class AlertManager @Inject constructor(
 
     fun stop() {
         android.util.Log.d("ALERT_AUDIT", "Stopping Alert")
-        ringtone?.stop()
-        vibrator.cancel()
+        try {
+            if (ringtone?.isPlaying == true) {
+                ringtone?.stop()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ALERT_AUDIT", "Failed to stop ringtone safely: ${e.message}")
+        } finally {
+            ringtone = null
+            vibrator.cancel()
+        }
     }
 }

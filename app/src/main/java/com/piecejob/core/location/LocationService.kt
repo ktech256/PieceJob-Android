@@ -107,6 +107,15 @@ class LocationService : Service() {
 
     @SuppressLint("MissingPermission")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val hasFine = androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val hasCoarse = androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+        if (!hasFine && !hasCoarse) {
+            android.util.Log.e("LocationService", "Stopping service: No location permissions granted")
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         createNotificationChannel()
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("PieceJob Active")
@@ -115,8 +124,17 @@ class LocationService : Service() {
             .setOngoing(true)
             .build()
         
-        startForeground(NOTIFICATION_ID, notification)
-        startLocationUpdates()
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+            startLocationUpdates()
+        } catch (e: Exception) {
+            android.util.Log.e("LocationService", "Failed to start foreground service: ${e.message}")
+            stopSelf()
+        }
         
         return START_STICKY
     }

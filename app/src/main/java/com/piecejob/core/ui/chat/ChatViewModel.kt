@@ -27,7 +27,6 @@ class ChatViewModel @Inject constructor(
     private val repository: ChatRepository,
     private val socketManager: SocketManager,
     private val jobRepository: com.piecejob.core.data.repository.JobRepository,
-    private val serviceRepository: com.piecejob.core.data.repository.ServiceRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -177,12 +176,32 @@ class ChatViewModel @Inject constructor(
         Log.d("FORENSIC", "$tag | To: $receiverId | Text: $text")
         
         viewModelScope.launch {
+            // Optimistic Update
+            val tempId = "temp_${System.currentTimeMillis()}"
+            val myId = com.piecejob.core.data.local.SessionManager(context).getUserId() ?: ""
+            val optimisticMsg = MessageDto(
+                id = tempId,
+                jobId = jobId,
+                senderId = UserSummaryDto(_id = myId, firstName = "You", lastName = "", role = ""),
+                receiverId = receiverId,
+                text = text,
+                mediaUrl = null,
+                mediaType = null,
+                isRead = false,
+                createdAt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).format(java.util.Date())
+            )
+            _messages.value = _messages.value + optimisticMsg
+
             val request = SendMessageRequest(jobId, receiverId, text)
             val res = repository.sendMessage(request)
-            if (res.success) {
-                Log.d("FORENSIC", "CHAT_DATABASE_SAVE | Success")
+            if (res.success && res.data != null) {
+                Log.d("FORENSIC", "CHAT_DATABASE_SAVE | Success. Updating temp message.")
+                // Replace temp message with real one
+                _messages.value = _messages.value.map { if (it.id == tempId) res.data else it }
             } else {
                 Log.e("FORENSIC", "CHAT_DATABASE_SAVE | Failed: ${res.message}")
+                // Remove temp message on failure
+                _messages.value = _messages.value.filter { it.id != tempId }
             }
         }
     }
@@ -268,8 +287,12 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun respondToProposal(proposalId: String, action: String) {
+    fun respondToProposal(proposalId: String?, action: String) {
         val jobId = currentJobId ?: return
+        if (proposalId == null) {
+            Log.e("FORENSIC", "respondToProposal | proposalId is NULL")
+            return
+        }
         viewModelScope.launch {
             repository.respondToProposal(proposalId, action)
             loadJobConfig(jobId)
@@ -290,9 +313,14 @@ class ChatViewModel @Inject constructor(
     private fun handleIncomingMessage(json: JSONObject) {
         try {
             val jobId = json.optString("jobId")
-            if (jobId != currentJobId) return
+            Log.d("FORENSIC", "CHAT_SOCKET_RECEIVED | Received jobId: $jobId, Current: $currentJobId")
+            
+            if (jobId != currentJobId && currentJobId != null) {
+                Log.w("FORENSIC", "CHAT_SOCKET_RECEIVED | JobId mismatch. Skipping.")
+                return
+            }
 
-            Log.d("FORENSIC", "CHAT_SOCKET_RECEIVED | Parsing message...")
+            Log.d("FORENSIC", "CHAT_SOCKET_RECEIVED | Parsing message payload: $json")
 
             // Handle senderId being a string (old) or an object (populated)
             val senderJson = json.optJSONObject("senderId")
@@ -314,7 +342,7 @@ class ChatViewModel @Inject constructor(
             }
 
             val message = MessageDto(
-                id = json.optString("_id").ifEmpty { json.optString("id") },
+                id = json.optString("id").ifEmpty { json.optString("_id") },
                 jobId = jobId,
                 senderId = senderId,
                 receiverId = json.optString("receiverId"),
@@ -345,6 +373,10 @@ class ChatViewModel @Inject constructor(
                 createdAt = json.optString("createdAt")
             )
 
+            if (message.id.isEmpty()) {
+                Log.e("FORENSIC", "CHAT_SOCKET_RECEIVED | FAILED: Message ID is empty. Full JSON: $json")
+            }
+
             // IF it's a negotiation message, refresh job state
             val type = message.metadata?.get("type") as? String
             if (type != null && listOf("PRICE_PROPOSAL", "PRICE_ACCEPTED", "PRICE_REJECTED", "PHOTO_REQUEST", "PHOTO_UPLOAD", "PHOTOS_SEEN").contains(type)) {
@@ -355,7 +387,9 @@ class ChatViewModel @Inject constructor(
             // Deduplication
             if (_messages.value.none { it.id == message.id }) {
                 _messages.value = _messages.value + message
-                Log.d("FORENSIC", "CHAT_RECOMPOSE | Message Added")
+                Log.d("FORENSIC", "CHAT_RECOMPOSE | Message Added: ${message.id}")
+            } else {
+                Log.d("FORENSIC", "CHAT_RECOMPOSE | Message Ignored (Duplicate): ${message.id}")
             }
         } catch (e: Exception) {
             Log.e("FORENSIC", "CHAT_PARSE_ERROR", e)
