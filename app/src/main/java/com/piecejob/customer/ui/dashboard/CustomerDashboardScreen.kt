@@ -645,42 +645,42 @@ fun ActiveJobCard(
 
     when {
         isNegotiation -> {
-            statusLabel = "Negotiation"
+            statusLabel = "Price negotiation"
             statusIcon = Icons.Default.Chat
             statusColor = Color(0xFFFFA000)
             actionLabel = "RESUME"
             actionIcon = Icons.Default.OpenInNew
         }
         job.status == "ACCEPTED" -> {
-            statusLabel = "Provider Assigned"
+            statusLabel = "Provider assigned"
             statusIcon = Icons.Default.CheckCircle
             statusColor = Color(0xFF1976D2)
             actionLabel = "TRACK"
             actionIcon = Icons.Default.Navigation
         }
         job.status == "EN_ROUTE" -> {
-            statusLabel = "Provider Travelling"
+            statusLabel = "Provider is on the way"
             statusIcon = Icons.Default.DirectionsCar
             statusColor = Color(0xFFE65100)
             actionLabel = "TRACK"
             actionIcon = Icons.Default.Navigation
         }
         job.status == "ARRIVED" -> {
-            statusLabel = "Provider Arrived"
+            statusLabel = "Provider has arrived"
             statusIcon = Icons.Default.LocationOn
             statusColor = Color(0xFF4CAF50)
             actionLabel = "TRACK"
             actionIcon = Icons.Default.Navigation
         }
         job.status == "STARTED" || job.status == "IN_PROGRESS" -> {
-            statusLabel = "Work In Progress"
+            statusLabel = "Work has started"
             statusIcon = Icons.Default.Handyman
             statusColor = Color(0xFF2E7D32)
             actionLabel = "TRACK"
             actionIcon = Icons.Default.Navigation
         }
         job.status == "COMPLETED" -> {
-            statusLabel = "Waiting For Your Confirmation"
+            statusLabel = "Work completed"
             statusIcon = Icons.Default.Verified
             statusColor = Color(0xFF1976D2)
             actionLabel = "OPEN"
