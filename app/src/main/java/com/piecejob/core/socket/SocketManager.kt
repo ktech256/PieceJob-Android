@@ -35,6 +35,9 @@ class SocketManager @Inject constructor(
     private val _callSignalFlow = MutableSharedFlow<JSONObject>(extraBufferCapacity = 10)
     val callSignalFlow: SharedFlow<JSONObject> = _callSignalFlow
 
+    private val _repairFcmFlow = MutableSharedFlow<JSONObject>(extraBufferCapacity = 10)
+    val repairFcmFlow: SharedFlow<JSONObject> = _repairFcmFlow
+
     fun connect(baseUrl: String) {
         if (socket?.connected() == true) return
 
@@ -138,6 +141,16 @@ class SocketManager @Inject constructor(
                     _callSignalFlow.tryEmit(data)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error in call_signal_received listener", e)
+                }
+            }
+
+            socket?.on("FORCE_REPAIR_FCM") { args ->
+                try {
+                    val data = args[0] as JSONObject
+                    Log.d("FCM_AUDIT", "FORCE_REPAIR_FCM received via Socket: $data")
+                    _repairFcmFlow.tryEmit(data)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in FORCE_REPAIR_FCM listener", e)
                 }
             }
 

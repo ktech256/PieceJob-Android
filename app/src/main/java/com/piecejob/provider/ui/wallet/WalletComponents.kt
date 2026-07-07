@@ -147,7 +147,7 @@ fun ServiceFeeTable(records: List<com.piecejob.core.data.remote.dto.RecentServic
                     textAlign = androidx.compose.ui.text.style.TextAlign.End
                 )
                 Text(
-                    text = String.format(Locale.getDefault(), "%s%.0f", currency, record.serviceFeeAmount),
+                    text = if (record.acceptedPrice > 0) String.format(Locale.getDefault(), "%s%.0f", currency, record.outstandingBalance) else "N/A",
                     modifier = Modifier.weight(1f),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Black,

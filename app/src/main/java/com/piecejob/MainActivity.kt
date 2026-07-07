@@ -288,6 +288,14 @@ class MainActivity : AppCompatActivity() {
                         // Implementation for in-app banner can be added here
                     }
                 }
+
+                // GLOBAL OBSERVER: FCM Token Repair Signal
+                LaunchedEffect(Unit) {
+                    socketManager.repairFcmFlow.collect { json ->
+                        android.util.Log.d("FCM_AUDIT", "REPAIR_SIGNAL_RECEIVED: Attempting immediate sync...")
+                        syncFcmToken()
+                    }
+                }
             }
         }
     }
