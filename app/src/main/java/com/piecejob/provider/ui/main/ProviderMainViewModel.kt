@@ -1,5 +1,3 @@
-package com.piecejob.provider.ui.main
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.repository.JobRepository
@@ -8,8 +6,9 @@ import com.piecejob.core.notification.manager.IncomingJob
 import com.piecejob.core.notification.manager.NotificationState
 import com.piecejob.core.socket.SocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,12 +20,21 @@ class ProviderMainViewModel @Inject constructor(
     val notificationState: NotificationState
 ) : ViewModel() {
 
-    private val _navigationEvent = MutableSharedFlow<String>()
-    val navigationEvent: SharedFlow<String> = _navigationEvent
+    private val _navigationEvent = Channel<String>(Channel.BUFFERED)
+    val navigationEvent: Flow<String> = _navigationEvent.receiveAsFlow()
+
+    companion object {
+        private var lastHandledJobId: String? = null
+        private var lastHandledStatus: String? = null
+        private var initialCheckDone: Boolean = false
+    }
 
     init {
         setupSocketListeners()
-        checkForActiveJob()
+        if (!initialCheckDone) {
+            checkForActiveJob()
+            initialCheckDone = true
+        }
     }
 
     private fun checkForActiveJob() {
@@ -35,18 +43,29 @@ class ProviderMainViewModel @Inject constructor(
             if (response.success && response.data != null) {
                 val job = response.data
                 
+                if (job.id == lastHandledJobId && job.status == lastHandledStatus) {
+                    android.util.Log.d("FORENSIC", "ProviderMainVM | State unchanged. Skipping nav.")
+                    return@launch
+                }
+
+                lastHandledJobId = job.id
+                lastHandledStatus = job.status
+
                 // PRIORITY 1: Active Job Tracking
                 if (listOf("ACCEPTED", "EN_ROUTE", "ARRIVED", "STARTED", "IN_PROGRESS").contains(job.status)) {
-                    _navigationEvent.emit("TRACKING:${job.id}")
+                    _navigationEvent.send("TRACKING:${job.id}")
                 }
                 // PRIORITY 2: Active Negotiation
                 else if (job.status == "PROVIDER_ACCEPTED") {
-                    _navigationEvent.emit("NEGOTIATION:${job.id}:${job.customerId}")
+                    _navigationEvent.send("NEGOTIATION:${job.id}:${job.customerId}")
                 }
                 // PRIORITY 3: Pending Rating
                 else if (job.status == "COMPLETED") {
-                    _navigationEvent.emit("RATING:${job.id}")
+                    _navigationEvent.send("RATING:${job.id}")
                 }
+            } else {
+                lastHandledJobId = null
+                lastHandledStatus = null
             }
         }
     }
@@ -84,10 +103,10 @@ class ProviderMainViewModel @Inject constructor(
                 val job = res.data
                 if (job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING") {
                     // Navigate to Negotiation Session
-                    _navigationEvent.emit("NEGOTIATION:${jobId}:${job.customerId}")
+                    _navigationEvent.send("NEGOTIATION:${jobId}:${job.customerId}")
                 } else {
                     // Navigate to Tracking for Dispatch
-                    _navigationEvent.emit("TRACKING:${jobId}")
+                    _navigationEvent.send("TRACKING:${jobId}")
                 }
             } else {
                 notificationState.setAccepting(false)

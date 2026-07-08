@@ -81,16 +81,19 @@ class CustomerDashboardViewModel @Inject constructor(
     }
 
     private fun setupSocket() {
-        socketManager.connect("https://piecejob-backend.onrender.com")
-        sessionManager.getUserId()?.let { socketManager.joinUser(it) }
-        
+        // Socket connection and room joining is now handled globally in MainActivity.
+        // ViewModels should only observe flows.
         viewModelScope.launch {
             socketManager.statusEventFlow.collect { event ->
                 Log.d("FORENSIC", "VM | Socket Status Update: ${event.status}. Reloading.")
                 if (event.status == "PROMOTIONS_REFRESH") {
                     refreshPromotionsOnly()
                 } else {
-                    loadDashboard(lastLoadedLocation?.latitude, lastLoadedLocation?.longitude)
+                    // surgical update would be better, but for now we ensure it doesn't loop
+                    // Only load if not already loading to prevent spam
+                    if (!_isLoading.value) {
+                        loadDashboard(lastLoadedLocation?.latitude, lastLoadedLocation?.longitude)
+                    }
                 }
             }
         }
@@ -110,8 +113,12 @@ class CustomerDashboardViewModel @Inject constructor(
 
     private fun observeLocationAndLoad() {
         viewModelScope.launch {
-            // Priority 1: Instant load to get user profile and existing address
-            loadDashboard()
+            // Only perform initial load if we don't have location yet.
+            // If location is already available, the collectLatest below will handle the first load.
+            if (LocationService.currentLocation.value == null) {
+                Log.d("FORENSIC", "VM | Initial dashboard load (no location)")
+                loadDashboard()
+            }
 
             LocationService.currentLocation.collectLatest { location ->
                 if (location != null) {
@@ -283,12 +290,7 @@ class CustomerDashboardViewModel @Inject constructor(
     }
 
     fun loadActiveJob() {
-        viewModelScope.launch {
-            val response = jobRepository.getActiveJob()
-            if (response.success) {
-                _activeJob.value = response.data
-            }
-        }
+        // Redundant call removed. loadDashboard() already fetches active jobs.
     }
 
     fun loadServices(gender: String? = null, lat: Double? = null, lng: Double? = null) {

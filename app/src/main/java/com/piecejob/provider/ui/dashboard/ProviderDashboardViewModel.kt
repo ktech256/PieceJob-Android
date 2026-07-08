@@ -142,8 +142,10 @@ class ProviderDashboardViewModel @Inject constructor(
         viewModelScope.launch {
             socketManager.statusEventFlow.collect { event ->
                 if (event.status == "COMPLETED" || event.status == "CANCELLED" || event.status == "RATED") {
-                    fetchActiveJob()
-                    loadDashboard()
+                    if (!_isLoading.value) {
+                        fetchActiveJob()
+                        loadDashboard()
+                    }
                 } else {
                     _activeJob.value?.let { currentJob ->
                         if (currentJob.id == event.jobId) {
@@ -266,13 +268,13 @@ class ProviderDashboardViewModel @Inject constructor(
                 if (response.success) {
                     _isOnline.value = newStatus
                     if (newStatus) {
-                        socketManager.connect("https://piecejob-backend.onrender.com")
-                        sessionManager.getUserId()?.let { socketManager.joinUser(it) }
+                        // socket connection is handled globally in MainActivity based on auth state
                         LocationService.startService(context)
                         loadAvailableJobs()
                     } else {
                         LocationService.stopService(context)
-                        socketManager.disconnect()
+                        // socket disconnect is handled globally or via sessionManager in towelmech style, 
+                        // but here we keep it online as long as session exists usually.
                         _availableJobs.value = emptyList()
                     }
                 } else {

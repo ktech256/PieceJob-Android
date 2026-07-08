@@ -260,8 +260,20 @@ class MainActivity : AppCompatActivity() {
                     socketManager.statusEventFlow.collect { event ->
                         android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Job: ${event.jobId} Status: ${event.status}")
                         
+                        val currentRoute = navController.currentDestination?.route
+
                         // ISSUE 1: Auto-navigate customer to negotiation when provider accepts
+                        // GUARD: Don't interrupt if already on Tracking, Rating, or if job is terminal
                         if (!isProvider && event.status == "PROVIDER_ACCEPTED") {
+                            val isAlreadyOnActionScreen = currentRoute?.contains("tracking") == true || 
+                                                        currentRoute?.contains("rating") == true ||
+                                                        currentRoute?.contains("negotiation") == true
+                            
+                            if (isAlreadyOnActionScreen) {
+                                android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Already on action screen ($currentRoute). Ignoring PROVIDER_ACCEPTED signal.")
+                                return@collect
+                            }
+
                             val providerId = event.providerInfo?.optString("_id") 
                                 ?: event.providerInfo?.optString("id") 
                                 ?: ""
@@ -285,7 +297,6 @@ class MainActivity : AppCompatActivity() {
                         if (event.status == "COMPLETED") {
                             callManager.disconnect("Ended")
                             
-                            val currentRoute = navController.currentDestination?.route
                             if (currentRoute?.startsWith("rating") == true) {
                                 android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Already on Rating screen. Skipping duplicate navigation.")
                                 return@collect
