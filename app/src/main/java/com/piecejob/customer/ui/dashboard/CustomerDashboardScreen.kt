@@ -635,7 +635,7 @@ fun ActiveJobCard(
     onTrack: () -> Unit,
     onResume: () -> Unit
 ) {
-    val isNegotiation = job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING"
+    val isNegotiation = job.status == "PROVIDER_ACCEPTED"
     
     var statusLabel = ""
     var statusIcon = Icons.Default.Timer
@@ -643,43 +643,43 @@ fun ActiveJobCard(
     var actionLabel = "OPEN"
     var actionIcon = Icons.Default.ChevronRight
 
-    when {
-        isNegotiation -> {
+    when (job.status) {
+        "PROVIDER_ACCEPTED" -> {
             statusLabel = "Price negotiation"
             statusIcon = Icons.Default.Chat
             statusColor = Color(0xFFFFA000)
             actionLabel = "RESUME"
             actionIcon = Icons.Default.OpenInNew
         }
-        job.status == "ACCEPTED" -> {
+        "ACCEPTED" -> {
             statusLabel = "Provider assigned"
             statusIcon = Icons.Default.CheckCircle
             statusColor = Color(0xFF1976D2)
             actionLabel = "TRACK"
             actionIcon = Icons.Default.Navigation
         }
-        job.status == "EN_ROUTE" -> {
+        "EN_ROUTE" -> {
             statusLabel = "Provider is on the way"
             statusIcon = Icons.Default.DirectionsCar
             statusColor = Color(0xFFE65100)
             actionLabel = "TRACK"
             actionIcon = Icons.Default.Navigation
         }
-        job.status == "ARRIVED" -> {
+        "ARRIVED" -> {
             statusLabel = "Provider has arrived"
             statusIcon = Icons.Default.LocationOn
             statusColor = Color(0xFF4CAF50)
             actionLabel = "TRACK"
             actionIcon = Icons.Default.Navigation
         }
-        job.status == "STARTED" || job.status == "IN_PROGRESS" -> {
+        "STARTED", "IN_PROGRESS" -> {
             statusLabel = "Work has started"
             statusIcon = Icons.Default.Handyman
             statusColor = Color(0xFF2E7D32)
             actionLabel = "TRACK"
             actionIcon = Icons.Default.Navigation
         }
-        job.status == "COMPLETED" -> {
+        "COMPLETED" -> {
             statusLabel = "Work completed"
             statusIcon = Icons.Default.Verified
             statusColor = Color(0xFF1976D2)

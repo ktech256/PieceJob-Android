@@ -131,7 +131,9 @@ fun NegotiationScreen(
     }
 
     LaunchedEffect(jobState?.status) {
-        if (jobState?.status == "EN_ROUTE" || jobState?.status == "ARRIVED" || jobState?.status == "STARTED") {
+        val activeOrTerminalStatuses = listOf("ACCEPTED", "EN_ROUTE", "ARRIVED", "STARTED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "RATED", "CLOSED")
+        if (jobState?.status != null && jobState!!.status in activeOrTerminalStatuses) {
+            android.util.Log.d("FORENSIC", "NEGOTIATION_PROTECTION | Status: ${jobState?.status}. Redirecting.")
             onNegotiationComplete(jobId, otherUserId)
         }
     }
