@@ -26,6 +26,29 @@ class ProviderMainViewModel @Inject constructor(
 
     init {
         setupSocketListeners()
+        checkForActiveJob()
+    }
+
+    private fun checkForActiveJob() {
+        viewModelScope.launch {
+            val response = jobRepository.getActiveJob()
+            if (response.success && response.data != null) {
+                val job = response.data
+                
+                // PRIORITY 1: Active Job Tracking
+                if (listOf("ACCEPTED", "EN_ROUTE", "ARRIVED", "STARTED", "IN_PROGRESS").contains(job.status)) {
+                    _navigationEvent.emit("TRACKING:${job.id}")
+                }
+                // PRIORITY 2: Active Negotiation
+                else if (job.status == "PROVIDER_ACCEPTED") {
+                    _navigationEvent.emit("NEGOTIATION:${job.id}:${job.customerId}")
+                }
+                // PRIORITY 3: Pending Rating
+                else if (job.status == "COMPLETED") {
+                    _navigationEvent.emit("RATING:${job.id}")
+                }
+            }
+        }
     }
 
     private fun setupSocketListeners() {

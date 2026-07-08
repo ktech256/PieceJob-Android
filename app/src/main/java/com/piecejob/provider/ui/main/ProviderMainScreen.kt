@@ -69,6 +69,11 @@ fun ProviderMainScreen(
             } else if (event.startsWith("TRACKING:")) {
                 val jobId = event.removePrefix("TRACKING:")
                 onNavigateToSubScreen(Screen.ProviderTracking.passJobId(jobId))
+            } else if (event.startsWith("RATING:")) {
+                val parts = event.split(":")
+                if (parts.size >= 2) {
+                    onNavigateToSubScreen(Screen.Rating.passJobId(parts[1]))
+                }
             } else {
                 // Backward compatibility for pure jobId
                 onNavigateToSubScreen(Screen.ProviderTracking.passJobId(event))

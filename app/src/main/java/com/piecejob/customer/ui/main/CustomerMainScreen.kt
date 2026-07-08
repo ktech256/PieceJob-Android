@@ -54,6 +54,11 @@ fun CustomerMainScreen(
                 if (parts.size >= 3) {
                     onNavigateToSubScreen(Screen.Chat.passArgs(parts[1], parts[2]))
                 }
+            } else if (event.startsWith("RATING:")) {
+                val parts = event.split(":")
+                if (parts.size >= 2) {
+                    onNavigateToSubScreen(Screen.Rating.passJobId(parts[1]))
+                }
             } else {
                 onNavigateToSubScreen(Screen.CustomerTracking.passJobId(event))
             }

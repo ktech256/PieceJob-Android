@@ -26,9 +26,17 @@ class CustomerMainViewModel @Inject constructor(
             val response = jobRepository.getActiveJob()
             if (response.success && response.data != null) {
                 val job = response.data
-                if (job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true) {
+                
+                // PRIORITY 1: Active Negotiation
+                if (job.status == "PROVIDER_ACCEPTED") {
                     _navigationEvent.emit("NEGOTIATION:${job.id}:${job.providerId}")
-                } else {
+                } 
+                // PRIORITY 2: Pending Rating (only if newest job is COMPLETED)
+                else if (job.status == "COMPLETED") {
+                    _navigationEvent.emit("RATING:${job.id}")
+                }
+                // PRIORITY 3: Active Job Tracking
+                else if (listOf("ACCEPTED", "EN_ROUTE", "ARRIVED", "STARTED", "IN_PROGRESS").contains(job.status)) {
                     _navigationEvent.emit(job.id)
                 }
             }

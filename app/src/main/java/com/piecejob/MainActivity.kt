@@ -284,6 +284,13 @@ class MainActivity : AppCompatActivity() {
 
                         if (event.status == "COMPLETED") {
                             callManager.disconnect("Ended")
+                            
+                            val currentRoute = navController.currentDestination?.route
+                            if (currentRoute?.startsWith("rating") == true) {
+                                android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Already on Rating screen. Skipping duplicate navigation.")
+                                return@collect
+                            }
+
                             android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Job Completed! Force navigating to Rating.")
                             navController.navigate(Screen.Rating.passJobId(event.jobId)) {
                                 popUpTo(Screen.Dashboard.route)
