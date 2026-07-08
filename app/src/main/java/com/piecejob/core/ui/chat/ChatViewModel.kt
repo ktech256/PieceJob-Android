@@ -196,8 +196,12 @@ class ChatViewModel @Inject constructor(
             val res = repository.sendMessage(request)
             if (res.success && res.data != null) {
                 Log.d("FORENSIC", "CHAT_DATABASE_SAVE | Success. Updating temp message.")
-                // Replace temp message with real one
-                _messages.value = _messages.value.map { if (it.id == tempId) res.data else it }
+                // Replace temp message with real one, or remove it if real one already arrived via socket
+                _messages.value = _messages.value.mapNotNull { 
+                    if (it.id == tempId) {
+                        if (_messages.value.any { m -> m.id == res.data.id }) null else res.data
+                    } else it
+                }
             } else {
                 Log.e("FORENSIC", "CHAT_DATABASE_SAVE | Failed: ${res.message}")
                 // Remove temp message on failure
@@ -384,12 +388,29 @@ class ChatViewModel @Inject constructor(
                 loadJobConfig(jobId)
             }
 
-            // Deduplication
+            // Deduplication and replacement of optimistic messages
+            val myId = com.piecejob.core.data.local.SessionManager(context).getUserId() ?: ""
+            val isFromMe = message.senderId._id == myId
+
             if (_messages.value.none { it.id == message.id }) {
-                _messages.value = _messages.value + message
-                Log.d("FORENSIC", "CHAT_RECOMPOSE | Message Added: ${message.id}")
+                if (isFromMe) {
+                    // Try to find a temp message to replace to avoid jumpy UI or duplication if API is slow
+                    var replaced = false
+                    _messages.value = _messages.value.map { 
+                        if (!replaced && it.id.startsWith("temp_") && it.text == message.text) {
+                            replaced = true
+                            message
+                        } else it
+                    }
+                    if (!replaced) {
+                        _messages.value = _messages.value + message
+                    }
+                } else {
+                    _messages.value = _messages.value + message
+                }
+                Log.d("FORENSIC", "CHAT_RECOMPOSE | Message Added/Updated: ${message.id}")
             } else {
-                Log.d("FORENSIC", "CHAT_RECOMPOSE | Message Ignored (Duplicate): ${message.id}")
+                Log.d("FORENSIC", "CHAT_RECOMPOSE | Message Ignored (Duplicate ID): ${message.id}")
             }
         } catch (e: Exception) {
             Log.e("FORENSIC", "CHAT_PARSE_ERROR", e)

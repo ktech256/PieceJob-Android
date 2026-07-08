@@ -82,7 +82,7 @@ fun CustomerTrackingScreen(
 
     val isTerminalState = job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED"
     val phase = job?.currentNegotiationPhase ?: "NEUTRAL"
-    val isNegotiating = job?.status == "PROVIDER_ACCEPTED"
+    val isNegotiating = job?.status == "PROVIDER_ACCEPTED" || job?.status == "ACCEPTED"
 
     var showCancelDialog by remember { mutableStateOf(false) }
     var hasAutoNavigatedToNegotiation by remember { mutableStateOf(false) }

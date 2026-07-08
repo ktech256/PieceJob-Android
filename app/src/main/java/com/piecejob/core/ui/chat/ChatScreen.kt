@@ -48,6 +48,10 @@ fun ChatScreen(
     
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
+    LaunchedEffect(jobId) {
+        viewModel.initChat(jobId)
+    }
+
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)

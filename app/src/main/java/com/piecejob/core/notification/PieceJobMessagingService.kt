@@ -5,6 +5,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -132,7 +134,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         
         val acceptPendingIntent = PendingIntent.getActivity(
             this, jobId.hashCode() + 1, acceptIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0)
         )
 
         // 2. Intent to Reject (Broadcast flow)
@@ -145,7 +147,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         
         val rejectPendingIntent = PendingIntent.getBroadcast(
             this, jobId.hashCode() + 2, rejectIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0)
         )
 
         // 3. General Click Intent
@@ -162,7 +164,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
 
         val contentPendingIntent = PendingIntent.getActivity(
             this, jobId.hashCode(), contentIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0)
         )
 
         val channelId = "piecejob_calls"
@@ -214,10 +216,10 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         
         val pendingIntent = PendingIntent.getActivity(
             this, job.jobId.hashCode(), intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0)
         )
 
-        val channelId = "piecejob_broadcasts_v2"
+        val channelId = "piecejob_broadcasts_v3" // Incremented version to ensure fresh channel settings
         Log.d("FCM_AUDIT", "Building notification for channel: $channelId")
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
@@ -239,7 +241,13 @@ class PieceJobMessagingService : FirebaseMessagingService() {
                 enableLights(true)
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 500, 200, 500)
-                setSound(null, null) 
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+                
+                // Set default notification sound to ensure heads-up pops
+                val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                setSound(soundUri, AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .build())
             }
             notificationManager.createNotificationChannel(channel)
         }

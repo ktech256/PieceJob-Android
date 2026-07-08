@@ -264,21 +264,23 @@ class MainActivity : AppCompatActivity() {
 
                         // ISSUE 1: Auto-navigate customer to negotiation when provider accepts
                         // GUARD: Don't interrupt if already on Action screens.
-                        // For PROVIDER_ACCEPTED, we ALLOW transition from 'tracking' (searching) to 'negotiation'.
-                        if (!isProvider && event.status == "PROVIDER_ACCEPTED") {
+                        // For PROVIDER_ACCEPTED and ACCEPTED (waiting for dispatch), we ALLOW transition from 'tracking' (searching) to 'negotiation'.
+                        if (!isProvider && (event.status == "PROVIDER_ACCEPTED" || event.status == "ACCEPTED")) {
                             val isAlreadyOnNegotiationOrRating = currentRoute?.contains("negotiation") == true || 
                                                                currentRoute?.contains("rating") == true
                             
                             if (isAlreadyOnNegotiationOrRating) {
-                                android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Already on negotiation/rating screen ($currentRoute). Ignoring PROVIDER_ACCEPTED signal.")
+                                android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Already on negotiation/rating screen ($currentRoute). Ignoring ${event.status} signal.")
                                 return@collect
                             }
 
                             val providerId = event.providerInfo?.optString("_id") 
                                 ?: event.providerInfo?.optString("id") 
                                 ?: ""
+                            
+                            // If ACCEPTED but no provider info in socket event, try to get it from current state or re-fetch (simplifying here to re-navigate only if providerId is known)
                             if (providerId.isNotEmpty()) {
-                                android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Provider Accepted! Auto-navigating to Negotiation.")
+                                android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Provider ${event.status}! Auto-navigating to Negotiation.")
                                 navController.navigate(Screen.Negotiation.passArgs(event.jobId, providerId))
                             }
                         }
