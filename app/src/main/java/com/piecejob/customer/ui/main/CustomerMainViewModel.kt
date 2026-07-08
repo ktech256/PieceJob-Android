@@ -1,3 +1,5 @@
+package com.piecejob.customer.ui.main
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.piecejob.core.data.repository.JobRepository

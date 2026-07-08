@@ -33,6 +33,7 @@ fun CustomerTrackingScreen(
     jobId: String,
     viewModel: JobTrackingViewModel = hiltViewModel(),
     onChatOpen: (String) -> Unit,
+    onNegotiationOpen: (String, String) -> Unit,
     onCallOpen: (String, String, String, String?) -> Unit,
     onSosTrigger: () -> Unit,
     onNavigateToRating: (String) -> Unit,
@@ -81,7 +82,7 @@ fun CustomerTrackingScreen(
 
     val isTerminalState = job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED"
     val phase = job?.currentNegotiationPhase ?: "NEUTRAL"
-    val isNegotiating = false // Removed RESUME NEGOTIATION overlay as per Issue 2 requirement
+    val isNegotiating = job?.status == "PROVIDER_ACCEPTED"
 
     var showCancelDialog by remember { mutableStateOf(false) }
     var hasAutoNavigatedToNegotiation by remember { mutableStateOf(false) }
@@ -119,7 +120,8 @@ fun CustomerTrackingScreen(
     LaunchedEffect(job?.status, phase) {
         if (isNegotiating && !hasAutoNavigatedToNegotiation) {
             hasAutoNavigatedToNegotiation = true
-            onChatOpen(job?.providerId ?: "")
+            android.util.Log.d("FORENSIC", "TRACKING_AUTO_NAV | Job status is PROVIDER_ACCEPTED. Auto-navigating to Negotiation.")
+            onNegotiationOpen(jobId, job?.providerId ?: "")
         }
 
         if (job?.status == "CANCELLED") {

@@ -263,14 +263,14 @@ class MainActivity : AppCompatActivity() {
                         val currentRoute = navController.currentDestination?.route
 
                         // ISSUE 1: Auto-navigate customer to negotiation when provider accepts
-                        // GUARD: Don't interrupt if already on Tracking, Rating, or if job is terminal
+                        // GUARD: Don't interrupt if already on Action screens.
+                        // For PROVIDER_ACCEPTED, we ALLOW transition from 'tracking' (searching) to 'negotiation'.
                         if (!isProvider && event.status == "PROVIDER_ACCEPTED") {
-                            val isAlreadyOnActionScreen = currentRoute?.contains("tracking") == true || 
-                                                        currentRoute?.contains("rating") == true ||
-                                                        currentRoute?.contains("negotiation") == true
+                            val isAlreadyOnNegotiationOrRating = currentRoute?.contains("negotiation") == true || 
+                                                               currentRoute?.contains("rating") == true
                             
-                            if (isAlreadyOnActionScreen) {
-                                android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Already on action screen ($currentRoute). Ignoring PROVIDER_ACCEPTED signal.")
+                            if (isAlreadyOnNegotiationOrRating) {
+                                android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Already on negotiation/rating screen ($currentRoute). Ignoring PROVIDER_ACCEPTED signal.")
                                 return@collect
                             }
 

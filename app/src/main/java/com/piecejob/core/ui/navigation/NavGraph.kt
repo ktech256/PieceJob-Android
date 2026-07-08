@@ -305,9 +305,11 @@ fun NavGraph(
             CustomerTrackingScreen(
                 jobId = jobId,
                 onChatOpen = { otherUserId ->
-                    // Forensic Fix: Navigate to Chat instead of Negotiation. 
-                    // ChatScreen handles state-based locking and provides a link to Negotiation if needed.
+                    // Regular chat access from tracking (will be limited if in negotiation)
                     navController.navigate(Screen.Chat.passArgs(jobId, otherUserId))
+                },
+                onNegotiationOpen = { jId, providerId ->
+                    navController.navigate(Screen.Negotiation.passArgs(jId, providerId))
                 },
                 onCallOpen = { receiverId, name, phone, photo ->
                     val route = Screen.Call.passArgs(jobId, receiverId, name, phone, photo)
