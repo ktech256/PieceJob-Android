@@ -334,7 +334,12 @@ fun ProviderDashboardScreen(
             item {
                 Text("Recent Activity", fontWeight = FontWeight.Black, fontSize = 16.sp)
             }
-            if (recentActivity.isEmpty()) {
+            
+            val filteredActivity = recentActivity
+                .filter { it.status == "COMPLETED" || it.status == "CANCELLED" }
+                .take(5)
+
+            if (filteredActivity.isEmpty()) {
                 item {
                     Text(
                         text = "No recent activity found.",
@@ -344,7 +349,7 @@ fun ProviderDashboardScreen(
                     )
                 }
             } else {
-                items(recentActivity) { activity ->
+                items(filteredActivity) { activity ->
                     RecentActivityItem(activity, currencySymbol)
                 }
             }
@@ -462,25 +467,46 @@ fun QuickActionButton(label: String, icon: ImageVector, onClick: () -> Unit) {
 
 @Composable
 fun RecentActivityItem(activity: com.piecejob.core.data.remote.dto.ActivityDto, currency: String) {
+    val isCancelled = activity.status == "CANCELLED"
+    
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Surface(modifier = Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = Color.White) {
+        Surface(
+            modifier = Modifier.size(40.dp), 
+            shape = RoundedCornerShape(10.dp), 
+            color = if (isCancelled) Color(0xFFFFEBEE) else Color(0xFFE8F5E9)
+        ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
-                    imageVector = if (activity.type == "JOB") Icons.Default.Work else Icons.Default.Payments,
+                    imageVector = if (isCancelled) Icons.Default.Cancel else Icons.Default.CheckCircle,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = Color.Gray
+                    tint = if (isCancelled) Color.Red else Color(0xFF2E7D32)
                 )
             }
         }
         Spacer(modifier = Modifier.width(16.dp))
         Column {
-            Text(activity.title ?: activity.type, fontSize = 13.sp, fontWeight = FontWeight.Bold)
             Text(
-                text = "${activity.createdAt.take(10)} • ${if(activity.amount > 0) "+" else ""}$currency ${String.format("%.2f", activity.amount)}",
+                text = activity.status.lowercase().replaceFirstChar { it.uppercase() }, 
+                fontSize = 13.sp, 
+                fontWeight = FontWeight.Bold
+            )
+            
+            val detailText = if (activity.status == "COMPLETED") {
+                if (activity.amount > 0) {
+                    "$currency ${String.format("%.2f", activity.amount)}"
+                } else {
+                    "Gross: N/A • Net: N/A"
+                }
+            } else {
+                null
+            }
+            
+            Text(
+                text = "${activity.createdAt.take(10)}${if (detailText != null) " • $detailText" else ""}",
                 fontSize = 11.sp,
                 color = Color.Gray
             )

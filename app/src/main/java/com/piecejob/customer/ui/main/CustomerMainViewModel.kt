@@ -49,18 +49,16 @@ class CustomerMainViewModel @Inject constructor(
                 lastHandledJobId = job.id
                 lastHandledStatus = job.status
 
-                // PRIORITY 1: Active Negotiation or Waiting for Dispatch
-                if (job.status == "PROVIDER_ACCEPTED" || job.status == "ACCEPTED") {
-                    _navigationEvent.send("NEGOTIATION:${job.id}:${job.providerId}")
-                } 
-                // PRIORITY 2: Pending Rating (only if newest job is COMPLETED)
-                else if (job.status == "COMPLETED") {
+                // PRIORITY 1: Pending Rating (only if newest job is COMPLETED)
+                if (job.status == "COMPLETED") {
                     _navigationEvent.send("RATING:${job.id}")
                 }
-                // PRIORITY 3: Active Job Tracking
+                // PRIORITY 2: Active Job Tracking (EN_ROUTE and beyond)
                 else if (listOf("EN_ROUTE", "ARRIVED", "STARTED", "IN_PROGRESS").contains(job.status)) {
                     _navigationEvent.send(job.id)
                 }
+                // NOTE: PROVIDER_ACCEPTED and ACCEPTED (Negotiation) are handled PASSIVELY via Dashboard cards
+                // to allow recovery without forced navigation loops on app restart.
             } else {
                 // Clear state if no active job found
                 lastHandledJobId = null

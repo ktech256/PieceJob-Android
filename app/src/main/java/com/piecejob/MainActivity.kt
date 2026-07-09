@@ -194,6 +194,15 @@ class MainActivity : AppCompatActivity() {
                                 android.util.Log.e("FORENSIC", "INCOMING_CALL_INVALID_DATA | JobId=$jobId, callerId=$callerId, callId=$callId")
                             }
                         }
+                        "PRICE_PROPOSAL", "PRICE_ACCEPTED", "PRICE_REJECTED", "PHOTO_REQUEST", "PHOTO_UPLOAD", "PHOTOS_SEEN" -> {
+                            val otherUserId = intent.getStringExtra("senderId")
+                            if (jobId != null && otherUserId != null) {
+                                android.util.Log.d("FORENSIC", "NEGOTIATION_RECOVERY_SIGNAL | Job: $jobId | OtherUser: $otherUserId")
+                                navController.navigate(Screen.Negotiation.passArgs(jobId, otherUserId)) {
+                                    launchSingleTop = true
+                                }
+                            }
+                        }
                     }
                     // Reset to null to avoid repeat triggers, but cold start intent is already handled
                     incomingIntentQueue.value = null

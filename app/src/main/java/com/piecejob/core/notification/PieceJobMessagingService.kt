@@ -71,10 +71,11 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         } else if (type == "BROADCAST_CANCELLED" || type == "JOB_ASSIGNED_ELSEWHERE") {
             Log.d("FCM_AUDIT", "Processing Termination Signal: $type")
             handleBroadcastTermination(jobId)
-        } else if (type == "PRICE_PROPOSAL" || type == "PRICE_ACCEPTED" || type == "PRICE_REJECTED" || type == "NEW_CHAT_MESSAGE") {
+        } else if (type == "PRICE_PROPOSAL" || type == "PRICE_ACCEPTED" || type == "PRICE_REJECTED" || 
+                   type == "NEW_CHAT_MESSAGE" || type == "PHOTO_REQUEST" || type == "PHOTO_UPLOAD") {
             val title = message.notification?.title ?: message.data["title"] ?: "New Message"
             val body = message.notification?.body ?: message.data["body"] ?: "You have a new message."
-            Log.d("FCM_AUDIT", "Showing urgent chat notification: $title")
+            Log.d("FCM_AUDIT", "Showing urgent chat/negotiation notification: $title")
             showStandardNotification(title, body, message.data, isUrgent = true)
         } else {
             val title = message.notification?.title ?: message.data["title"] ?: "PieceJob"
