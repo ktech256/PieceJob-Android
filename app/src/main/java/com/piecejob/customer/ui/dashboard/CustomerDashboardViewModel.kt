@@ -73,6 +73,8 @@ class CustomerDashboardViewModel @Inject constructor(
     private val _searchResults = MutableStateFlow<List<Any>>(emptyList())
     val searchResults: StateFlow<List<Any>> = _searchResults.asStateFlow()
 
+    val currentUserId = sessionManager.getUserId() ?: ""
+
     private var lastLoadedLocation: android.location.Location? = null
 
     init {

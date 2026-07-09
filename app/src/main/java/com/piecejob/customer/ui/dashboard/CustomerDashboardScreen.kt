@@ -34,6 +34,8 @@ import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.OpenInNew
 import com.piecejob.core.data.remote.ServiceDto
 
+import com.piecejob.core.utils.formatDateTimeString
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerDashboardScreen(
@@ -59,6 +61,7 @@ fun CustomerDashboardScreen(
     val currentAddress by viewModel.currentAddress.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val bookAgainServices by viewModel.bookAgainServices.collectAsState()
+    val currentUserId = viewModel.currentUserId
 
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
@@ -233,13 +236,19 @@ fun CustomerDashboardScreen(
         // SECTION 12: LATEST ACTIVITY
         item { SectionTitle("Latest Activity") }
         val activityList = dashboardData?.latestActivity ?: emptyList()
-        if (activityList.isEmpty() && isLoading) {
-            items(2) { SkeletonListItem() }
-        } else if (activityList.isEmpty()) {
-            item { Text("No recent activity found.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(horizontal = 24.dp)) }
+        val filteredActivity = activityList
+            .filter { it.status == "COMPLETED" || it.status == "CANCELLED" }
+            .take(5)
+
+        if (filteredActivity.isEmpty()) {
+            if (isLoading) {
+                items(2) { SkeletonListItem() }
+            } else {
+                item { Text("No recent activity found.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(horizontal = 24.dp)) }
+            }
         } else {
-            items(activityList) { act ->
-                ActivityItem(act, currencySymbol)
+            items(filteredActivity) { act ->
+                ActivityItem(act, currencySymbol, currentUserId)
             }
         }
 
@@ -872,14 +881,110 @@ fun TopProviderCard(provider: com.piecejob.core.data.remote.dto.TopProviderDto) 
 }
 
 @Composable
-fun ActivityItem(act: com.piecejob.core.data.remote.dto.ActivityDto, currency: String) {
-    ListItem(
-        headlineContent = { Text(act.serviceName ?: act.serviceCode ?: "Service", fontWeight = FontWeight.Bold) },
-        supportingContent = { Text("${act.status} • ${act.createdAt.take(10)}", fontSize = 12.sp, color = Color.Gray) },
-        leadingContent = { Surface(modifier = Modifier.size(40.dp), shape = RoundedCornerShape(10.dp), color = Color(0xFFF5F5F5)) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(20.dp)) } } },
-        trailingContent = { Text("$currency ${String.format("%.2f", act.amount)}", fontWeight = FontWeight.Black, fontSize = 14.sp) },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-    )
+fun ActivityItem(act: com.piecejob.core.data.remote.dto.ActivityDto, currency: String, currentUserId: String) {
+    val isCancelled = act.status == "CANCELLED"
+    val statusColor = if (isCancelled) Color(0xFFD32F2F) else Color(0xFF2E7D32)
+    val bgColor = if (isCancelled) Color(0xFFFFEBEE) else Color(0xFFE8F5E9)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(modifier = Modifier.size(32.dp), shape = CircleShape, color = bgColor) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (isCancelled) Icons.Default.Cancel else Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = statusColor
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (isCancelled) "Cancelled" else "Completed",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        color = statusColor
+                    )
+                    Text(
+                        text = act.serviceName ?: "General Service",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
+                
+                Text(
+                    text = "$currency ${String.format("%.2f", act.amount)}",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.Black
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(verticalAlignment = Alignment.Top) {
+                Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(12.dp).padding(top = 2.dp), tint = Color.Gray)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = act.address ?: "Service Address",
+                    fontSize = 11.sp,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = 14.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (isCancelled) {
+                val actor = if (act.cancelledBy == currentUserId) "You" else "Provider"
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column {
+                        Text("Cancelled:", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                        Text(formatDateTimeString(act.createdAt), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Text(
+                        text = "Cancelled by $actor",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFFD32F2F),
+                        modifier = Modifier.align(Alignment.Bottom)
+                    )
+                }
+            } else {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column {
+                        Text("Started:", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                        Text(formatDateTimeString(act.startedAt), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("Completed:", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                        Text(formatDateTimeString(act.completedAt), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+                
+                if (act.amount <= 0) {
+                    // This shouldn't happen based on requirements but handle just in case
+                    Text(
+                        "Total Paid: $currency 0.00", 
+                        fontSize = 9.sp, 
+                        color = Color.Gray, 
+                        modifier = Modifier.padding(top = 4.dp).align(Alignment.End)
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
