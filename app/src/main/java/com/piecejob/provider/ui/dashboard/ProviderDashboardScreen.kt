@@ -564,7 +564,7 @@ fun RecentActivityItem(activity: com.piecejob.core.data.remote.dto.ActivityDto, 
                     }
                 }
                 
-                if (activity.amount <= 0) {
+                if ((activity.amount ?: 0.0) <= 0) {
                    Text(
                        "Gross: N/A • Net: N/A", 
                        fontSize = 9.sp, 

@@ -987,7 +987,7 @@ fun ActivityItem(act: com.piecejob.core.data.remote.dto.ActivityDto, currency: S
                     }
                 }
                 
-                if (act.amount <= 0) {
+                if ((act.amount ?: 0.0) <= 0) {
                     // This shouldn't happen based on requirements but handle just in case
                     Text(
                         "Total Paid: $currency 0.00", 
