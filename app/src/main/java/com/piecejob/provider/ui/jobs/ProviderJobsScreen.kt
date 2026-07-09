@@ -82,7 +82,7 @@ fun ProviderJobsScreen(
                 when (selectedTabIndex) {
                     0 -> JobsList(availableJobs, isLoading, onNavigateToSubScreen) { viewModel.acceptJob(it) }
                     1 -> JobsList(activeJobs, isLoading, onNavigateToSubScreen) { onNavigateToTracking(it) }
-                    2 -> JobsList(scheduledJobs, isLoading, onNavigateToSubScreen) { /* Detail */ }
+                    2 -> JobsList(scheduledJobs, isLoading, onNavigateToSubScreen) { onNavigateToTracking(it) }
                     3 -> JobsList(completedJobs, isLoading, onNavigateToSubScreen) { onNavigateToTracking(it) }
                     4 -> JobsList(cancelledJobs, isLoading, onNavigateToSubScreen) { onNavigateToTracking(it) }
                     5 -> JobsList(disputedJobs, isLoading, onNavigateToSubScreen) { onNavigateToTracking(it) }
@@ -134,6 +134,23 @@ fun JobCard(job: JobDto, isLoading: Boolean, onNavigateToSubScreen: (String) -> 
             InfoRow(label = "Date/Time", value = job.createdAt?.take(16)?.replace("T", " ") ?: "Unknown")
             InfoRow(label = "Location", value = job.location?.address ?: "Client Location")
             
+            if (job.status == "CANCELLED") {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Cancelled by: ${job.cancelledByName ?: "Unknown"}",
+                    fontSize = 12.sp,
+                    color = Color(0xFFD32F2F),
+                    fontWeight = FontWeight.Bold
+                )
+                if (!job.cancellationReason.isNullOrBlank()) {
+                    Text(
+                        text = "Reason: ${job.cancellationReason}",
+                        fontSize = 11.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+            
             Spacer(modifier = Modifier.height(16.dp))
             
             if (job.status == "BROADCASTED") {
@@ -172,7 +189,7 @@ fun JobCard(job: JobDto, isLoading: Boolean, onNavigateToSubScreen: (String) -> 
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = statusColor)
                 ) {
-                    Text(text = if(job.status in listOf("ACCEPTED", "ARRIVED", "STARTED", "IN_PROGRESS")) "OPEN TRACKING" else "VIEW STATUS: ${job.status}")
+                    Text(text = if(job.status in listOf("ACCEPTED", "ARRIVED", "STARTED", "IN_PROGRESS", "SCHEDULED")) "OPEN TRACKING" else "VIEW STATUS: ${job.status}")
                 }
             }
         }

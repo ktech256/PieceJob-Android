@@ -120,6 +120,23 @@ fun CustomerJobCard(job: JobDto, onClick: () -> Unit) {
             JobInfoRow(label = "Date/Time", value = job.createdAt?.take(16)?.replace("T", " ") ?: "Unknown")
             JobInfoRow(label = "Location", value = job.location?.address ?: "Location Shared")
             
+            if (job.status == "CANCELLED") {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Cancelled by: ${job.cancelledByName ?: "Unknown"}",
+                    fontSize = 12.sp,
+                    color = Color(0xFFD32F2F),
+                    fontWeight = FontWeight.Bold
+                )
+                if (!job.cancellationReason.isNullOrBlank()) {
+                    Text(
+                        text = "Reason: ${job.cancellationReason}",
+                        fontSize = 11.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+            
             Spacer(modifier = Modifier.height(16.dp))
 
             val isNegotiating = job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true || job.priceStatus == "PENDING"

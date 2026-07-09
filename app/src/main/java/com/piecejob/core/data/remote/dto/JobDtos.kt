@@ -50,7 +50,10 @@ data class JobDto(
     @SerializedName("customerRatingDismissed") val customerRatingDismissed: Boolean?,
     @SerializedName("providerRatingDismissed") val providerRatingDismissed: Boolean?,
     @SerializedName("createdAt") val createdAt: String?,
-    @SerializedName("paymentReference") val paymentReference: String? = null
+    @SerializedName("paymentReference") val paymentReference: String? = null,
+    @SerializedName("cancellationReason") val cancellationReason: String? = null,
+    @SerializedName("cancelledBy") val cancelledBy: String? = null,
+    @SerializedName("cancelledByName") val cancelledByName: String? = null
 )
 
 data class PayBookingFeeResponse(
