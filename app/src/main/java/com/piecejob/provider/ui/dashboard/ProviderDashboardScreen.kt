@@ -353,7 +353,10 @@ fun ProviderDashboardScreen(
                     )
                 }
             } else {
-                items(filteredActivity) { activity ->
+                items(
+                    items = filteredActivity,
+                    key = { it.id }
+                ) { activity ->
                     RecentActivityItem(activity, currencySymbol, currentUserId)
                 }
             }

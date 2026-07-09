@@ -247,7 +247,10 @@ fun CustomerDashboardScreen(
                 item { Text("No recent activity found.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(horizontal = 24.dp)) }
             }
         } else {
-            items(filteredActivity) { act ->
+            items(
+                items = filteredActivity,
+                key = { it.id }
+            ) { act ->
                 ActivityItem(act, currencySymbol, currentUserId)
             }
         }
