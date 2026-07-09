@@ -512,8 +512,9 @@ fun RecentActivityItem(activity: com.piecejob.core.data.remote.dto.ActivityDto, 
                     )
                 }
                 if (!isCancelled) {
+                    val amount = activity.amount
                     Text(
-                        text = if (activity.amount > 0) "$currency ${String.format("%.2f", activity.amount)}" else "N/A",
+                        text = if (amount != null && amount > 0) "$currency ${String.format("%.2f", amount)}" else "N/A",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Black,
                         color = Color(0xFF2E7D32)

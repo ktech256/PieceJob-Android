@@ -934,8 +934,9 @@ fun ActivityItem(act: com.piecejob.core.data.remote.dto.ActivityDto, currency: S
                             color = Color(0xFF1976D2)
                         )
                     }
+                    val amount = act.amount
                     Text(
-                        text = "$currency ${String.format("%.2f", act.amount)}",
+                        text = if (amount != null) "$currency ${String.format("%.2f", amount)}" else "N/A",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Black,
                         color = Color.Black

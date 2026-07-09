@@ -86,12 +86,15 @@ fun CustomerJobsScreen(
 
 @Composable
 fun CustomerJobCard(job: JobDto, onClick: () -> Unit) {
+    val isCompleted = job.status in listOf("COMPLETED", "RATED", "CLOSED")
+    val isCancelled = job.status == "CANCELLED"
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        onClick = onClick
+        onClick = if (!isCompleted && !isCancelled) onClick else ({})
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -117,10 +120,20 @@ fun CustomerJobCard(job: JobDto, onClick: () -> Unit) {
             
             val providerName = if (job.providerInfo != null) "${job.providerInfo?.firstName} ${job.providerInfo?.lastName}" else "Searching for Provider..."
             JobInfoRow(label = "Provider", value = providerName)
-            JobInfoRow(label = "Date/Time", value = job.createdAt?.take(16)?.replace("T", " ") ?: "Unknown")
+
+            // Timestamps Refinement (Issue 5 & 6)
+            val startTime = if (isCancelled) job.createdAt else (job.startedAt ?: job.createdAt)
+            val endTime = if (isCompleted) job.completedAt else if (isCancelled) job.cancelledAt else null
+            val timeDisplay = if (endTime != null) {
+                "${startTime?.take(16)?.replace("T", " ")} to ${endTime.take(16).replace("T", " ")}"
+            } else {
+                startTime?.take(16)?.replace("T", " ") ?: "Unknown"
+            }
+            JobInfoRow(label = "Date/Time", value = timeDisplay)
+
             JobInfoRow(label = "Location", value = job.location?.address ?: "Location Shared")
             
-            if (job.status == "CANCELLED") {
+            if (isCancelled) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Cancelled by: ${job.cancelledByName ?: "Unknown"}",
@@ -139,21 +152,41 @@ fun CustomerJobCard(job: JobDto, onClick: () -> Unit) {
             
             Spacer(modifier = Modifier.height(16.dp))
 
-            val isNegotiating = job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true || job.priceStatus == "PENDING"
-            if (isNegotiating) {
-                Button(
-                    onClick = onClick,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
-                ) {
-                    Text("RESUME NEGOTIATION", fontWeight = FontWeight.Black)
+            if (!isCompleted && !isCancelled) {
+                val isNegotiating = job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true || job.priceStatus == "PENDING"
+                if (isNegotiating) {
+                    Button(
+                        onClick = onClick,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
+                    ) {
+                        Text("RESUME NEGOTIATION", fontWeight = FontWeight.Black)
+                    }
                 }
             }
-            
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "Total Amount", fontSize = 12.sp, color = Color.Gray)
-                Text(text = "${job.currency ?: ""} ${String.format("%.2f", (job.serviceFee ?: 0.0) + (job.bookingFee ?: 0.0))}", fontWeight = FontWeight.Black, color = Color.Black)
+
+            // Amount Display Refinement (Issue 2 & 4)
+            val showAmount = !isCancelled || (job.bookingFee ?: 0.0) > 0
+            if (showAmount) {
+                val amountLabel = when {
+                    isCompleted && job.priceNegotiationRequired == true -> "Amount Paid"
+                    isCompleted -> "Booking Fee"
+                    isCancelled -> "Booking Fee"
+                    else -> "Total Amount"
+                }
+
+                val displayAmount = when {
+                    isCompleted && job.priceNegotiationRequired == true -> job.agreedPrice ?: ((job.serviceFee ?: 0.0) + (job.bookingFee ?: 0.0))
+                    isCompleted -> job.bookingFee ?: 0.0
+                    isCancelled -> job.bookingFee ?: 0.0
+                    else -> (job.serviceFee ?: 0.0) + (job.bookingFee ?: 0.0)
+                }
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = amountLabel, fontSize = 12.sp, color = Color.Gray)
+                    Text(text = "${job.currency ?: ""} ${String.format("%.2f", displayAmount)}", fontWeight = FontWeight.Black, color = Color.Black)
+                }
             }
         }
     }

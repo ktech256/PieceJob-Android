@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.piecejob.core.data.remote.dto.JobDto
+import com.piecejob.core.utils.formatPrivacyAddress
 
 @Composable
 fun ProviderJobsScreen(
@@ -112,6 +113,9 @@ fun JobsList(jobs: List<JobDto>, isLoading: Boolean, onNavigateToSubScreen: (Str
 
 @Composable
 fun JobCard(job: JobDto, isLoading: Boolean, onNavigateToSubScreen: (String) -> Unit, onAction: (String) -> Unit) {
+    val isCompleted = job.status in listOf("COMPLETED", "RATED", "CLOSED")
+    val isCancelled = job.status == "CANCELLED"
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -124,17 +128,45 @@ fun JobCard(job: JobDto, isLoading: Boolean, onNavigateToSubScreen: (String) -> 
                     Text(text = job.serviceName ?: job.serviceCode ?: "Unknown Service", fontWeight = FontWeight.Black, fontSize = 18.sp)
                     Text(text = "Job ID: #${job.id.takeLast(6).uppercase()}", fontSize = 10.sp, color = Color.Gray)
                 }
-                Text(text = "${job.currency ?: ""} ${String.format("%.2f", (job.serviceFee ?: 0.0) + (job.bookingFee ?: 0.0))}", fontWeight = FontWeight.Black, color = Color(0xFF2E7D32))
+                if (!isCancelled) {
+                    val price = if (isCompleted) job.providerEarnings else (job.serviceFee ?: 0.0) + (job.bookingFee ?: 0.0)
+                    Column(horizontalAlignment = Alignment.End) {
+                        if (isCompleted) {
+                            Text(text = "Provider Earnings", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                        }
+                        Text(
+                            text = if (isCompleted && price == null) "N/A" else "${job.currency ?: ""} ${String.format("%.2f", price ?: 0.0)}",
+                            fontWeight = FontWeight.Black,
+                            color = if (isCompleted) Color(0xFF2E7D32) else Color.Black
+                        )
+                    }
+                }
             }
             
             Spacer(modifier = Modifier.height(12.dp))
             
             val customerName = if (job.status == "BROADCASTED") "Hidden until accepted" else "${job.customerInfo?.firstName} ${job.customerInfo?.lastName}"
             InfoRow(label = "Customer", value = customerName)
-            InfoRow(label = "Date/Time", value = job.createdAt?.take(16)?.replace("T", " ") ?: "Unknown")
-            InfoRow(label = "Location", value = job.location?.address ?: "Client Location")
+
+            // Issue 6: Start Time + Completion/Cancellation Time
+            val startTime = job.startedAt ?: job.createdAt
+            val endTime = if (isCompleted) job.completedAt else if (isCancelled) job.cancelledAt else null
+            val timeDisplay = if (endTime != null) {
+                "${startTime?.take(16)?.replace("T", " ")} to ${endTime.take(16).replace("T", " ")}"
+            } else {
+                startTime?.take(16)?.replace("T", " ") ?: "Unknown"
+            }
+            InfoRow(label = "Date/Time", value = timeDisplay)
+
+            // Issue 5: Address Privacy
+            val displayAddress = if (isCompleted || isCancelled) {
+                formatPrivacyAddress(job.location?.address)
+            } else {
+                job.location?.address ?: "Client Location"
+            }
+            InfoRow(label = "Location", value = displayAddress)
             
-            if (job.status == "CANCELLED") {
+            if (isCancelled) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Cancelled by: ${job.cancelledByName ?: "Unknown"}",
@@ -151,45 +183,45 @@ fun JobCard(job: JobDto, isLoading: Boolean, onNavigateToSubScreen: (String) -> 
                 }
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            if (job.status == "BROADCASTED") {
-                Button(
-                    onClick = { onAction(job.id) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    enabled = !isLoading
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
-                    } else {
-                        Text("ACCEPT JOB")
-                    }
-                }
-            } else if (job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING") {
-                Button(
-                    onClick = { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.customerId ?: "")) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
-                ) {
-                    Text("RESUME NEGOTIATION")
-                }
-            } else {
-                val statusColor = when (job.status) {
-                    "COMPLETED" -> Color(0xFF4CAF50)
-                    "CANCELLED" -> Color(0xFFD32F2F)
-                    "STARTED", "IN_PROGRESS" -> Color(0xFF1976D2)
-                    else -> Color(0xFFFFA000)
-                }
+            if (!isCompleted && !isCancelled) {
+                Spacer(modifier = Modifier.height(16.dp))
                 
-                Button(
-                    onClick = { onAction(job.id) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = statusColor)
-                ) {
-                    Text(text = if(job.status in listOf("ACCEPTED", "ARRIVED", "STARTED", "IN_PROGRESS", "SCHEDULED")) "OPEN TRACKING" else "VIEW STATUS: ${job.status}")
+                if (job.status == "BROADCASTED") {
+                    Button(
+                        onClick = { onAction(job.id) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !isLoading
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
+                        } else {
+                            Text("ACCEPT JOB")
+                        }
+                    }
+                } else if (job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING") {
+                    Button(
+                        onClick = { onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.customerId ?: "")) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
+                    ) {
+                        Text("RESUME NEGOTIATION")
+                    }
+                } else {
+                    val statusColor = when (job.status) {
+                        "STARTED", "IN_PROGRESS" -> Color(0xFF1976D2)
+                        else -> Color(0xFFFFA000)
+                    }
+                    
+                    Button(
+                        onClick = { onAction(job.id) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = statusColor)
+                    ) {
+                        Text(text = if(job.status in listOf("ACCEPTED", "ARRIVED", "STARTED", "IN_PROGRESS", "SCHEDULED")) "OPEN TRACKING" else "VIEW STATUS: ${job.status}")
+                    }
                 }
             }
         }
