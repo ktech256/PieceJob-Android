@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import kotlinx.coroutines.flow.update
 import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 
@@ -191,23 +190,18 @@ class ChatViewModel @Inject constructor(
                 isRead = false,
                 createdAt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).format(java.util.Date())
             )
-            _messages.update { it + optimisticMsg }
+            _messages.value = _messages.value + optimisticMsg
 
             val request = SendMessageRequest(jobId, receiverId, text)
             val res = repository.sendMessage(request)
             if (res.success && res.data != null) {
                 Log.d("FORENSIC", "CHAT_DATABASE_SAVE | Success. Updating temp message.")
-                _messages.update { current ->
-                    // Replace temp message with real one, but ONLY if real one hasn't arrived via socket yet
-                    if (current.any { it.id == res.data.id }) {
-                        current.filter { it.id != tempId }
-                    } else {
-                        current.map { if (it.id == tempId) res.data else it }
-                    }
-                }
+                // Replace temp message with real one
+                _messages.value = _messages.value.map { if (it.id == tempId) res.data else it }
             } else {
                 Log.e("FORENSIC", "CHAT_DATABASE_SAVE | Failed: ${res.message}")
-                _messages.update { current -> current.filter { it.id != tempId } }
+                // Remove temp message on failure
+                _messages.value = _messages.value.filter { it.id != tempId }
             }
         }
     }
@@ -390,36 +384,12 @@ class ChatViewModel @Inject constructor(
                 loadJobConfig(jobId)
             }
 
-            // Deduplication and replacement of optimistic messages
-            val myId = com.piecejob.core.data.local.SessionManager(context).getUserId() ?: ""
-            val isFromMe = message.senderId._id == myId
-
-            _messages.update { current ->
-                if (current.any { it.id == message.id }) {
-                    Log.d("FORENSIC", "CHAT_RECOMPOSE | Message Ignored (Duplicate ID): ${message.id}")
-                    current
-                } else {
-                    if (isFromMe) {
-                        // Check if we have an optimistic message with matching text to replace
-                        var replaced = false
-                        val updated = current.map { 
-                            if (!replaced && it.id.startsWith("temp_") && it.text == message.text) {
-                                replaced = true
-                                message
-                            } else it
-                        }
-                        if (replaced) {
-                            Log.d("FORENSIC", "CHAT_RECOMPOSE | Optimistic message replaced: ${message.id}")
-                            updated
-                        } else {
-                            Log.d("FORENSIC", "CHAT_RECOMPOSE | Message Added (Me): ${message.id}")
-                            current + message
-                        }
-                    } else {
-                        Log.d("FORENSIC", "CHAT_RECOMPOSE | Message Added (Other): ${message.id}")
-                        current + message
-                    }
-                }
+            // Deduplication
+            if (_messages.value.none { it.id == message.id }) {
+                _messages.value = _messages.value + message
+                Log.d("FORENSIC", "CHAT_RECOMPOSE | Message Added: ${message.id}")
+            } else {
+                Log.d("FORENSIC", "CHAT_RECOMPOSE | Message Ignored (Duplicate): ${message.id}")
             }
         } catch (e: Exception) {
             Log.e("FORENSIC", "CHAT_PARSE_ERROR", e)

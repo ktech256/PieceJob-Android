@@ -635,7 +635,7 @@ fun ActiveJobCard(
     onTrack: () -> Unit,
     onResume: () -> Unit
 ) {
-    val isNegotiation = job.status == "PROVIDER_ACCEPTED" || job.status == "ACCEPTED"
+    val isNegotiation = job.status == "PROVIDER_ACCEPTED"
     
     var statusLabel = ""
     var statusIcon = Icons.Default.Timer
@@ -652,11 +652,11 @@ fun ActiveJobCard(
             actionIcon = Icons.Default.OpenInNew
         }
         "ACCEPTED" -> {
-            statusLabel = "Price agreed"
+            statusLabel = "Provider assigned"
             statusIcon = Icons.Default.CheckCircle
-            statusColor = Color(0xFF2E7D32)
-            actionLabel = "RESUME"
-            actionIcon = Icons.Default.OpenInNew
+            statusColor = Color(0xFF1976D2)
+            actionLabel = "TRACK"
+            actionIcon = Icons.Default.Navigation
         }
         "EN_ROUTE" -> {
             statusLabel = "Provider is on the way"

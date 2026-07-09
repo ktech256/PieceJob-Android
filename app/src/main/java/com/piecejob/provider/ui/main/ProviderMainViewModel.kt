@@ -7,7 +7,6 @@ import com.piecejob.core.notification.AlertManager
 import com.piecejob.core.notification.manager.IncomingJob
 import com.piecejob.core.notification.manager.NotificationState
 import com.piecejob.core.socket.SocketManager
-import com.piecejob.core.utils.PrivacyUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -77,17 +76,14 @@ class ProviderMainViewModel @Inject constructor(
         socketManager.onNewBroadcast { data ->
             android.util.Log.d("FCM_AUDIT", "ENTRY: setupSocketListeners -> onNewBroadcast")
             android.util.Log.d("SOCKET_AUDIT", "NEW_JOB_BROADCAST received via Socket: $data")
-            
-            val rawAddress = data.optString("address").takeIf { it.isNotEmpty() }
-                ?: data.optJSONObject("location")?.optString("address").takeIf { it?.isNotEmpty() == true }
-                ?: "Nearby Location"
-                
             val incomingJob = IncomingJob(
                 jobId = data.optString("jobId"),
                 serviceCode = data.optString("serviceCode", "Service Request"),
                 serviceName = data.optString("serviceName"),
                 customerName = data.optString("recipientName"),
-                address = PrivacyUtils.obscureAddress(rawAddress),
+                address = data.optString("address").takeIf { it.isNotEmpty() }
+                    ?: data.optJSONObject("location")?.optString("address").takeIf { it?.isNotEmpty() == true }
+                    ?: "Nearby Location",
                 distance = data.optString("distance").takeIf { it.isNotEmpty() } ?: "Nearby",
                 expiresAt = System.currentTimeMillis() + 60000
             )

@@ -194,16 +194,6 @@ class MainActivity : AppCompatActivity() {
                                 android.util.Log.e("FORENSIC", "INCOMING_CALL_INVALID_DATA | JobId=$jobId, callerId=$callerId, callId=$callId")
                             }
                         }
-                        "PRICE_PROPOSAL", "PRICE_ACCEPTED", "PRICE_REJECTED", "NEW_CHAT_MESSAGE" -> {
-                            val otherUserId = intent.getStringExtra("senderId")
-                            if (jobId != null && otherUserId != null) {
-                                android.util.Log.d("FORENSIC", "NEGOTIATION_RECOVERY_SIGNAL | Job: $jobId | OtherUser: $otherUserId")
-                                // Use Negotiation route for these types as requested
-                                navController.navigate(Screen.Negotiation.passArgs(jobId, otherUserId)) {
-                                    launchSingleTop = true
-                                }
-                            }
-                        }
                     }
                     // Reset to null to avoid repeat triggers, but cold start intent is already handled
                     incomingIntentQueue.value = null
@@ -273,24 +263,22 @@ class MainActivity : AppCompatActivity() {
                         val currentRoute = navController.currentDestination?.route
 
                         // ISSUE 1: Auto-navigate customer to negotiation when provider accepts
-                        // GUARD: Don't interrupt if already on Action screens.
-                        // For PROVIDER_ACCEPTED and ACCEPTED (waiting for dispatch), we ALLOW transition from 'tracking' (searching) to 'negotiation'.
-                        if (!isProvider && (event.status == "PROVIDER_ACCEPTED" || event.status == "ACCEPTED")) {
-                            val isAlreadyOnNegotiationOrRating = currentRoute?.contains("negotiation") == true || 
-                                                               currentRoute?.contains("rating") == true
+                        // GUARD: Don't interrupt if already on Tracking, Rating, or if job is terminal
+                        if (!isProvider && event.status == "PROVIDER_ACCEPTED") {
+                            val isAlreadyOnActionScreen = currentRoute?.contains("tracking") == true || 
+                                                        currentRoute?.contains("rating") == true ||
+                                                        currentRoute?.contains("negotiation") == true
                             
-                            if (isAlreadyOnNegotiationOrRating) {
-                                android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Already on negotiation/rating screen ($currentRoute). Ignoring ${event.status} signal.")
+                            if (isAlreadyOnActionScreen) {
+                                android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Already on action screen ($currentRoute). Ignoring PROVIDER_ACCEPTED signal.")
                                 return@collect
                             }
 
                             val providerId = event.providerInfo?.optString("_id") 
                                 ?: event.providerInfo?.optString("id") 
                                 ?: ""
-                            
-                            // If ACCEPTED but no provider info in socket event, try to get it from current state or re-fetch (simplifying here to re-navigate only if providerId is known)
                             if (providerId.isNotEmpty()) {
-                                android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Provider ${event.status}! Auto-navigating to Negotiation.")
+                                android.util.Log.d("FORENSIC", "STATUS_OBSERVER | Provider Accepted! Auto-navigating to Negotiation.")
                                 navController.navigate(Screen.Negotiation.passArgs(event.jobId, providerId))
                             }
                         }

@@ -5,8 +5,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.media.AudioAttributes
-import android.media.RingtoneManager
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -17,8 +15,6 @@ import com.piecejob.R
 import com.piecejob.core.data.repository.UserRepository
 import com.piecejob.core.notification.manager.IncomingJob
 import com.piecejob.core.notification.manager.NotificationState
-import com.piecejob.core.utils.PrivacyUtils
-import com.piecejob.provider.IncomingJobActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -90,13 +86,12 @@ class PieceJobMessagingService : FirebaseMessagingService() {
 
     private fun handleIncomingJob(data: Map<String, String>) {
         Log.d("FCM_AUDIT", "ENTRY: handleIncomingJob")
-        val rawAddress = data["address"] ?: "Nearby Location"
         val incomingJob = IncomingJob(
             jobId = data["jobId"] ?: "",
             serviceCode = data["serviceCode"] ?: "Service Request",
             serviceName = data["serviceName"],
             customerName = data["recipientName"],
-            address = PrivacyUtils.obscureAddress(rawAddress),
+            address = data["address"] ?: "Nearby Location",
             distance = data["distance"] ?: "Nearby", 
             expiresAt = System.currentTimeMillis() + 60000 
         )
@@ -137,7 +132,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         
         val acceptPendingIntent = PendingIntent.getActivity(
             this, jobId.hashCode() + 1, acceptIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0)
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         // 2. Intent to Reject (Broadcast flow)
@@ -150,7 +145,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         
         val rejectPendingIntent = PendingIntent.getBroadcast(
             this, jobId.hashCode() + 2, rejectIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0)
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         // 3. General Click Intent
@@ -167,7 +162,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
 
         val contentPendingIntent = PendingIntent.getActivity(
             this, jobId.hashCode(), contentIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0)
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val channelId = "piecejob_calls"
@@ -179,7 +174,6 @@ class PieceJobMessagingService : FirebaseMessagingService() {
                 enableLights(true)
                 enableVibration(true)
                 setSound(null, null) 
-                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -193,7 +187,6 @@ class PieceJobMessagingService : FirebaseMessagingService() {
             .setAutoCancel(true)
             .setOngoing(true)
             .setVibrate(longArrayOf(0, 500, 200, 500))
-            .setFullScreenIntent(contentPendingIntent, true) 
             .setContentIntent(contentPendingIntent)
             .addAction(android.R.drawable.ic_menu_call, "Accept", acceptPendingIntent)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Reject", rejectPendingIntent)
@@ -211,7 +204,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
 
     private fun showHeadsUpNotification(job: IncomingJob) {
         Log.d("FCM_AUDIT", "ENTRY: showHeadsUpNotification")
-        val intent = Intent(this, IncomingJobActivity::class.java).apply {
+        val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("jobId", job.jobId)
             putExtra("type", "NEW_JOB_BROADCAST")
@@ -219,10 +212,10 @@ class PieceJobMessagingService : FirebaseMessagingService() {
         
         val pendingIntent = PendingIntent.getActivity(
             this, job.jobId.hashCode(), intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0)
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val channelId = "piecejob_broadcasts_v3" // Incremented version to ensure fresh channel settings
+        val channelId = "piecejob_broadcasts_v2"
         Log.d("FCM_AUDIT", "Building notification for channel: $channelId")
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
@@ -234,7 +227,6 @@ class PieceJobMessagingService : FirebaseMessagingService() {
             .setOngoing(true)
             .setVibrate(longArrayOf(0, 500, 200, 500))
             .setContentIntent(pendingIntent)
-            .setFullScreenIntent(pendingIntent, true) 
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -244,13 +236,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
                 enableLights(true)
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 500, 200, 500)
-                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
-                
-                // Set default notification sound to ensure heads-up pops
-                val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                setSound(soundUri, AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .build())
+                setSound(null, null)
             }
             notificationManager.createNotificationChannel(channel)
         }
