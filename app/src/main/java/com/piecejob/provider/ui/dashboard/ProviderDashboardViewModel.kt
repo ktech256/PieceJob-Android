@@ -69,6 +69,8 @@ class ProviderDashboardViewModel @Inject constructor(
     private val _navigationEvent = MutableSharedFlow<String>()
     val navigationEvent: SharedFlow<String> = _navigationEvent
 
+    val currentUserId = sessionManager.getUserId() ?: ""
+
     init {
         loadDashboard()
         observeSocket()

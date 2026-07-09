@@ -49,7 +49,11 @@ data class ActivityDto(
     val title: String? = null,
     val serviceCode: String? = null,
     val serviceName: String? = null,
+    val address: String? = null,
     val amount: Double,
+    val startedAt: String? = null,
+    val completedAt: String? = null,
+    val cancelledBy: String? = null,
     val createdAt: String
 )
 
