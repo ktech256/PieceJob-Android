@@ -51,8 +51,10 @@ data class ActivityDto(
     val serviceName: String? = null,
     val address: String? = null,
     val amount: Double,
+    val isNegotiated: Boolean? = true,
     val startedAt: String? = null,
     val completedAt: String? = null,
+    val cancelledAt: String? = null,
     val cancelledBy: String? = null,
     val createdAt: String
 )

@@ -925,12 +925,22 @@ fun ActivityItem(act: com.piecejob.core.data.remote.dto.ActivityDto, currency: S
                     )
                 }
                 
-                Text(
-                    text = "$currency ${String.format("%.2f", act.amount)}",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.Black
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    if (!isCancelled && act.isNegotiated == false) {
+                        Text(
+                            text = "Booking Fee",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1976D2)
+                        )
+                    }
+                    Text(
+                        text = "$currency ${String.format("%.2f", act.amount)}",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.Black
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -954,7 +964,7 @@ fun ActivityItem(act: com.piecejob.core.data.remote.dto.ActivityDto, currency: S
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
                         Text("Cancelled:", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                        Text(formatDateTimeString(act.createdAt), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(formatDateTimeString(act.cancelledAt ?: act.createdAt), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                     Text(
                         text = "Cancelled by $actor",

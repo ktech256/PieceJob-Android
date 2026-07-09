@@ -541,7 +541,7 @@ fun RecentActivityItem(activity: com.piecejob.core.data.remote.dto.ActivityDto, 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
                         Text("Cancelled:", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                        Text(formatDateTimeString(activity.createdAt), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(formatDateTimeString(activity.cancelledAt ?: activity.createdAt), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                     Text(
                         text = "Cancelled by $actor",
