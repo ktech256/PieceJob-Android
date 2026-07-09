@@ -17,6 +17,8 @@ import com.piecejob.R
 import com.piecejob.core.data.repository.UserRepository
 import com.piecejob.core.notification.manager.IncomingJob
 import com.piecejob.core.notification.manager.NotificationState
+import com.piecejob.core.utils.PrivacyUtils
+import com.piecejob.provider.IncomingJobActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -88,12 +90,13 @@ class PieceJobMessagingService : FirebaseMessagingService() {
 
     private fun handleIncomingJob(data: Map<String, String>) {
         Log.d("FCM_AUDIT", "ENTRY: handleIncomingJob")
+        val rawAddress = data["address"] ?: "Nearby Location"
         val incomingJob = IncomingJob(
             jobId = data["jobId"] ?: "",
             serviceCode = data["serviceCode"] ?: "Service Request",
             serviceName = data["serviceName"],
             customerName = data["recipientName"],
-            address = data["address"] ?: "Nearby Location",
+            address = PrivacyUtils.obscureAddress(rawAddress),
             distance = data["distance"] ?: "Nearby", 
             expiresAt = System.currentTimeMillis() + 60000 
         )
@@ -208,7 +211,7 @@ class PieceJobMessagingService : FirebaseMessagingService() {
 
     private fun showHeadsUpNotification(job: IncomingJob) {
         Log.d("FCM_AUDIT", "ENTRY: showHeadsUpNotification")
-        val intent = Intent(this, MainActivity::class.java).apply {
+        val intent = Intent(this, IncomingJobActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra("jobId", job.jobId)
             putExtra("type", "NEW_JOB_BROADCAST")

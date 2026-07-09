@@ -24,6 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.piecejob.core.data.remote.dto.MessageDto
 import com.piecejob.core.data.remote.dto.JobDto
 import com.piecejob.core.data.remote.dto.PriceProposalDto
+import com.piecejob.core.utils.PrivacyUtils
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -366,7 +367,7 @@ fun NegotiationScreen(
                             Column(modifier = Modifier.padding(12.dp)) {
                                 if (isProvider) {
                                     NegotiationHeaderItem("Service:", jobState?.serviceName ?: "General Service")
-                                    NegotiationHeaderItem("Location:", formatNegotiationAddress(jobState?.location?.address))
+                                    NegotiationHeaderItem("Location:", PrivacyUtils.obscureAddress(jobState?.location?.address))
                                     NegotiationHeaderItem("Distance:", distance)
                                 } else {
                                     val providerName = jobState?.providerInfo?.firstName ?: "Provider"
@@ -899,16 +900,5 @@ fun NegotiationHeaderItem(label: String, value: String) {
     Row(modifier = Modifier.padding(vertical = 2.dp)) {
         Text(text = label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF827717), modifier = Modifier.width(65.dp))
         Text(text = value, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF827717))
-    }
-}
-
-fun formatNegotiationAddress(address: String?): String {
-    if (address == null) return "Client Location"
-    val parts = address.split(",")
-    return if (parts.size >= 3) {
-        // Example: "139 Erasmus St, Flora Park, Polokwane" -> "Flora Park, Polokwane"
-        "${parts[1].trim()}, ${parts[2].trim()}"
-    } else {
-        address
     }
 }
