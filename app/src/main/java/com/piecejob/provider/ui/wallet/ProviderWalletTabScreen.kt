@@ -222,7 +222,11 @@ fun ProviderWalletTabScreen(
                 Button(
                     onClick = { showWithdrawDialog = true },
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFD32F2F),
+                        disabledContainerColor = Color(0xFFE0E0E0),
+                        disabledContentColor = Color.Gray
+                    ),
                     enabled = isEscrowEnabled && (wallet?.balanceMain ?: 0.0) >= 50.0
                 ) {
                     Icon(Icons.Default.AccountBalance, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -244,7 +248,7 @@ fun ProviderWalletTabScreen(
                     ProviderBalanceCard(
                         "Escrow", 
                         if (isEscrowEnabled) "$currencySymbol${wallet?.balanceEscrow ?: 0.0}" else "Unavailable", 
-                        if (isEscrowEnabled) Color(0xFFFFA000) else Color.Gray, 
+                        if (isEscrowEnabled) Color(0xFFFFA000) else Color(0xFF9E9E9E),
                         Modifier.weight(1f)
                     )
                 }
