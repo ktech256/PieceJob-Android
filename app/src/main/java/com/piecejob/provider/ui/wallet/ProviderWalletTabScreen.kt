@@ -35,6 +35,7 @@ fun ProviderWalletTabScreen(
     val error by viewModel.error.collectAsState()
     val navEvent by viewModel.navigationEvent.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
+    val isEscrowEnabled by viewModel.isEscrowEnabled.collectAsState()
 
     LaunchedEffect(navEvent) {
         navEvent?.let {
@@ -59,7 +60,7 @@ fun ProviderWalletTabScreen(
             title = { Text("Cash Out", fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text("Available: $currencySymbol${wallet?.balanceMain ?: 0.0}", fontSize = 12.sp, color = Color.Gray)
+                    Text("Platform Balance: $currencySymbol${wallet?.balanceMain ?: 0.0}", fontSize = 12.sp, color = Color.Gray)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = withdrawAmount,
@@ -145,6 +146,21 @@ fun ProviderWalletTabScreen(
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("0.00") }
                     )
+
+                    if ((wallet?.balanceCredit ?: 0.0) > 0.0) {
+                        Button(
+                            onClick = {
+                                viewModel.payServiceFee("CREDIT", "INTERNAL", voucherAmount.toDoubleOrNull() ?: 0.0)
+                                showPayServiceFeeDialog = false
+                                voucherAmount = ""
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF121212)),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("USE CREDIT BALANCE ($currencySymbol${wallet?.balanceCredit})", fontSize = 11.sp, fontWeight = FontWeight.Black)
+                        }
+                    }
                     
                     Surface(
                         color = Color(0xFFF5F5F5),
@@ -207,7 +223,7 @@ fun ProviderWalletTabScreen(
                     onClick = { showWithdrawDialog = true },
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                    enabled = (wallet?.balanceMain ?: 0.0) >= 50.0
+                    enabled = isEscrowEnabled && (wallet?.balanceMain ?: 0.0) >= 50.0
                 ) {
                     Icon(Icons.Default.AccountBalance, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -224,8 +240,13 @@ fun ProviderWalletTabScreen(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ProviderBalanceCard("Available", "$currencySymbol${wallet?.balanceMain ?: 0.0}", Color(0xFF121212), Modifier.weight(1f))
-                    ProviderBalanceCard("Escrow", "$currencySymbol${wallet?.balanceEscrow ?: 0.0}", Color(0xFFFFA000), Modifier.weight(1f))
+                    ProviderBalanceCard("Platform Balance", "$currencySymbol${wallet?.balanceMain ?: 0.0}", Color(0xFF121212), Modifier.weight(1f))
+                    ProviderBalanceCard(
+                        "Escrow", 
+                        if (isEscrowEnabled) "$currencySymbol${wallet?.balanceEscrow ?: 0.0}" else "Unavailable", 
+                        if (isEscrowEnabled) Color(0xFFFFA000) else Color.Gray, 
+                        Modifier.weight(1f)
+                    )
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ProviderBalanceCard("Credit", "$currencySymbol${wallet?.balanceCredit ?: 0.0}", Color(0xFF2E7D32), Modifier.weight(1f))

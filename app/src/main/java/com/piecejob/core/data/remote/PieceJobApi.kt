@@ -510,7 +510,8 @@ data class SettingsDto(
     val currencyCode: String,
     val currencySymbol: String? = null,
     val nightFeeEnabled: Boolean,
-    val weekendFeeEnabled: Boolean
+    val weekendFeeEnabled: Boolean,
+    val isEscrowEnabled: Boolean = false
 )
 
 data class ServiceDto(

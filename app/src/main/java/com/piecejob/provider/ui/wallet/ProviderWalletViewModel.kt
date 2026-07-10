@@ -20,6 +20,7 @@ class ProviderWalletViewModel @Inject constructor(
     val wallet: StateFlow<WalletDto?> = _wallet
 
     val currencySymbol = MutableStateFlow(configRepository.getCurrencySymbol())
+    val isEscrowEnabled = MutableStateFlow(configRepository.isEscrowEnabled())
 
     private val _transactions = MutableStateFlow<List<WalletTransactionDto>>(emptyList())
     val transactions: StateFlow<List<WalletTransactionDto>> = _transactions
@@ -54,6 +55,7 @@ class ProviderWalletViewModel @Inject constructor(
                 launch {
                     configRepository.refreshWorkspaceConfig()
                     currencySymbol.value = configRepository.getCurrencySymbol()
+                    isEscrowEnabled.value = configRepository.isEscrowEnabled()
                 }
 
                 // Parallel load

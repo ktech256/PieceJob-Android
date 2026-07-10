@@ -74,6 +74,14 @@ class SessionManager @Inject constructor(
         return prefs.getString("locale", "en-ZA") ?: "en-ZA"
     }
 
+    fun saveEscrowEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("escrow_enabled", enabled).apply()
+    }
+
+    fun isEscrowEnabled(): Boolean {
+        return prefs.getBoolean("escrow_enabled", false)
+    }
+
     fun saveLastPhoneNumber(phone: String) {
         prefs.edit().putString("last_phone", phone).apply()
     }

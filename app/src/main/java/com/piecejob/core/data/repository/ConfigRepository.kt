@@ -22,6 +22,7 @@ class ConfigRepository @Inject constructor(
                 config.settings.currencySymbol?.let { sessionManager.saveCurrencySymbol(it) }
                 config.country.timezone?.let { sessionManager.saveTimezone(it) }
                 config.country.locale?.let { sessionManager.saveLocale(it) }
+                sessionManager.saveEscrowEnabled(config.settings.isEscrowEnabled)
             }
             response
         } catch (e: Exception) {
@@ -32,6 +33,7 @@ class ConfigRepository @Inject constructor(
     fun getCurrencySymbol(): String = sessionManager.getCurrencySymbol()
     fun getTimezone(): String = sessionManager.getTimezone()
     fun getLocale(): String = sessionManager.getLocale()
+    fun isEscrowEnabled(): Boolean = sessionManager.isEscrowEnabled()
 
     suspend fun getServiceDetails(code: String) = try {
         api.getServiceDetails(code)
