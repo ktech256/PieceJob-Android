@@ -49,7 +49,7 @@ fun ProviderTransactionRow(tx: WalletTransactionDto, currency: String) {
 }
 
 @Composable
-fun ProviderBalanceCard(title: String, amount: String, color: Color, modifier: Modifier) {
+fun ProviderBalanceCard(title: String, amount: String, color: Color, modifier: Modifier, subTitle: String? = null) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(20.dp),
@@ -60,6 +60,9 @@ fun ProviderBalanceCard(title: String, amount: String, color: Color, modifier: M
             Text(text = title.uppercase(), fontSize = 9.sp, color = Color.Gray, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
             Spacer(Modifier.height(4.dp))
             Text(text = amount, fontSize = 18.sp, fontWeight = FontWeight.Black, color = color)
+            if (subTitle != null) {
+                Text(text = subTitle, fontSize = 8.sp, color = color.copy(alpha = 0.7f), fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

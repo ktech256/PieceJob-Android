@@ -249,7 +249,25 @@ fun ProviderWalletTabScreen(
                     )
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ProviderBalanceCard("Credit", "$currencySymbol${wallet?.balanceCredit ?: 0.0}", Color(0xFF2E7D32), Modifier.weight(1f))
+                    val creditBalance = wallet?.balanceCredit ?: 0.0
+                    val creditColor = when {
+                        creditBalance > 0 -> Color(0xFF2E7D32) // Green
+                        creditBalance < 0 -> Color(0xFFD32F2F) // Red
+                        else -> Color(0xFF2E7D32) // Zero (Settled) - Greenish
+                    }
+                    val creditLabel = when {
+                        creditBalance > 0 -> "PieceJob owes you"
+                        creditBalance < 0 -> "You owe PieceJob"
+                        else -> "Account Settled"
+                    }
+
+                    ProviderBalanceCard(
+                        title = "Credit", 
+                        amount = String.format(Locale.getDefault(), "%s%s%.2f", if(creditBalance < 0) "-" else "", currencySymbol, Math.abs(creditBalance)), 
+                        color = creditColor, 
+                        modifier = Modifier.weight(1f),
+                        subTitle = creditLabel
+                    )
                     ProviderBalanceCard("Referral", "$currencySymbol${wallet?.balanceReferral ?: 0.0}", Color(0xFF1976D2), Modifier.weight(1f))
                 }
             }
@@ -259,9 +277,9 @@ fun ProviderWalletTabScreen(
         item {
             val balance = wallet?.serviceFeeBalance ?: 0.0
             val (statusText, statusColor, displayBalance) = when {
-                balance < 0 -> Triple("PLEASE PAY A SERVICE FEE OF", Color(0xFFD32F2F), String.format(Locale.getDefault(), "- %s %.2f", currencySymbol, Math.abs(balance)))
-                balance > 0 -> Triple("SERVICE FEE CREDIT", Color(0xFF2E7D32), String.format(Locale.getDefault(), "+ %s %.2f", currencySymbol, balance))
-                else -> Triple("SERVICE FEE SETTLED", Color(0xFF1976D2), String.format(Locale.getDefault(), "%s 0.00", currencySymbol))
+                balance < 0 -> Triple("PLEASE PAY A SERVICE FEE OF", Color(0xFFD32F2F), String.format(Locale.getDefault(), "- %s%.2f", currencySymbol, Math.abs(balance)))
+                balance > 0 -> Triple("SERVICE FEE CREDIT", Color(0xFF2E7D32), String.format(Locale.getDefault(), "+ %s%.2f", currencySymbol, balance))
+                else -> Triple("SERVICE FEE SETTLED", Color(0xFF1976D2), String.format(Locale.getDefault(), "%s0.00", currencySymbol))
             }
 
             Card(
