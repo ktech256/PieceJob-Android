@@ -58,6 +58,9 @@ class ProviderDashboardViewModel @Inject constructor(
     private val _recentActivity = MutableStateFlow<List<ActivityDto>>(emptyList())
     val recentActivity: StateFlow<List<ActivityDto>> = _recentActivity
 
+    private val _referralCampaign = MutableStateFlow<ReferralCampaignDto?>(null)
+    val referralCampaign: StateFlow<ReferralCampaignDto?> = _referralCampaign
+
     private val _providerLocation = MutableStateFlow<com.google.android.gms.maps.model.LatLng?>(null)
     val providerLocation: StateFlow<com.google.android.gms.maps.model.LatLng?> = _providerLocation
 
@@ -105,6 +108,7 @@ class ProviderDashboardViewModel @Inject constructor(
                     _stats.value = data.stats
                     _activeJob.value = data.activeJob
                     _recentActivity.value = data.recentActivity
+                    _referralCampaign.value = data.referralCampaign
                     _isOnline.value = data.stats.isOnline
                     
                     if (data.activeJob != null) {

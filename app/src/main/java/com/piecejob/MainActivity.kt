@@ -152,6 +152,21 @@ class MainActivity : AppCompatActivity() {
                     val type = intent.getStringExtra("type")
                     val jobId = intent.getStringExtra("jobId")
                     
+                    // HANDLE REFERRAL DEEP LINK
+                    val data = intent.data
+                    if (data != null && (data.host == "piecejob.app" || data.host == "www.piecejob.app") && data.path?.startsWith("/r/") == true) {
+                        val code = data.lastPathSegment
+                        if (!code.isNullOrBlank()) {
+                            android.util.Log.d("REFERRAL_AUDIT", "Detected Referral Code from Deep Link: $code")
+                            authViewModel.referralCode.value = code
+                            if (!authViewModel.isLoggedIn()) {
+                                navController.navigate(Screen.RegistrationDetails.route) {
+                                    launchSingleTop = true
+                                }
+                            }
+                        }
+                    }
+
                     android.util.Log.d("FORENSIC", "MAIN_ACTIVITY_NAV_SIGNAL | Type: $type | Job: $jobId")
 
                     when (type) {

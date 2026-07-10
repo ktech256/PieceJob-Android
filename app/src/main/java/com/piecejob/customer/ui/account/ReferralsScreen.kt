@@ -2,11 +2,17 @@ package com.piecejob.customer.ui.account
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +32,7 @@ fun ReferralsScreen(
 ) {
     val stats by viewModel.referralStats.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.loadReferralStats()
@@ -37,16 +44,21 @@ fun ReferralsScreen(
                 title = { Text("Refer & Earn", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
         }
     ) { padding ->
+        val referralCode = stats?.referralCode ?: "------"
+        val referralLink = "https://piecejob.app/r/$referralCode"
+        val shareMessage = "Join me on PieceJob! Use my referral code $referralCode to register and unlock rewards for both of us.\n\nRegister here: $referralLink"
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
             Card(
@@ -56,46 +68,96 @@ fun ReferralsScreen(
             ) {
                 Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Your Referral Code", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
-                    Text(text = stats?.referralCode ?: "------", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Black)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { /* Share Logic */ },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.Share, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("SHARE CODE", fontWeight = FontWeight.Bold)
+                    Text(text = referralCode, color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Black)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = referralLink, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(
+                            onClick = {
+                                val clipboardManager = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                val clip = android.content.ClipData.newPlainText("Referral Link", referralLink)
+                                clipboardManager.setPrimaryClip(clip)
+                                android.widget.Toast.makeText(context, "Link copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Link, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("LINK", fontWeight = FontWeight.Bold)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                val clipboardManager = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                val clip = android.content.ClipData.newPlainText("Referral Code", referralCode)
+                                clipboardManager.setPrimaryClip(clip)
+                                android.widget.Toast.makeText(context, "Code copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            border = BorderStroke(1.dp, Color.White),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("CODE", fontWeight = FontWeight.Bold)
+                        }
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // QUICK SOCIAL SHARING
+            Text(text = "Quick Share", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SocialShareButton("WhatsApp", Icons.Default.Chat, Color(0xFF25D366)) {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, shareMessage)
+                        setPackage("com.whatsapp")
+                    }
+                    try { context.startActivity(intent) } catch (e: Exception) { context.startActivity(Intent.createChooser(intent, "Share via")) }
+                }
+                SocialShareButton("More", Icons.Default.Share, Color(0xFF121212)) {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, shareMessage)
+                    }
+                    context.startActivity(Intent.createChooser(intent, "Share via"))
                 }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                ReferralStatCard("Total", "${stats?.totalReferrals ?: 0}", Modifier.weight(1f))
-                ReferralStatCard("Earned", "$${stats?.paidRewards ?: 0.0}", Modifier.weight(1f))
+                ReferralStatCard("Total Referrals", "${stats?.totalReferrals ?: 0}", Modifier.weight(1f))
+                ReferralStatCard("Earned Rewards", "${stats?.history?.firstOrNull()?.workspace ?: "$"} ${String.format("%.2f", stats?.paidRewards ?: 0.0)}", Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            Text(text = "Referral History", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(text = "Referral History", fontSize = 18.sp, fontWeight = FontWeight.Black)
             Spacer(modifier = Modifier.height(16.dp))
 
             if (stats?.history?.isEmpty() == true) {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text("No referrals yet.", color = Color.Gray)
+                Box(modifier = Modifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text("No referrals yet. Start sharing to earn!", color = Color.Gray, fontSize = 14.sp)
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(stats?.history ?: emptyList()) { item ->
-                        ReferralHistoryItem(item)
-                    }
+                stats?.history?.forEach { item ->
+                    ReferralHistoryItem(item)
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
+            
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
@@ -164,6 +226,22 @@ fun ReferralHistoryItem(item: com.piecejob.core.data.remote.dto.ReferralHistoryD
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun SocialShareButton(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier.clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        color = color.copy(alpha = 0.1f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
+    ) {
+        Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(label, color = color, fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }
     }
 }

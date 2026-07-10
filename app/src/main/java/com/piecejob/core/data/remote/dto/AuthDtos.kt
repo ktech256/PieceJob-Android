@@ -87,7 +87,8 @@ data class UserDto(
     val language: String? = null,
     val country: String? = null,
     val privacySettings: PrivacySettingsDto? = null,
-    val subscription: SubscriptionDto? = null
+    val subscription: SubscriptionDto? = null,
+    val referredBy: String? = null
 )
 
 data class AddressDto(

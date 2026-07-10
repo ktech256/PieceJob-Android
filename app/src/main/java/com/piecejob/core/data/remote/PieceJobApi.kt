@@ -61,6 +61,9 @@ interface PieceJobApi {
     @GET("users/referrals")
     suspend fun getReferralStats(): ApiResponse<ReferralStatsDto>
 
+    @POST("users/referrals/attach")
+    suspend fun attachReferral(@Body body: Map<String, String>): ApiResponse<Unit>
+
     @GET("dashboard/customer")
     suspend fun getCustomerDashboard(
         @Query("lat") lat: Double? = null,

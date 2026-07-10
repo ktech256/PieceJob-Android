@@ -45,6 +45,15 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="piecejob" android:host="payment-callback" />
             </intent-filter>
+
+            <!-- Referral Deep Link -->
+            <intent-filter android:label="Referral Link" android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="piecejob.app" android:pathPrefix="/r" />
+                <data android:scheme="https" android:host="www.piecejob.app" android:pathPrefix="/r" />
+            </intent-filter>
         </activity>
 
         <meta-data

@@ -161,6 +161,21 @@ fun ProviderWalletTabScreen(
                             Text("USE CREDIT BALANCE ($currencySymbol${wallet?.balanceCredit})", fontSize = 11.sp, fontWeight = FontWeight.Black)
                         }
                     }
+
+                    if ((wallet?.balanceReferral ?: 0.0) > 0.0) {
+                        Button(
+                            onClick = {
+                                viewModel.payServiceFee("REFERRAL", "INTERNAL", voucherAmount.toDoubleOrNull() ?: 0.0)
+                                showPayServiceFeeDialog = false
+                                voucherAmount = ""
+                            },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2)),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("USE REFERRAL BALANCE ($currencySymbol${wallet?.balanceReferral})", fontSize = 11.sp, fontWeight = FontWeight.Black)
+                        }
+                    }
                     
                     Surface(
                         color = Color(0xFFF5F5F5),

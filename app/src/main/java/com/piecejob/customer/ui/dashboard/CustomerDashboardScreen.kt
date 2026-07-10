@@ -829,19 +829,21 @@ fun EmergencyCard(title: String, modifier: Modifier) {
 @Composable
 fun ReferralDashboardCard(campaign: com.piecejob.core.data.remote.dto.ReferralCampaignDto?, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(24.dp).clickable { onClick() }, 
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp).clickable { onClick() }, 
         shape = RoundedCornerShape(24.dp), 
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1))
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(modifier = Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = Color.White) {
-                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = Color(0xFFFFA000)) }
+            Surface(modifier = Modifier.size(56.dp), shape = CircleShape, color = Color.White) {
+                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(28.dp)) }
             }
             Spacer(modifier = Modifier.width(20.dp))
-            Column {
-                Text(text = campaign?.title ?: "Invite & Earn", fontWeight = FontWeight.Black, fontSize = 16.sp)
-                Text(text = campaign?.description ?: "Get rewards for every friend who joins.", fontSize = 12.sp, color = Color.Gray)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = campaign?.title ?: "Refer & Earn Rewards", fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color(0xFFE65100))
+                Text(text = campaign?.description ?: "Invite friends to PieceJob and earn rewards for every successful job.", fontSize = 12.sp, color = Color.DarkGray, lineHeight = 18.sp)
             }
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFFFA000))
         }
     }
 }

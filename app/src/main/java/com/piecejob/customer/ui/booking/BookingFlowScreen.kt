@@ -482,8 +482,14 @@ fun ServiceSelectionStep(viewModel: BookingViewModel) {
 fun BookingFeeStep(viewModel: BookingViewModel) {
     val estimate by viewModel.priceEstimate.collectAsState()
     val selectedService by viewModel.selectedService.collectAsState()
+    val wallet by viewModel.wallet.collectAsState()
     val error by viewModel.error.collectAsState()
     var showPaymentWarning by remember { mutableStateOf(false) }
+    var showReferralSuccess by remember { mutableStateOf(false) }
+
+    val bookingFee = estimate?.bookingFee ?: 0.0
+    val referralBalance = wallet?.balanceReferral ?: 0.0
+    val canUseReferral = referralBalance >= bookingFee && bookingFee > 0
 
     if (showPaymentWarning) {
         AlertDialog(
@@ -514,7 +520,7 @@ fun BookingFeeStep(viewModel: BookingViewModel) {
             }
         }
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(32.dp))
         Surface(modifier = Modifier.size(80.dp), shape = CircleShape, color = Color(0xFFFDECEA)) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color(0xFFD32F2F), modifier = Modifier.size(40.dp))
@@ -523,9 +529,9 @@ fun BookingFeeStep(viewModel: BookingViewModel) {
         Spacer(modifier = Modifier.height(24.dp))
         Text(selectedService?.name ?: "Service", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color.Black)
         Text("Booking Fee", fontSize = 14.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-        Text(String.format(java.util.Locale.getDefault(), "%s %.2f", estimate?.currencySymbol ?: estimate?.currency ?: "", estimate?.bookingFee ?: 0.0), fontSize = 42.sp, fontWeight = FontWeight.Black)
+        Text(String.format(java.util.Locale.getDefault(), "%s %.2f", estimate?.currencySymbol ?: estimate?.currency ?: "", bookingFee), fontSize = 42.sp, fontWeight = FontWeight.Black)
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -542,19 +548,40 @@ fun BookingFeeStep(viewModel: BookingViewModel) {
                     lineHeight = 20.sp
                 )
                 HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
-                DetailRow("Payable Now", String.format(java.util.Locale.getDefault(), "%s %.2f", symbol, estimate?.bookingFee ?: 0.0), highlight = true)
+                DetailRow("Payable Now", String.format(java.util.Locale.getDefault(), "%s %.2f", symbol, bookingFee), highlight = true)
+                
+                if (referralBalance > 0) {
+                    DetailRow("Referral Balance", String.format(java.util.Locale.getDefault(), "%s %.2f", symbol, referralBalance))
+                }
             }
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
+        if (canUseReferral) {
+            Button(
+                onClick = { 
+                    android.util.Log.d("REFERRAL_AUDIT", "USER_SELECTED_REFERRAL_PAYMENT")
+                    viewModel.createJob(useReferral = true)
+                },
+                modifier = Modifier.fillMaxWidth().height(64.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+            ) {
+                Icon(Icons.Default.CardGiftcard, contentDescription = null)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("PAY WITH REFERRAL BALANCE", fontWeight = FontWeight.Black, fontSize = 14.sp)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
         Button(
             onClick = { showPaymentWarning = true },
             modifier = Modifier.fillMaxWidth().height(64.dp),
             shape = RoundedCornerShape(20.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+            colors = ButtonDefaults.buttonColors(containerColor = if (canUseReferral) Color(0xFF121212) else Color(0xFFD32F2F))
         ) {
-            Text("PAY BOOKING FEE", fontWeight = FontWeight.Black, fontSize = 16.sp)
+            Text(if (canUseReferral) "USE OTHER PAYMENT METHOD" else "PAY BOOKING FEE", fontWeight = FontWeight.Black, fontSize = 16.sp)
         }
     }
 }

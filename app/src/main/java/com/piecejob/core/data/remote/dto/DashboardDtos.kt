@@ -64,6 +64,7 @@ data class ProviderDashboardDto(
     val stats: ProviderStatsDto,
     val activeJob: JobDto?,
     val recentActivity: List<ActivityDto>,
+    val referralCampaign: ReferralCampaignDto?,
     val currency: String
 )
 

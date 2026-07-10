@@ -56,6 +56,7 @@ class BookingViewModel @Inject constructor(
     private val serviceRepository: ServiceRepository,
     private val providerRepository: ProviderRepository,
     private val settingsRepository: SettingsRepository,
+    private val walletRepository: com.piecejob.core.data.repository.WalletRepository,
     private val configRepository: com.piecejob.core.data.repository.ConfigRepository,
     private val socketManager: SocketManager,
     private val sessionManager: SessionManager,
@@ -92,6 +93,7 @@ class BookingViewModel @Inject constructor(
 
     // Step 5: Pricing
     val priceEstimate = MutableStateFlow<PriceEstimateDto?>(null)
+    val wallet = MutableStateFlow<com.piecejob.core.data.remote.dto.WalletDto?>(null)
     val availablePaymentMethods = MutableStateFlow<List<PaymentMethodDto>>(emptyList())
     val selectedPaymentMethod = MutableStateFlow<PaymentMethodDto?>(null)
 
@@ -369,6 +371,13 @@ class BookingViewModel @Inject constructor(
         val service = selectedService.value ?: return
         viewModelScope.launch {
             _isLoading.value = true
+            
+            // Load Wallet for referral balance check
+            val walletRes = walletRepository.getWalletBalance()
+            if (walletRes.success) {
+                wallet.value = walletRes.data
+            }
+
             // Refresh workspace config to ensure correct currency
             configRepository.refreshWorkspaceConfig()
 
@@ -389,8 +398,8 @@ class BookingViewModel @Inject constructor(
         }
     }
 
-    fun createJob() {
-        android.util.Log.d("TowMechSecurity", "PAYMENT_INIT_STARTED: createJob triggered")
+    fun createJob(useReferral: Boolean = false) {
+        android.util.Log.d("TowMechSecurity", "PAYMENT_INIT_STARTED: createJob triggered, useReferral=$useReferral")
         val service = selectedService.value ?: run {
             android.util.Log.e("TowMechSecurity", "PAYMENT_INIT_FAILED: selectedService is null")
             return
@@ -412,19 +421,18 @@ class BookingViewModel @Inject constructor(
                 recipientName = recipientName.value,
                 recipientPhone = recipientPhone.value
             )
-            android.util.Log.d("TowMechSecurity", "PAYMENT_API_CALLED: Calling createJob for ${service.code}")
             val res = jobRepository.createJob(request)
-            android.util.Log.d("TowMechSecurity", "PAYMENT_RESPONSE_RECEIVED: createJob success=${res.success} hasData=${res.data != null}")
             if (res.success && res.data != null) {
                 createdJob.value = res.data
-                // Join the job room for live updates during payment
                 socketManager.joinJob(res.data.id)
-                // Automatically proceed to payment initialization bypassing gateway selection
-                payBookingFee(res.data.id)
+                
+                if (useReferral) {
+                    payWithReferralBalance()
+                } else {
+                    payBookingFee(res.data.id)
+                }
             } else {
-                val errorMsg = res.error?.message ?: "Data payload is null despite success=${res.success}"
-                android.util.Log.e("TowMechSecurity", "PAYMENT_INIT_FAILED: $errorMsg. Full Response: $res")
-                _error.value = errorMsg
+                _error.value = res.error?.message ?: "Job creation failed"
                 _isLoading.value = false
             }
         }
@@ -484,6 +492,36 @@ class BookingViewModel @Inject constructor(
                 val errorMsg = res.error?.message ?: "Verification data is null"
                 android.util.Log.e("TowMechSecurity", "PAYMENT_VERIFY_FAILED: $errorMsg")
                 _error.value = errorMsg
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun payWithReferralBalance() {
+        val jobId = createdJob.value?.id ?: run {
+            _error.value = "Active job not found"
+            return
+        }
+        
+        viewModelScope.launch {
+            _isLoading.value = true
+            android.util.Log.d("REFERRAL_AUDIT", "PAYING_WITH_REFERRAL: JobID $jobId")
+            
+            val res = jobRepository.payBookingFee(jobId) 
+            if (res.success && res.data != null) {
+                val job = res.data.job
+                if (job.status == "BROADCASTED" || job.status == "PENDING_MATCH") {
+                    _currentStep.value = BookingStep.TRACKING
+                } else if (res.data.paymentUrl != null) {
+                    paymentUrl.value = res.data.paymentUrl
+                    paymentReference.value = res.data.reference
+                    _currentStep.value = BookingStep.PAYMENT_WEBVIEW
+                } else {
+                    createdJob.value = job
+                    _currentStep.value = BookingStep.TRACKING
+                }
+            } else {
+                _error.value = res.error?.message ?: "Payment failed"
             }
             _isLoading.value = false
         }

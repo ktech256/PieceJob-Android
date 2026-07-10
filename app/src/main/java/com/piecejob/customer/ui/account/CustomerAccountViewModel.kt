@@ -248,6 +248,19 @@ class CustomerAccountViewModel @Inject constructor(
         }
     }
 
+    fun attachReferral(code: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val response = userRepository.attachReferral(code)
+            if (response.success) {
+                loadProfile()
+            } else {
+                _error.value = response.message
+            }
+            _isLoading.value = false
+        }
+    }
+
     fun updatePrivacy(profileVisibility: String, shareLocation: Boolean, dataSharing: Boolean, marketingPreferences: Boolean) {
         viewModelScope.launch {
             _isLoading.value = true

@@ -50,6 +50,14 @@ class UserRepository @Inject constructor(
         }
     }
 
+    suspend fun attachReferral(referralCode: String): ApiResponse<Unit> {
+        return try {
+            api.attachReferral(mapOf("referralCode" to referralCode))
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
     suspend fun updateProfile(firstName: String, lastName: String, email: String, gender: String?, dob: String?, profilePhoto: String?): ApiResponse<UserDto> {
         return try {
             api.updateProfile(UpdateProfileRequest(firstName, lastName, email, gender, dob, profilePhoto))

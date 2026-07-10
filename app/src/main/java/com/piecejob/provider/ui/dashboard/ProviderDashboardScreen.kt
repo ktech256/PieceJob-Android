@@ -41,6 +41,7 @@ fun ProviderDashboardScreen(
     val availableJobs by viewModel.availableJobs.collectAsState()
     val activeJob by viewModel.activeJob.collectAsState()
     val recentActivity by viewModel.recentActivity.collectAsState()
+    val referralCampaign by viewModel.referralCampaign.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
     val error by viewModel.error.collectAsState()
     val currentUserId = viewModel.currentUserId
@@ -360,6 +361,35 @@ fun ProviderDashboardScreen(
                     RecentActivityItem(activity, currencySymbol, currentUserId)
                 }
             }
+
+            // REFERRAL CAMPAIGN
+            item {
+                ReferralDashboardCard(referralCampaign) {
+                    onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Referral.route)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ReferralDashboardCard(campaign: com.piecejob.core.data.remote.dto.ReferralCampaignDto?, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).clickable { onClick() },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(modifier = Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(modifier = Modifier.size(56.dp), shape = CircleShape, color = Color.White) {
+                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(28.dp)) }
+            }
+            Spacer(modifier = Modifier.width(20.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = campaign?.title ?: "Refer & Earn Rewards", fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color(0xFFE65100))
+                Text(text = campaign?.description ?: "Get rewards when your referrals join and complete their first PieceJob.", fontSize = 12.sp, color = Color.DarkGray, lineHeight = 18.sp)
+            }
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFFFA000))
         }
     }
 }
