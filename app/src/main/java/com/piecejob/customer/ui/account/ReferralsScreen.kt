@@ -138,7 +138,7 @@ fun ReferralsScreen(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 ReferralStatCard("Total Referrals", "${stats?.totalReferrals ?: 0}", Modifier.weight(1f))
-                ReferralStatCard("Earned Rewards", "${stats?.history?.firstOrNull()?.workspace ?: "$"} ${String.format("%.2f", stats?.paidRewards ?: 0.0)}", Modifier.weight(1f))
+                ReferralStatCard("Earned Rewards", "${stats?.currency ?: stats?.history?.firstOrNull()?.currency ?: "R"} ${String.format("%.2f", stats?.paidRewards ?: 0.0)}", Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -218,7 +218,7 @@ fun ReferralHistoryItem(item: com.piecejob.core.data.remote.dto.ReferralHistoryD
                     Column(horizontalAlignment = Alignment.End) {
                         Text(text = "Reward", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
                         Text(
-                            text = "${item.workspace ?: "$"} ${String.format("%.2f", item.rewardAmount)}",
+                            text = "${item.currency ?: item.workspace ?: "R"} ${String.format("%.2f", item.rewardAmount)}",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Black,
                             color = statusColor

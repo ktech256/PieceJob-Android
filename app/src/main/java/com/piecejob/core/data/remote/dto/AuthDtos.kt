@@ -38,6 +38,7 @@ data class ReferralStatsDto(
     val totalReferrals: Int,
     val pendingRewards: Double,
     val paidRewards: Double,
+    val currency: String? = null,
     val history: List<ReferralHistoryDto>
 )
 
@@ -48,6 +49,7 @@ data class ReferralHistoryDto(
     val completionDate: String?,
     val rewardAmount: Double,
     val status: String, // PENDING, QUALIFIED, REWARDED, EXPIRED, REJECTED, DISABLED
+    val currency: String? = null,
     val workspace: String?,
     val createdAt: String
 )

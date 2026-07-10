@@ -99,7 +99,7 @@ fun ProviderReferralScreen(
                     
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         ReferralStatItem("Total Invited", (stats?.totalReferrals ?: 0).toString(), Modifier.weight(1f))
-                        ReferralStatItem("Total Earned", "${stats?.history?.firstOrNull()?.workspace ?: "R"} ${stats?.paidRewards ?: 0.0}", Modifier.weight(1f))
+                        ReferralStatItem("Total Earned", "${stats?.currency ?: stats?.history?.firstOrNull()?.currency ?: "R"} ${stats?.paidRewards ?: 0.0}", Modifier.weight(1f))
                     }
                     
                     Spacer(modifier = Modifier.height(32.dp))
@@ -242,33 +242,13 @@ fun ReferralHistoryItem(item: com.piecejob.core.data.remote.dto.ReferralHistoryD
                     Column(horizontalAlignment = Alignment.End) {
                         Text(text = "Reward", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
                         Text(
-                            text = "${item.workspace ?: "R"} ${String.format("%.2f", item.rewardAmount)}",
+                            text = "${item.currency ?: item.workspace ?: "R"} ${String.format("%.2f", item.rewardAmount)}",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Black,
                             color = statusColor
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun ReferralCodeCard(code: String, onShare: (String) -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-    ) {
-        Column(modifier = Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text = "YOUR UNIQUE CODE", fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
-            Text(text = code, fontSize = 36.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = { onShare(code) }, shape = RoundedCornerShape(12.dp)) {
-                Icon(Icons.Default.Share, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("SHARE LINK")
             }
         }
     }
