@@ -38,7 +38,18 @@ data class ReferralStatsDto(
     val totalReferrals: Int,
     val pendingRewards: Double,
     val paidRewards: Double,
-    val history: List<ReferralUserDto>
+    val history: List<ReferralHistoryDto>
+)
+
+data class ReferralHistoryDto(
+    @SerializedName("_id", alternate = ["id"]) val id: String,
+    val referredUser: String,
+    val jobId: String?,
+    val completionDate: String?,
+    val rewardAmount: Double,
+    val status: String, // PENDING, QUALIFIED, REWARDED, EXPIRED, REJECTED, DISABLED
+    val workspace: String?,
+    val createdAt: String
 )
 
 data class ReferralUserDto(

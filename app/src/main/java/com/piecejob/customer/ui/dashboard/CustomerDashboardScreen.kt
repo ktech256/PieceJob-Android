@@ -278,7 +278,7 @@ fun CustomerDashboardScreen(
         // SECTION 13: REFERRAL PROGRAM
         item { 
             ReferralDashboardCard(dashboardData?.referralCampaign) {
-                onProfileClick()
+                onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.CustomerReferrals.route)
             } 
         }
 

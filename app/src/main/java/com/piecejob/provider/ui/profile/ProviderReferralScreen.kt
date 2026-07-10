@@ -76,19 +76,76 @@ fun ProviderReferralScreen(
                 }
                 
                 stats?.history?.let { history ->
-                    items(history) { user ->
-                        ListItem(
-                            headlineContent = { Text("${user.firstName} ${user.lastName}") },
-                            supportingContent = { Text("Joined: ${user.createdAt.take(10)}") },
-                            trailingContent = { 
-                                if (user.isVerified) {
-                                    Text("Success", color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                } else {
-                                    Text("Pending", color = Color(0xFFEF6C00), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                }
-                            }
+                    items(history) { item ->
+                        ReferralHistoryItem(item)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ReferralHistoryItem(item: com.piecejob.core.data.remote.dto.ReferralHistoryDto) {
+    val statusColor = when (item.status) {
+        "REWARDED", "QUALIFIED" -> Color(0xFF2E7D32)
+        "PENDING" -> Color(0xFFEF6C00)
+        "EXPIRED", "REJECTED", "DISABLED" -> Color(0xFFD32F2F)
+        else -> Color.Gray
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(text = item.referredUser, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(text = "Joined ${item.createdAt.take(10)}", fontSize = 11.sp, color = Color.Gray)
+                }
+                Surface(
+                    color = statusColor.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = item.status,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        color = statusColor,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            }
+
+            if (item.jobId != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.2f))
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(text = "Qualifying Job", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                        Text(text = "Job #${item.jobId.takeLast(6)}", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(text = "Reward", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "${item.workspace ?: "R"} ${String.format("%.2f", item.rewardAmount)}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Black,
+                            color = statusColor
                         )
-                        HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package com.piecejob.customer.ui.account
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -86,18 +87,79 @@ fun ReferralsScreen(
                     Text("No referrals yet.", color = Color.Gray)
                 }
             } else {
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(stats?.history ?: emptyList()) { user ->
-                        ListItem(
-                            headlineContent = { Text("${user.firstName} ${user.lastName}") },
-                            supportingContent = { Text(user.createdAt.take(10)) },
-                            trailingContent = {
-                                if (user.isVerified) {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50))
-                                } else {
-                                    Text("Pending", color = Color.Gray, fontSize = 12.sp)
-                                }
-                            }
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(stats?.history ?: emptyList()) { item ->
+                        ReferralHistoryItem(item)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ReferralHistoryItem(item: com.piecejob.core.data.remote.dto.ReferralHistoryDto) {
+    val statusColor = when (item.status) {
+        "REWARDED", "QUALIFIED" -> Color(0xFF2E7D32)
+        "PENDING" -> Color(0xFFEF6C00)
+        "EXPIRED", "REJECTED", "DISABLED" -> Color(0xFFD32F2F)
+        else -> Color.Gray
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(0.5.dp, Color.LightGray.copy(alpha = 0.5f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(text = item.referredUser, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(text = "Joined ${item.createdAt.take(10)}", fontSize = 11.sp, color = Color.Gray)
+                }
+                Surface(
+                    color = statusColor.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = item.status,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        color = statusColor,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            }
+
+            if (item.jobId != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.2f))
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(text = "Qualifying Job", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                        Text(text = "Job #${item.jobId.takeLast(6)}", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(text = "Reward", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "${item.workspace ?: "$"} ${String.format("%.2f", item.rewardAmount)}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Black,
+                            color = statusColor
                         )
                     }
                 }

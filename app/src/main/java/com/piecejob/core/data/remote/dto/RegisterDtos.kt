@@ -11,7 +11,8 @@ data class CustomerRegisterRequest(
     val idNumber: String,
     val gender: String,
     val deviceId: String? = null,
-    val fcmToken: String? = null
+    val fcmToken: String? = null,
+    val referralCode: String? = null
 )
 
 data class ProviderRegisterRequest(
@@ -27,5 +28,6 @@ data class ProviderRegisterRequest(
     val idOrPassportNumber: String,
     val servicesOffered: List<String>,
     val deviceId: String? = null,
-    val fcmToken: String? = null
+    val fcmToken: String? = null,
+    val referralCode: String? = null
 )

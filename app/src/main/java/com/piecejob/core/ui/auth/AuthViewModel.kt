@@ -46,6 +46,7 @@ class AuthViewModel @Inject constructor(
     val gender = MutableStateFlow("") // New Field
     val idNumber = MutableStateFlow("")
     val password = MutableStateFlow("")
+    val referralCode = MutableStateFlow("")
 
     // Provider Specific
     val selectedServices = MutableStateFlow<List<String>>(emptyList())
@@ -158,7 +159,8 @@ class AuthViewModel @Inject constructor(
                         idNumber = idNumber.value,
                         gender = gender.value,
                         deviceId = deviceId,
-                        fcmToken = fcmToken
+                        fcmToken = fcmToken,
+                        referralCode = referralCode.value.ifBlank { null }
                     )
                     Log.d(TAG, "Calling registerCustomer API")
                     repository.registerCustomer(request)
@@ -176,7 +178,8 @@ class AuthViewModel @Inject constructor(
                         nationalityType = "Citizen",
                         idOrPassportNumber = idNumber.value,
                         servicesOffered = selectedServices.value,
-                        fcmToken = fcmToken
+                        fcmToken = fcmToken,
+                        referralCode = referralCode.value.ifBlank { null }
                     )
                     Log.d(TAG, "Calling registerProvider API")
                     repository.registerProvider(request)

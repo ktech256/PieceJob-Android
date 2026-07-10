@@ -46,6 +46,7 @@ fun RegistrationDetailsScreen(
     val gender by viewModel.gender.collectAsState()
     val idNumber by viewModel.idNumber.collectAsState()
     val password by viewModel.password.collectAsState()
+    val referralCode by viewModel.referralCode.collectAsState()
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     
@@ -301,6 +302,17 @@ fun RegistrationDetailsScreen(
                 shape = RoundedCornerShape(16.dp),
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // REFERRAL CODE
+            DetailField(
+                label = "Referral Code (Optional)",
+                value = referralCode,
+                onValueChange = { viewModel.referralCode.value = it.uppercase() }
             )
 
             if (authState is AuthState.Error) {
