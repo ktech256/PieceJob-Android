@@ -152,6 +152,7 @@ data class RecentServiceFeeDto(
     val date: String,
     val acceptedPrice: Double,
     val serviceFeeAmount: Double,
+    val originalFee: Double,
     val outstandingBalance: Double,
     val status: String
 )
