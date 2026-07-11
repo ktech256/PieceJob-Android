@@ -124,7 +124,13 @@ class SessionManager @Inject constructor(
 
     fun getReferralBaseUrl(): String {
         val fallback = "https://${com.piecejob.core.utils.Constants.PRODUCTION_DOMAIN}${com.piecejob.core.utils.Constants.REFERRAL_PATH}"
-        return prefs.getString("referral_base_url", fallback) ?: fallback
+        var savedUrl = prefs.getString("referral_base_url", fallback) ?: fallback
+        
+        // HEAL MALFORMED LINKS: Ensure it has /r/ and ends with /
+        if (!savedUrl.contains("/r/")) {
+            savedUrl = if (savedUrl.endsWith("/")) "${savedUrl}r/" else "$savedUrl/r/"
+        }
+        return if (savedUrl.endsWith("/")) savedUrl else "$savedUrl/"
     }
 
     fun getQrBrandingType(): String {
