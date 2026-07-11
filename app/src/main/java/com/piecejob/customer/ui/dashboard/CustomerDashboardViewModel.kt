@@ -43,6 +43,7 @@ class CustomerDashboardViewModel @Inject constructor(
     val realtimePromotions: StateFlow<List<PromotionDto>> = _realtimePromotions.asStateFlow()
 
     val currencySymbol = MutableStateFlow(configRepository.getCurrencySymbol())
+    val isReferralEnabled = MutableStateFlow(configRepository.isReferralEnabled())
 
     private val _services = MutableStateFlow<List<ServiceDto>>(emptyList())
     val services: StateFlow<List<ServiceDto>> = _services
@@ -167,6 +168,7 @@ class CustomerDashboardViewModel @Inject constructor(
                 launch { 
                     configRepository.refreshWorkspaceConfig()
                     currencySymbol.value = configRepository.getCurrencySymbol()
+                    isReferralEnabled.value = configRepository.isReferralEnabled()
                 }
 
                 val response = dashboardRepository.getCustomerDashboard(lat, lng)

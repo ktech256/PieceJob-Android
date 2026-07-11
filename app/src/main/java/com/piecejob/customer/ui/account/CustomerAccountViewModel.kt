@@ -12,11 +12,16 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CustomerAccountViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val configRepository: com.piecejob.core.data.repository.ConfigRepository
 ) : ViewModel() {
 
     private val _user = MutableStateFlow<UserDto?>(null)
     val user: StateFlow<UserDto?> = _user
+
+    val isReferralEnabled = MutableStateFlow(configRepository.isReferralEnabled())
+    val referralBaseUrl = MutableStateFlow(configRepository.getReferralBaseUrl())
+    val qrBrandingType = MutableStateFlow(configRepository.getQrBrandingType())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -240,6 +245,12 @@ class CustomerAccountViewModel @Inject constructor(
     fun loadReferralStats() {
         viewModelScope.launch {
             _isLoading.value = true
+            // Refresh config to get latest referral settings
+            configRepository.refreshWorkspaceConfig()
+            isReferralEnabled.value = configRepository.isReferralEnabled()
+            referralBaseUrl.value = configRepository.getReferralBaseUrl()
+            qrBrandingType.value = configRepository.getQrBrandingType()
+
             val response = userRepository.getReferralStats()
             if (response.success) {
                 _referralStats.value = response.data

@@ -75,6 +75,7 @@ fun RegistrationDetailsScreen(
     val isIdNumberValid = idNumber.trim().isNotBlank()
     val isPasswordStrong = password.length >= 6
     val isPasswordMatch = password == confirmPassword && password.isNotEmpty()
+    val isReferralEnabled by viewModel.isReferralEnabled.collectAsState()
     
     val isFormValid = isFirstNameValid && 
                      isLastNameValid && 
@@ -309,11 +310,13 @@ fun RegistrationDetailsScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // REFERRAL CODE
-            DetailField(
-                label = "Referral Code (Optional)",
-                value = referralCode,
-                onValueChange = { viewModel.referralCode.value = it.uppercase() }
-            )
+            if (isReferralEnabled) {
+                DetailField(
+                    label = "Referral Code (Optional)",
+                    value = referralCode,
+                    onValueChange = { viewModel.referralCode.value = it.uppercase() }
+                )
+            }
 
             if (authState is AuthState.Error) {
                 Text(

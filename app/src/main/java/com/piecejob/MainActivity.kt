@@ -22,6 +22,8 @@ import com.piecejob.core.ui.auth.AuthViewModel
 import com.piecejob.core.ui.navigation.NavGraph
 import com.piecejob.core.ui.navigation.Screen
 import com.piecejob.core.ui.theme.PieceJobTheme
+import com.piecejob.core.utils.Constants
+import com.piecejob.core.utils.ReferrerManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -47,6 +49,9 @@ class MainActivity : AppCompatActivity() {
     
     @Inject
     lateinit var sessionManager: SessionManager
+
+    @Inject
+    lateinit var referrerManager: ReferrerManager
 
     private val lifecycleScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main + kotlinx.coroutines.SupervisorJob())
 
@@ -152,14 +157,30 @@ class MainActivity : AppCompatActivity() {
                     val type = intent.getStringExtra("type")
                     val jobId = intent.getStringExtra("jobId")
                     
+                    // START INSTALL REFERRER TRACKING
+                    if (!authViewModel.isLoggedIn()) {
+                        referrerManager.startTracking { code ->
+                            authViewModel.referralCode.value = code
+                        }
+                    }
+
                     // HANDLE REFERRAL DEEP LINK
                     val data = intent.data
-                    if (data != null && (data.host == "piecejob.app" || data.host == "www.piecejob.app") && data.path?.startsWith("/r/") == true) {
+                    val configReferralUrl = sessionManager.getReferralBaseUrl()
+                    val configHost = try { android.net.Uri.parse(configReferralUrl).host } catch (e: Exception) { null }
+                    
+                    val isReferralHost = data?.host == configHost || 
+                                        data?.host == Constants.PRODUCTION_DOMAIN || 
+                                        data?.host == "www.${Constants.PRODUCTION_DOMAIN}"
+
+                    if (data != null && isReferralHost && (data.path?.startsWith("/r/") == true || data.path?.contains("/referral/") == true)) {
                         val code = data.lastPathSegment
                         if (!code.isNullOrBlank()) {
                             android.util.Log.d("REFERRAL_AUDIT", "Detected Referral Code from Deep Link: $code")
                             authViewModel.referralCode.value = code
-                            if (!authViewModel.isLoggedIn()) {
+                            
+                            // Check if referral program is enabled before navigating
+                            if (sessionManager.isReferralEnabled() && !authViewModel.isLoggedIn()) {
                                 navController.navigate(Screen.RegistrationDetails.route) {
                                     launchSingleTop = true
                                 }

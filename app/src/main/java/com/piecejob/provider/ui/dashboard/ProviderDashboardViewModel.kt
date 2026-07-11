@@ -39,6 +39,7 @@ class ProviderDashboardViewModel @Inject constructor(
     val userProfile: StateFlow<DashboardProfileDto?> = _userProfile
 
     val currencySymbol = MutableStateFlow(configRepository.getCurrencySymbol())
+    val isReferralEnabled = MutableStateFlow(configRepository.isReferralEnabled())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -99,6 +100,7 @@ class ProviderDashboardViewModel @Inject constructor(
                 launch {
                     configRepository.refreshWorkspaceConfig()
                     currencySymbol.value = configRepository.getCurrencySymbol()
+                    isReferralEnabled.value = configRepository.isReferralEnabled()
                 }
 
                 val response = dashboardRepository.getProviderDashboard()

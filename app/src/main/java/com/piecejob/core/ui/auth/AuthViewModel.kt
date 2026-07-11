@@ -22,6 +22,7 @@ import javax.inject.Inject
 class AuthViewModel @Inject constructor(
     private val repository: AuthRepository,
     private val userRepository: UserRepository,
+    private val configRepository: com.piecejob.core.data.repository.ConfigRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
@@ -34,6 +35,8 @@ class AuthViewModel @Inject constructor(
     
     val selectedCountry = MutableStateFlow<CountryDto?>(null)
     val selectedLanguage = MutableStateFlow<LanguageDto?>(null)
+    
+    val isReferralEnabled = MutableStateFlow(configRepository.isReferralEnabled())
     
     val phoneNumber = MutableStateFlow("")
     val loginIdentifier = MutableStateFlow("") // Prefilled from last session
@@ -63,6 +66,10 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             Log.d(TAG, "Loading configurations from backend...")
             try {
+                // Refresh workspace config to get referral settings etc.
+                configRepository.refreshWorkspaceConfig()
+                isReferralEnabled.value = configRepository.isReferralEnabled()
+
                 val countryRes = repository.getCountries()
                 if (countryRes.success) {
                     Log.d(TAG, "Countries loaded: ${countryRes.data?.size ?: 0}")

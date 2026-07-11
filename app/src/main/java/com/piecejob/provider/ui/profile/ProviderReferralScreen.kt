@@ -9,10 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +21,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.piecejob.core.data.remote.dto.ReferralStatsDto
+import com.piecejob.core.utils.Constants
+import com.piecejob.core.utils.QRUtils
+import androidx.compose.ui.graphics.asImageBitmap
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +32,9 @@ fun ProviderReferralScreen(
     onBack: () -> Unit
 ) {
     val stats by viewModel.stats.collectAsState()
+    val isReferralEnabled by viewModel.isReferralEnabled.collectAsState()
+    val referralBaseUrl by viewModel.referralBaseUrl.collectAsState()
+    val qrBrandingType by viewModel.qrBrandingType.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
 
@@ -51,10 +54,54 @@ fun ProviderReferralScreen(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
+        } else if (!isReferralEnabled) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Text(
+                    text = "Referral program is currently unavailable in your region.",
+                    color = Color.Gray,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.padding(24.dp)
+                )
+            }
         } else {
             val referralCode = stats?.referralCode ?: "------"
-            val referralLink = "https://piecejob.app/r/$referralCode"
+            val referralLink = "$referralBaseUrl$referralCode"
             val shareMessage = "Start earning as a PieceJob Provider! Use my code $referralCode to register and get rewards after your first job.\n\nRegister here: $referralLink"
+
+            var showQrDialog by remember { mutableStateOf(false) }
+
+            if (showQrDialog) {
+                AlertDialog(
+                    onDismissRequest = { showQrDialog = false },
+                    title = { Text("Your Referral QR Code", fontWeight = FontWeight.Black) },
+                    text = {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                            val qrBitmap = remember(referralLink, qrBrandingType) { 
+                                QRUtils.generateQRCode(
+                                    text = referralLink, 
+                                    brandingType = qrBrandingType,
+                                    primaryColor = android.graphics.Color.parseColor("#1976D2")
+                                ) 
+                            }
+                            if (qrBitmap != null) {
+                                androidx.compose.foundation.Image(
+                                    bitmap = qrBitmap.asImageBitmap(),
+                                    contentDescription = "QR Code",
+                                    modifier = Modifier.size(250.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(text = referralCode, fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color(0xFF1976D2))
+                            Text(text = "Scan to register", fontSize = 12.sp, color = Color.Gray)
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showQrDialog = false }) {
+                            Text("CLOSE", fontWeight = FontWeight.Black)
+                        }
+                    }
+                )
+            }
 
             LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
                 item {
@@ -70,6 +117,19 @@ fun ProviderReferralScreen(
                             putExtra(Intent.EXTRA_TEXT, shareMessage)
                         }
                         context.startActivity(Intent.createChooser(intent, "Share Invitation"))
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Button(
+                        onClick = { showQrDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF121212))
+                    ) {
+                        Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("SHOW QR CODE", fontWeight = FontWeight.Black)
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))

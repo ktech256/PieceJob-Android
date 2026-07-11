@@ -58,6 +58,7 @@ fun CustomerDashboardScreen(
     val dashboardData by viewModel.dashboardData.collectAsState()
     val realtimePromotions by viewModel.realtimePromotions.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
+    val isReferralEnabled by viewModel.isReferralEnabled.collectAsState()
     val currentAddress by viewModel.currentAddress.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val bookAgainServices by viewModel.bookAgainServices.collectAsState()
@@ -276,10 +277,12 @@ fun CustomerDashboardScreen(
         }
 
         // SECTION 13: REFERRAL PROGRAM
-        item { 
-            ReferralDashboardCard(dashboardData?.referralCampaign) {
-                onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.CustomerReferrals.route)
-            } 
+        if (isReferralEnabled) {
+            item { 
+                ReferralDashboardCard(dashboardData?.referralCampaign) {
+                    onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.CustomerReferrals.route)
+                } 
+            }
         }
 
         // SECTION 14: CUSTOMER TIPS

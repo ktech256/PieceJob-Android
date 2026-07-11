@@ -29,6 +29,7 @@ fun ProviderProfileScreen(
     onNavigate: (Screen) -> Unit
 ) {
     val stats by viewModel.stats.collectAsState()
+    val isReferralEnabled by viewModel.isReferralEnabled.collectAsState()
     
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -43,27 +44,29 @@ fun ProviderProfileScreen(
             )
         }
 
-        val menuItems = listOf(
-            ProfileMenuItem("Personal Details", Icons.Default.Person, Screen.ProviderPersonalDetails),
-            ProfileMenuItem("Inbox", Icons.Default.Inbox, Screen.Inbox),
-            ProfileMenuItem("My Services", Icons.Default.Handyman, Screen.MyServices),
-            ProfileMenuItem("Availability", Icons.Default.Schedule, Screen.Availability),
-            ProfileMenuItem("Verification Documents", Icons.Default.VerifiedUser, Screen.VerificationDocs),
-            ProfileMenuItem("Reviews & Feedback", Icons.Default.Star, Screen.Reviews),
-            ProfileMenuItem("Equipment & Tools", Icons.Default.Construction, Screen.EquipmentTools),
-            ProfileMenuItem("Certifications", Icons.Default.HistoryEdu, Screen.Certifications),
-            ProfileMenuItem("Experience", Icons.Default.Timeline, Screen.Experience),
-            ProfileMenuItem("Wallet Settings", Icons.Default.Wallet, Screen.WalletSettings),
-            ProfileMenuItem("Bank Details", Icons.Default.AccountBalance, Screen.BankDetails),
-            ProfileMenuItem("Notifications", Icons.Default.Notifications, Screen.Notifications),
-            ProfileMenuItem("Security", Icons.Default.Security, Screen.Security),
-            ProfileMenuItem("Device Management", Icons.Default.Smartphone, Screen.DeviceManagement),
-            ProfileMenuItem("Referral Program", Icons.Default.CardGiftcard, Screen.Referral),
-            ProfileMenuItem("Statements", Icons.Default.ReceiptLong, Screen.ProviderStatements),
-            ProfileMenuItem("Disputes", Icons.Default.Gavel, Screen.Disputes),
-            ProfileMenuItem("Support", Icons.Default.SupportAgent, Screen.Support),
-            ProfileMenuItem("Terms & Policies", Icons.Default.Policy, Screen.TermsPolicies)
-        )
+        val menuItems = buildList {
+            add(ProfileMenuItem("Personal Details", Icons.Default.Person, Screen.ProviderPersonalDetails))
+            add(ProfileMenuItem("Inbox", Icons.Default.Inbox, Screen.Inbox))
+            add(ProfileMenuItem("My Services", Icons.Default.Handyman, Screen.MyServices))
+            add(ProfileMenuItem("Availability", Icons.Default.Schedule, Screen.Availability))
+            add(ProfileMenuItem("Verification Documents", Icons.Default.VerifiedUser, Screen.VerificationDocs))
+            add(ProfileMenuItem("Reviews & Feedback", Icons.Default.Star, Screen.Reviews))
+            add(ProfileMenuItem("Equipment & Tools", Icons.Default.Construction, Screen.EquipmentTools))
+            add(ProfileMenuItem("Certifications", Icons.Default.HistoryEdu, Screen.Certifications))
+            add(ProfileMenuItem("Experience", Icons.Default.Timeline, Screen.Experience))
+            add(ProfileMenuItem("Wallet Settings", Icons.Default.Wallet, Screen.WalletSettings))
+            add(ProfileMenuItem("Bank Details", Icons.Default.AccountBalance, Screen.BankDetails))
+            add(ProfileMenuItem("Notifications", Icons.Default.Notifications, Screen.Notifications))
+            add(ProfileMenuItem("Security", Icons.Default.Security, Screen.Security))
+            add(ProfileMenuItem("Device Management", Icons.Default.Smartphone, Screen.DeviceManagement))
+            if (isReferralEnabled) {
+                add(ProfileMenuItem("Referral Program", Icons.Default.CardGiftcard, Screen.Referral))
+            }
+            add(ProfileMenuItem("Statements", Icons.Default.ReceiptLong, Screen.ProviderStatements))
+            add(ProfileMenuItem("Disputes", Icons.Default.Gavel, Screen.Disputes))
+            add(ProfileMenuItem("Support", Icons.Default.SupportAgent, Screen.Support))
+            add(ProfileMenuItem("Terms & Policies", Icons.Default.Policy, Screen.TermsPolicies))
+        }
 
         items(menuItems.size) { index ->
             val item = menuItems[index]

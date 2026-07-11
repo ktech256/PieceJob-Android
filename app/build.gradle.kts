@@ -107,6 +107,12 @@ dependencies {
     // Image Loading
     implementation("io.coil-kt:coil-compose:2.6.0")
 
+    // Install Referrer
+    implementation("com.android.installreferrer:installreferrer:2.2")
+
+    // QR Code
+    implementation("com.google.zxing:core:3.5.3")
+
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)

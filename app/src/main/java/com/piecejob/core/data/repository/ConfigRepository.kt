@@ -23,6 +23,22 @@ class ConfigRepository @Inject constructor(
                 config.country.timezone?.let { sessionManager.saveTimezone(it) }
                 config.country.locale?.let { sessionManager.saveLocale(it) }
                 sessionManager.saveEscrowEnabled(config.settings.isEscrowEnabled)
+                sessionManager.saveReferralEnabled(config.settings.isReferralProgramEnabled)
+                sessionManager.saveReferralSettings(
+                    rewardAmount = config.settings.referralRewardAmount,
+                    currencyCode = config.settings.referralCurrencyCode,
+                    rewardType = config.settings.referralRewardType,
+                    minJobs = config.settings.referralMinCompletedJobs,
+                    maxRewards = config.settings.referralMaxRewardsPerUser,
+                    delayDays = config.settings.referralRewardDelayDays,
+                    expiryDays = config.settings.referralExpiryDays,
+                    baseUrl = config.settings.referralBaseUrl,
+                    qrBranding = config.settings.qrBrandingType,
+                    fraudPhone = config.settings.referralFraudDuplicatePhoneEnabled,
+                    fraudEmail = config.settings.referralFraudDuplicateEmailEnabled,
+                    fraudHardware = config.settings.referralFraudHardwareDetectionEnabled,
+                    fraudCircular = config.settings.referralFraudCircularDetectionEnabled
+                )
             }
             response
         } catch (e: Exception) {
@@ -34,6 +50,9 @@ class ConfigRepository @Inject constructor(
     fun getTimezone(): String = sessionManager.getTimezone()
     fun getLocale(): String = sessionManager.getLocale()
     fun isEscrowEnabled(): Boolean = sessionManager.isEscrowEnabled()
+    fun isReferralEnabled(): Boolean = sessionManager.isReferralEnabled()
+    fun getReferralBaseUrl(): String = sessionManager.getReferralBaseUrl()
+    fun getQrBrandingType(): String = sessionManager.getQrBrandingType()
 
     suspend fun getServiceDetails(code: String) = try {
         api.getServiceDetails(code)

@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +23,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import com.piecejob.core.utils.QRUtils
+import androidx.compose.ui.graphics.asImageBitmap
+import com.piecejob.core.utils.Constants
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +34,9 @@ fun ReferralsScreen(
     viewModel: CustomerAccountViewModel = hiltViewModel()
 ) {
     val stats by viewModel.referralStats.collectAsState()
+    val isReferralEnabled by viewModel.isReferralEnabled.collectAsState()
+    val referralBaseUrl by viewModel.referralBaseUrl.collectAsState()
+    val qrBrandingType by viewModel.qrBrandingType.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val context = LocalContext.current
 
@@ -50,9 +56,56 @@ fun ReferralsScreen(
             )
         }
     ) { padding ->
+        if (!isReferralEnabled) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Text(
+                    text = "Referral program is currently unavailable in your region.",
+                    color = Color.Gray,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.padding(24.dp)
+                )
+            }
+            return@Scaffold
+        }
+
         val referralCode = stats?.referralCode ?: "------"
-        val referralLink = "https://piecejob.app/r/$referralCode"
+        val referralLink = "$referralBaseUrl$referralCode"
         val shareMessage = "Join me on PieceJob! Use my referral code $referralCode to register and unlock rewards for both of us.\n\nRegister here: $referralLink"
+
+        var showQrDialog by remember { mutableStateOf(false) }
+
+        if (showQrDialog) {
+            AlertDialog(
+                onDismissRequest = { showQrDialog = false },
+                title = { Text("Your Referral QR Code", fontWeight = FontWeight.Black) },
+                text = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        val qrBitmap = remember(referralLink, qrBrandingType) { 
+                            QRUtils.generateQRCode(
+                                text = referralLink,
+                                brandingType = qrBrandingType,
+                                primaryColor = android.graphics.Color.parseColor("#D32F2F")
+                            ) 
+                        }
+                        if (qrBitmap != null) {
+                            androidx.compose.foundation.Image(
+                                bitmap = qrBitmap.asImageBitmap(),
+                                contentDescription = "QR Code",
+                                modifier = Modifier.size(250.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(text = referralCode, fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color(0xFFD32F2F))
+                        Text(text = "Scan to register", fontSize = 12.sp, color = Color.Gray)
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showQrDialog = false }) {
+                        Text("CLOSE", fontWeight = FontWeight.Black, color = Color(0xFFD32F2F))
+                    }
+                }
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -109,6 +162,17 @@ fun ReferralsScreen(
                         }
                     }
                 }
+            }
+
+            Button(
+                onClick = { showQrDialog = true },
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF121212))
+            ) {
+                Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("SHOW QR CODE", fontWeight = FontWeight.Black)
             }
 
             Spacer(modifier = Modifier.height(24.dp))

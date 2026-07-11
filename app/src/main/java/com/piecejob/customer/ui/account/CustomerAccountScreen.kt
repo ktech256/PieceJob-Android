@@ -29,6 +29,7 @@ fun CustomerAccountScreen(
     viewModel: CustomerAccountViewModel = hiltViewModel()
 ) {
     val user by viewModel.user.collectAsState()
+    val isReferralEnabled by viewModel.isReferralEnabled.collectAsState()
     
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -55,12 +56,14 @@ fun CustomerAccountScreen(
                 AccountMenuItem("Invoices", Icons.Default.Receipt, Screen.CustomerInvoices),
                 AccountMenuItem("Statements", Icons.Default.Assessment, Screen.CustomerStatements)
             )),
-            AccountSection("ENGAGEMENT", listOf(
-                AccountMenuItem("Notifications", Icons.Default.Notifications, Screen.CustomerNotifications),
-                AccountMenuItem("Referrals", Icons.Default.CardGiftcard, Screen.CustomerReferrals),
-                AccountMenuItem("Rewards", Icons.Default.Stars, Screen.CustomerRewards),
-                AccountMenuItem("PieceJob Plus", Icons.Default.AddCircle, Screen.CustomerPlus)
-            )),
+            AccountSection("ENGAGEMENT", buildList {
+                add(AccountMenuItem("Notifications", Icons.Default.Notifications, Screen.CustomerNotifications))
+                if (isReferralEnabled) {
+                    add(AccountMenuItem("Referrals", Icons.Default.CardGiftcard, Screen.CustomerReferrals))
+                }
+                add(AccountMenuItem("Rewards", Icons.Default.Stars, Screen.CustomerRewards))
+                add(AccountMenuItem("PieceJob Plus", Icons.Default.AddCircle, Screen.CustomerPlus))
+            }),
             AccountSection("SAFETY", listOf(
                 AccountMenuItem("SOS Settings", Icons.Default.Security, Screen.CustomerSosSettings),
                 AccountMenuItem("Emergency Contacts", Icons.Default.Phone, Screen.CustomerEmergencyContacts)

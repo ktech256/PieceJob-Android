@@ -82,6 +82,58 @@ class SessionManager @Inject constructor(
         return prefs.getBoolean("escrow_enabled", false)
     }
 
+    fun saveReferralEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("referral_enabled", enabled).apply()
+    }
+
+    fun isReferralEnabled(): Boolean {
+        return prefs.getBoolean("referral_enabled", true)
+    }
+
+    fun saveReferralSettings(
+        rewardAmount: Double,
+        currencyCode: String?,
+        rewardType: String?,
+        minJobs: Int,
+        maxRewards: Int,
+        delayDays: Int,
+        expiryDays: Int,
+        baseUrl: String?,
+        qrBranding: String?,
+        fraudPhone: Boolean,
+        fraudEmail: Boolean,
+        fraudHardware: Boolean,
+        fraudCircular: Boolean
+    ) {
+        prefs.edit().apply {
+            putFloat("referral_reward_amount", rewardAmount.toFloat())
+            putString("referral_currency_code", currencyCode)
+            putString("referral_reward_type", rewardType)
+            putInt("referral_min_jobs", minJobs)
+            putInt("referral_max_rewards", maxRewards)
+            putInt("referral_delay_days", delayDays)
+            putInt("referral_expiry_days", expiryDays)
+            putString("referral_base_url", baseUrl)
+            putString("qr_branding_type", qrBranding)
+            putBoolean("referral_fraud_phone", fraudPhone)
+            putBoolean("referral_fraud_email", fraudEmail)
+            putBoolean("referral_fraud_hardware", fraudHardware)
+            putBoolean("referral_fraud_circular", fraudCircular)
+        }.apply()
+    }
+
+    fun getReferralBaseUrl(): String {
+        val fallback = "https://${com.piecejob.core.utils.Constants.PRODUCTION_DOMAIN}${com.piecejob.core.utils.Constants.REFERRAL_PATH}"
+        return prefs.getString("referral_base_url", fallback) ?: fallback
+    }
+
+    fun getQrBrandingType(): String {
+        return prefs.getString("qr_branding_type", "NONE") ?: "NONE"
+    }
+
+    fun getReferralRewardAmount(): Double = prefs.getFloat("referral_reward_amount", 0f).toDouble()
+    fun getReferralCurrencyCode(): String = prefs.getString("referral_currency_code", "USD") ?: "USD"
+
     fun saveLastPhoneNumber(phone: String) {
         prefs.edit().putString("last_phone", phone).apply()
     }

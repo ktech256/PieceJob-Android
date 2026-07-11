@@ -51,8 +51,8 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="piecejob.app" android:pathPrefix="/r" />
-                <data android:scheme="https" android:host="www.piecejob.app" android:pathPrefix="/r" />
+                <data android:scheme="https" android:host="piecejob.co" android:pathPrefix="/r" />
+                <data android:scheme="https" android:host="www.piecejob.co" android:pathPrefix="/r" />
             </intent-filter>
         </activity>
 

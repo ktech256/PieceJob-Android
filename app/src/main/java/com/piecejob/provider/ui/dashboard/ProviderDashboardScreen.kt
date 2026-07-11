@@ -42,6 +42,7 @@ fun ProviderDashboardScreen(
     val activeJob by viewModel.activeJob.collectAsState()
     val recentActivity by viewModel.recentActivity.collectAsState()
     val referralCampaign by viewModel.referralCampaign.collectAsState()
+    val isReferralEnabled by viewModel.isReferralEnabled.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
     val error by viewModel.error.collectAsState()
     val currentUserId = viewModel.currentUserId
@@ -363,9 +364,11 @@ fun ProviderDashboardScreen(
             }
 
             // REFERRAL CAMPAIGN
-            item {
-                ReferralDashboardCard(referralCampaign) {
-                    onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Referral.route)
+            if (isReferralEnabled) {
+                item {
+                    ReferralDashboardCard(referralCampaign) {
+                        onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Referral.route)
+                    }
                 }
             }
         }
