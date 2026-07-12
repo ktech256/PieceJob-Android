@@ -32,7 +32,7 @@ fun ProviderTermsScreen(onBack: () -> Unit) {
             factory = { context ->
                 WebView(context).apply {
                     webViewClient = WebViewClient()
-                    loadUrl("https://piecejob.work/terms")
+                    loadUrl(com.piecejob.core.utils.Constants.TERMS_URL)
                 }
             }
         )

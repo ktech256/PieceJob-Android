@@ -14,13 +14,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalUriHandler
 import com.piecejob.BuildConfig
+import com.piecejob.core.utils.Constants
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
     onBack: () -> Unit
 ) {
+    val uriHandler = LocalUriHandler.current
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -57,8 +61,8 @@ fun AboutScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            AboutListItem("Terms of Service") { /* Open URL */ }
-            AboutListItem("Privacy Policy") { /* Open URL */ }
+            AboutListItem("Terms of Service") { uriHandler.openUri(Constants.TERMS_URL) }
+            AboutListItem("Privacy Policy") { uriHandler.openUri(Constants.PRIVACY_URL) }
             AboutListItem("Open Source Licenses") { /* Open Screen */ }
             AboutListItem("Company Information") { /* Open Details */ }
             

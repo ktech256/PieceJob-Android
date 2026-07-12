@@ -4,6 +4,7 @@ import com.piecejob.core.data.remote.PieceJobApi
 import com.piecejob.core.data.remote.GoogleMapsApi
 import com.piecejob.core.data.remote.AuthInterceptor
 import com.piecejob.core.data.local.SessionManager
+import com.piecejob.core.utils.Constants
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,7 +23,7 @@ import java.util.concurrent.TimeUnit
 object NetworkModule {
 
     // RENDER PUBLIC ENDPOINT
-    private const val BASE_URL = "https://piecejob-backend.onrender.com/api/v1/"
+    private const val BASE_URL = Constants.API_BASE_URL
 
     @Provides
     @Singleton

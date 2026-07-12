@@ -195,7 +195,7 @@ class BookingViewModel @Inject constructor(
     }
 
     private fun setupPaymentSocket() {
-        socketManager.connect("https://piecejob-backend.onrender.com")
+        socketManager.connect(com.piecejob.core.utils.Constants.SOCKET_URL)
         sessionManager.getUserId()?.let { socketManager.joinUser(it) }
         
         viewModelScope.launch {

@@ -250,7 +250,7 @@ class MainActivity : AppCompatActivity() {
                     if (authViewModel.isLoggedIn()) {
                         try {
                             android.util.Log.d("SOCKET_AUDIT", "Connecting socket globally...")
-                            socketManager.connect("https://piecejob-backend.onrender.com")
+                            socketManager.connect(Constants.SOCKET_URL)
                             
                             // ISSUE 2: Start Location Service only for providers by default
                             // Customers only start it during active job tracking

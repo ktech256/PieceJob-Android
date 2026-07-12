@@ -81,7 +81,7 @@ class JobTrackingViewModel @Inject constructor(
             
             // 1. Setup Sockets FIRST to ensure we don't miss any concurrent events
             Log.d("FORENSIC", "INIT_TRACKING_STARTED | Job: $jobId")
-            socketManager.connect("https://piecejob-backend.onrender.com")
+            socketManager.connect(com.piecejob.core.utils.Constants.SOCKET_URL)
             socketManager.clearListeners() // Clear any stale listeners from previous jobs
             socketManager.joinJob(jobId)
             sessionManager.getUserId()?.let { socketManager.joinUser(it) }
