@@ -795,15 +795,21 @@ fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, o
                             else Text("START WORK", fontWeight = FontWeight.Bold) 
                         }
                         
-                        "STARTED", "IN_PROGRESS" -> Button(
-                            onClick = { onComplete(job.id) },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !isActionLoading,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
-                        ) { 
-                            if (isActionLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
-                            else Text("COMPLETE WORK", fontWeight = FontWeight.Bold) 
+                        "STARTED", "IN_PROGRESS" -> {
+                            var isCompleting by remember { mutableStateOf(false) }
+                            Button(
+                                onClick = { 
+                                    isCompleting = true
+                                    onComplete(job.id) 
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !isLoading && !isCompleting,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                            ) { 
+                                if (isLoading || isCompleting) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
+                                else Text("COMPLETE WORK", fontWeight = FontWeight.Bold) 
+                            }
                         }
 
                         "COMPLETED" -> Button(
