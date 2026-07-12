@@ -44,12 +44,14 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         authInterceptor: AuthInterceptor,
-        tokenAuthenticator: com.piecejob.core.data.remote.TokenAuthenticator
+        tokenAuthenticator: com.piecejob.core.data.remote.TokenAuthenticator,
+        requestGuard: com.piecejob.core.data.remote.GlobalRequestGuardInterceptor
     ): OkHttpClient {
         val logging = okhttp3.logging.HttpLoggingInterceptor().apply {
             level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
         }
         return OkHttpClient.Builder()
+            .addInterceptor(requestGuard) // FIRST LINE OF DEFENSE
             .addInterceptor(authInterceptor)
             .authenticator(tokenAuthenticator)
             .addInterceptor(logging)

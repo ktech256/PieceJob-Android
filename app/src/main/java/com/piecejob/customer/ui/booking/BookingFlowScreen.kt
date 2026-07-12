@@ -35,6 +35,8 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import com.piecejob.core.data.remote.ServiceDto
 import com.piecejob.core.data.remote.dto.ProviderDto
+import com.piecejob.core.ui.components.PieceJobButton
+import com.piecejob.core.ui.components.PieceJobOutlinedButton
 import com.piecejob.customer.ui.dashboard.ServiceDetailsDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,6 +116,7 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
     val selectedCoords by viewModel.selectedCoordinates.collectAsState()
     val currentGps by viewModel.currentGpsCoordinates.collectAsState()
     val addressPredictions by viewModel.addressPredictions.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
 
     val cameraPositionState = rememberCameraPositionState {
@@ -323,28 +326,27 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // "Your Location" Button (35%)
-                    Button(
+                    PieceJobButton(
+                        text = "YOUR LOCATION",
                         onClick = { viewModel.fetchCurrentLocation(isManualSelection = true) },
-                        modifier = Modifier.weight(0.35f).height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)), // WhatsApp Green
-                        contentPadding = PaddingValues(horizontal = 4.dp)
-                    ) {
-                        Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("YOUR LOCATION", fontWeight = FontWeight.Bold, fontSize = 10.sp, maxLines = 1)
-                    }
+                        modifier = Modifier.weight(0.35f),
+                        containerColor = Color(0xFF25D366), // WhatsApp Green
+                        icon = Icons.Default.MyLocation,
+                        fontSize = 10.sp,
+                        height = 56.dp,
+                        isLoading = isLoading
+                    )
 
                     // "Continue" Button (65%)
-                    Button(
+                    PieceJobButton(
+                        text = "CONTINUE",
                         onClick = { viewModel.confirmRecipient() },
                         enabled = (addressText.isNotBlank() && selectedCoords != null),
-                        modifier = Modifier.weight(0.65f).height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
-                    ) {
-                        Text("CONTINUE", fontWeight = FontWeight.Black)
-                    }
+                        modifier = Modifier.weight(0.65f),
+                        containerColor = Color(0xFFD32F2F),
+                        height = 56.dp,
+                        isLoading = isLoading
+                    )
                 }
             }
         }
@@ -355,6 +357,7 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
 fun RecipientSelectionStep(viewModel: BookingViewModel) {
     var recipientName by remember { mutableStateOf("") }
     var recipientPhone by remember { mutableStateOf("") }
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
         Text("Who is this service for?", fontWeight = FontWeight.Black, fontSize = 22.sp)
@@ -378,18 +381,17 @@ fun RecipientSelectionStep(viewModel: BookingViewModel) {
         
         Spacer(modifier = Modifier.weight(1f))
         
-        Button(
+        PieceJobButton(
+            text = "CONTINUE",
             onClick = { 
                 viewModel.recipientName.value = recipientName
                 viewModel.recipientPhone.value = recipientPhone
                 viewModel.confirmRecipient()
             },
             enabled = recipientName.isNotBlank(),
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Text("CONTINUE", fontWeight = FontWeight.Black)
-        }
+            height = 56.dp,
+            isLoading = isLoading
+        )
     }
 }
 
@@ -484,6 +486,7 @@ fun BookingFeeStep(viewModel: BookingViewModel) {
     val selectedService by viewModel.selectedService.collectAsState()
     val wallet by viewModel.wallet.collectAsState()
     val error by viewModel.error.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     var showPaymentWarning by remember { mutableStateOf(false) }
     var showReferralSuccess by remember { mutableStateOf(false) }
 
@@ -497,11 +500,18 @@ fun BookingFeeStep(viewModel: BookingViewModel) {
             title = { Text("Booking Fee Payment", fontWeight = FontWeight.Black) },
             text = { Text("This booking fee confirms your booking. The final service price will be negotiated directly between you and the provider.") },
             confirmButton = {
-                Button(onClick = { 
-                    android.util.Log.d("TowMechSecurity", "PAYMENT_CONFIRM_CLICKED: Review & Pay Confirm Button")
-                    showPaymentWarning = false
-                    viewModel.createJob()
-                }) { Text("CONFIRM") }
+                PieceJobButton(
+                    text = "CONFIRM",
+                    onClick = { 
+                        android.util.Log.d("TowMechSecurity", "PAYMENT_CONFIRM_CLICKED: Review & Pay Confirm Button")
+                        showPaymentWarning = false
+                        viewModel.createJob()
+                    },
+                    isLoading = isLoading,
+                    fullWidth = false,
+                    height = 40.dp,
+                    fontSize = 14.sp
+                )
             },
             dismissButton = {
                 TextButton(onClick = { showPaymentWarning = false }) { Text("CANCEL") }
@@ -559,30 +569,29 @@ fun BookingFeeStep(viewModel: BookingViewModel) {
         Spacer(modifier = Modifier.weight(1f))
 
         if (canUseReferral) {
-            Button(
+            PieceJobButton(
+                text = "PAY WITH REFERRAL BALANCE",
                 onClick = { 
                     android.util.Log.d("REFERRAL_AUDIT", "USER_SELECTED_REFERRAL_PAYMENT")
                     viewModel.createJob(useReferral = true)
                 },
-                modifier = Modifier.fillMaxWidth().height(64.dp),
-                shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
-            ) {
-                Icon(Icons.Default.CardGiftcard, contentDescription = null)
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("PAY WITH REFERRAL BALANCE", fontWeight = FontWeight.Black, fontSize = 14.sp)
-            }
+                modifier = Modifier.fillMaxWidth(),
+                containerColor = Color(0xFF2E7D32),
+                icon = Icons.Default.CardGiftcard,
+                height = 64.dp,
+                isLoading = isLoading
+            )
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        Button(
+        PieceJobButton(
+            text = if (canUseReferral) "USE OTHER PAYMENT METHOD" else "PAY BOOKING FEE",
             onClick = { showPaymentWarning = true },
-            modifier = Modifier.fillMaxWidth().height(64.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = if (canUseReferral) Color(0xFF121212) else Color(0xFFD32F2F))
-        ) {
-            Text(if (canUseReferral) "USE OTHER PAYMENT METHOD" else "PAY BOOKING FEE", fontWeight = FontWeight.Black, fontSize = 16.sp)
-        }
+            modifier = Modifier.fillMaxWidth(),
+            containerColor = if (canUseReferral) Color(0xFF121212) else Color(0xFFD32F2F),
+            height = 64.dp,
+            isLoading = isLoading
+        )
     }
 }
 

@@ -13,6 +13,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.piecejob.BuildConfig
+import com.piecejob.core.ui.components.PieceJobButton
+import com.piecejob.core.ui.components.PieceJobOutlinedButton
 
 @Composable
 fun WelcomeScreen(
@@ -73,29 +75,19 @@ fun WelcomeScreen(
         }
 
         Column(modifier = Modifier.fillMaxWidth()) {
-            Button(
+            PieceJobButton(
+                text = "LOG IN",
                 onClick = onLoginClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(58.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("LOG IN", fontSize = 16.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-            }
+                height = 58.dp
+            )
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            OutlinedButton(
+            PieceJobOutlinedButton(
+                text = "GET STARTED",
                 onClick = onRegisterClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(58.dp),
-                shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-            ) {
-                Text("GET STARTED", fontSize = 16.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
-            }
+                height = 58.dp
+            )
             
             Spacer(modifier = Modifier.height(40.dp))
         }

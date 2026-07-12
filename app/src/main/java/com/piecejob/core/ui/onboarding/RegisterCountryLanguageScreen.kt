@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.piecejob.core.ui.auth.AuthViewModel
 import com.piecejob.core.ui.auth.AuthState
+import com.piecejob.core.ui.components.PieceJobButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -139,23 +140,15 @@ fun RegisterCountryLanguageScreen(
                 }
             }
 
-            Button(
+            PieceJobButton(
+                text = "CONTINUE",
                 onClick = { 
                     val fullPhone = "${selectedCountry?.phoneCode ?: "+27"}${phoneNumber.removePrefix("0")}"
                     viewModel.requestOtp(fullPhone)
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(58.dp),
-                shape = RoundedCornerShape(16.dp),
-                enabled = selectedCountry != null && selectedLanguage != null && phoneNumber.length >= 9 && authState !is AuthState.Loading
-            ) {
-                if (authState is AuthState.Loading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                } else {
-                    Text("CONTINUE", fontSize = 16.sp, fontWeight = FontWeight.Black)
-                }
-            }
+                isLoading = authState is AuthState.Loading,
+                enabled = selectedCountry != null && selectedLanguage != null && phoneNumber.length >= 9
+            )
         }
     }
 }

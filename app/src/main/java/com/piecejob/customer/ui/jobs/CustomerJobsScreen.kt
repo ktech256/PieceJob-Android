@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.piecejob.core.data.remote.dto.JobDto
+import com.piecejob.core.ui.components.PieceJobButton
 
 @Composable
 fun CustomerJobsScreen(
@@ -155,14 +156,14 @@ fun CustomerJobCard(job: JobDto, onClick: () -> Unit) {
             if (!isCompleted && !isCancelled) {
                 val isNegotiating = job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true || job.priceStatus == "PENDING"
                 if (isNegotiating) {
-                    Button(
+                    PieceJobButton(
+                        text = "RESUME NEGOTIATION",
                         onClick = onClick,
                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
-                    ) {
-                        Text("RESUME NEGOTIATION", fontWeight = FontWeight.Black)
-                    }
+                        containerColor = Color(0xFFFFA000),
+                        height = 48.dp,
+                        fontSize = 12.sp
+                    )
                 }
             }
 
