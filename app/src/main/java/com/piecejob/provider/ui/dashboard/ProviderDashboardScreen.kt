@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.piecejob.core.data.remote.dto.JobDto
+import com.piecejob.core.ui.components.PieceJobButton
+import com.piecejob.core.ui.components.PieceJobOutlinedButton
 
 import com.piecejob.core.utils.formatPrivacyAddress
 import com.piecejob.core.utils.formatDateTimeString
@@ -762,79 +764,72 @@ fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, o
                     when (job.status) {
                         "PROVIDER_ACCEPTED", "ACCEPTED" -> {
                             if (isNegotiationPending) {
-                                Button(
+                                PieceJobButton(
+                                    text = "RESUME NEGOTIATION",
                                     onClick = { 
                                         onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.customerId ?: ""))
                                     },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
-                                ) { Text("RESUME NEGOTIATION", fontWeight = FontWeight.Bold) }
+                                    containerColor = Color(0xFFFFA000),
+                                    height = 48.dp,
+                                    fontSize = 12.sp
+                                )
                             } else {
-                                Button(
+                                PieceJobButton(
+                                    text = "MARK ARRIVED",
                                     onClick = { onArrive(job.id) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    enabled = !isActionLoading,
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
-                                ) { 
-                                    if (isActionLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
-                                    else Text("MARK ARRIVED", fontWeight = FontWeight.Bold) 
-                                }
+                                    isLoading = isLoading,
+                                    containerColor = Color(0xFF1976D2),
+                                    height = 48.dp,
+                                    fontSize = 12.sp
+                                )
                             }
                         }
                         
-                        "ARRIVED" -> Button(
+                        "ARRIVED" -> PieceJobButton(
+                            text = "START WORK",
                             onClick = { onStart(job.id) },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !isActionLoading,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                        ) { 
-                            if (isActionLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
-                            else Text("START WORK", fontWeight = FontWeight.Bold) 
-                        }
+                            isLoading = isLoading,
+                            containerColor = Color(0xFF4CAF50),
+                            height = 48.dp,
+                            fontSize = 12.sp
+                        )
                         
                         "STARTED", "IN_PROGRESS" -> {
                             var isCompleting by remember { mutableStateOf(false) }
-                            Button(
+                            PieceJobButton(
+                                text = "COMPLETE WORK",
                                 onClick = { 
                                     isCompleting = true
                                     onComplete(job.id) 
                                 },
-                                modifier = Modifier.fillMaxWidth(),
-                                enabled = !isLoading && !isCompleting,
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
-                            ) { 
-                                if (isLoading || isCompleting) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
-                                else Text("COMPLETE WORK", fontWeight = FontWeight.Bold) 
-                            }
+                                isLoading = isLoading || isCompleting,
+                                containerColor = Color(0xFFD32F2F),
+                                height = 48.dp,
+                                fontSize = 12.sp
+                            )
                         }
 
-                        "COMPLETED" -> Button(
+                        "COMPLETED" -> PieceJobButton(
+                            text = "RATE CUSTOMER",
                             onClick = onClick,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
-                        ) { Text("RATE CUSTOMER", fontWeight = FontWeight.Bold) }
+                            containerColor = Color(0xFFFFA000),
+                            height = 48.dp,
+                            fontSize = 12.sp
+                        )
                     }
                 }
                 
                 if (!isCompleted) {
                     // Resume Tracking Button
-                    OutlinedButton(
+                    PieceJobOutlinedButton(
+                        text = "RESUME",
                         onClick = onClick,
                         modifier = Modifier.weight(0.8f),
-                        shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Navigation, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("RESUME", fontWeight = FontWeight.Bold)
-                        }
-                    }
+                        icon = Icons.Default.Navigation,
+                        height = 48.dp,
+                        fontSize = 12.sp,
+                        contentColor = Color.Gray
+                    )
                 }
             }
         }

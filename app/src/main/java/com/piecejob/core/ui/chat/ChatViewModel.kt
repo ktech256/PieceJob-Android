@@ -209,15 +209,20 @@ class ChatViewModel @Inject constructor(
     fun requestPhotos() {
         val jobId = currentJobId ?: return
         viewModelScope.launch {
+            _isLoading.value = true
             repository.requestPhotos(jobId)
+            loadJobConfig(jobId)
+            _isLoading.value = false
         }
     }
 
     fun markPhotosSeen() {
         val jobId = currentJobId ?: return
         viewModelScope.launch {
+            _isLoading.value = true
             repository.markPhotosSeen(jobId)
             loadJobConfig(jobId) // Refresh local state to enable pricing
+            _isLoading.value = false
         }
     }
 
@@ -282,8 +287,10 @@ class ChatViewModel @Inject constructor(
     fun proposePrice(amount: Double) {
         val jobId = currentJobId ?: return
         viewModelScope.launch {
+            _isLoading.value = true
             repository.proposePrice(jobId, amount)
             loadJobConfig(jobId)
+            _isLoading.value = false
         }
     }
 
@@ -294,19 +301,23 @@ class ChatViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
+            _isLoading.value = true
             repository.respondToProposal(proposalId, action)
             loadJobConfig(jobId)
+            _isLoading.value = false
         }
     }
 
     fun confirmDispatch() {
         val jobId = currentJobId ?: return
         viewModelScope.launch {
+            _isLoading.value = true
             val res = jobRepository.confirmDispatch(jobId)
             if (res.success) {
                 // Socket listener should catch the status update, but we refresh anyway
                 loadJobConfig(jobId)
             }
+            _isLoading.value = false
         }
     }
 

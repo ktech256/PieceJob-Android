@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.piecejob.core.data.remote.dto.InvoiceDto
 import com.piecejob.core.data.remote.dto.WalletTransactionDto
+import com.piecejob.core.ui.components.PieceJobButton
 
 @Composable
 fun CustomerWalletScreen(
@@ -200,19 +201,17 @@ fun CustomerWalletScreen(
 
 @Composable
 fun WalletActionButton(label: String, icon: ImageVector, onClick: () -> Unit, modifier: Modifier) {
-    Button(
+    PieceJobButton(
+        text = label,
         onClick = onClick,
-        modifier = modifier.height(48.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f)),
-        shape = RoundedCornerShape(12.dp),
-        contentPadding = PaddingValues(0.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
-    }
+        modifier = modifier,
+        icon = icon,
+        containerColor = Color.White.copy(alpha = 0.2f),
+        contentColor = Color.White,
+        height = 48.dp,
+        fontSize = 12.sp,
+        shape = RoundedCornerShape(12.dp)
+    )
 }
 
 @Composable

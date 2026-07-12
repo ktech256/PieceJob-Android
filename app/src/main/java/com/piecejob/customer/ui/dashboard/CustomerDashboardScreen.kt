@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.OpenInNew
 import com.piecejob.core.data.remote.ServiceDto
+import com.piecejob.core.ui.components.PieceJobButton
 
 import com.piecejob.core.utils.formatDateTimeString
 
@@ -786,21 +787,16 @@ fun ActiveJobCard(
                     )
                 }
                 
-                Button(
+                PieceJobButton(
+                    text = actionLabel,
                     onClick = { if (isNegotiation) onResume() else onTrack() },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF121212)),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Icon(actionIcon, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.White)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = actionLabel,
-                        color = Color.White,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
+                    icon = actionIcon,
+                    containerColor = Color(0xFF121212),
+                    height = 40.dp,
+                    fontSize = 11.sp,
+                    fullWidth = false,
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                )
             }
         }
     }

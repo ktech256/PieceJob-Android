@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.piecejob.BuildConfig
 import com.piecejob.core.ui.auth.AuthViewModel
 import com.piecejob.core.ui.auth.AuthState
+import com.piecejob.core.ui.components.PieceJobButton
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -330,7 +331,8 @@ fun RegistrationDetailsScreen(
             Spacer(modifier = Modifier.height(40.dp))
 
             // THE CRITICAL BUTTON
-            Button(
+            PieceJobButton(
+                text = if (isProvider) "CONTINUE TO TRADES" else "CREATE ACCOUNT",
                 onClick = { 
                     Log.d(TAG, "ACTION: Primary button CLICKED. isProvider: $isProvider")
                     if (isProvider) {
@@ -341,22 +343,9 @@ fun RegistrationDetailsScreen(
                         viewModel.register() 
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(58.dp),
-                shape = RoundedCornerShape(16.dp),
+                isLoading = authState is AuthState.Loading,
                 enabled = isFormValid
-            ) {
-                if (authState is AuthState.Loading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                } else {
-                    Text(
-                        text = if (isProvider) "CONTINUE TO TRADES" else "CREATE ACCOUNT",
-                        fontSize = 15.sp, 
-                        fontWeight = FontWeight.Black
-                    )
-                }
-            }
+            )
             
             Spacer(modifier = Modifier.height(32.dp))
         }

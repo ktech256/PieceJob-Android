@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.piecejob.BuildConfig
+import com.piecejob.core.ui.components.PieceJobButton
 
 import androidx.activity.compose.BackHandler
 
@@ -166,19 +167,13 @@ fun RatingScreen(
             Text(text = error!!, color = Color.Red, fontSize = 14.sp, modifier = Modifier.padding(bottom = 16.dp))
         }
 
-        Button(
+        PieceJobButton(
+            text = "SUBMIT RATING",
             onClick = { viewModel.submitRating(jobId, rating, comment) },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            enabled = !isSubmitting && rating > 0,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
-        ) {
-            if (isSubmitting) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-            } else {
-                Text("SUBMIT RATING", fontWeight = FontWeight.Black)
-            }
-        }
+            isLoading = isSubmitting,
+            enabled = rating > 0,
+            containerColor = Color(0xFF2E7D32)
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
 

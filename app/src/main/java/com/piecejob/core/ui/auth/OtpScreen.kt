@@ -15,6 +15,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.piecejob.core.ui.components.PieceJobButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,20 +101,12 @@ fun OtpScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
             
-            Button(
+            PieceJobButton(
+                text = "Verify & Continue",
                 onClick = { viewModel.verifyOtp(otp) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                enabled = otp.length == 6 && state !is AuthState.Loading
-            ) {
-                if (state is AuthState.Loading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                } else {
-                    Text("Verify & Continue", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                }
-            }
+                isLoading = state is AuthState.Loading,
+                enabled = otp.length == 6
+            )
             
             Spacer(modifier = Modifier.height(24.dp))
             

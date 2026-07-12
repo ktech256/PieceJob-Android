@@ -31,6 +31,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.ui.layout.ContentScale
+import com.piecejob.core.ui.components.PieceJobButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,7 +100,8 @@ fun ChatScreen(
                 }
             },
             confirmButton = {
-                Button(
+                PieceJobButton(
+                    text = "Send Proposal",
                     onClick = {
                         val amount = priceAmount.toDoubleOrNull()
                         if (amount != null) {
@@ -108,8 +110,12 @@ fun ChatScreen(
                             priceAmount = ""
                         }
                     },
-                    enabled = priceAmount.isNotBlank()
-                ) { Text("Send Proposal") }
+                    isLoading = isLoading,
+                    enabled = priceAmount.isNotBlank(),
+                    fullWidth = false,
+                    height = 40.dp,
+                    fontSize = 14.sp
+                )
             },
             dismissButton = {
                 TextButton(onClick = { showPriceDialog = false }) { Text("Cancel") }
@@ -148,13 +154,15 @@ fun ChatScreen(
                             textAlign = TextAlign.Center
                         )
                         Spacer(Modifier.height(8.dp))
-                        Button(
+                        PieceJobButton(
+                            text = "GO TO NEGOTIATION",
                             onClick = onNegotiationOpen,
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFBC02D))
-                        ) {
-                            Text("GO TO NEGOTIATION", color = Color.Black, fontSize = 11.sp)
-                        }
+                            containerColor = Color(0xFFFBC02D),
+                            contentColor = Color.Black,
+                            fontSize = 11.sp,
+                            height = 40.dp
+                        )
                     }
                 } else {
                     Column {
@@ -204,6 +212,7 @@ fun ChatScreen(
                         ChatBubble(
                             msg = msg,
                             isMe = msg.senderId._id != otherUserId,
+                            isLoading = isLoading,
                             onAction = { action, meta ->
                                 when (action) {
                                     "UPLOAD_PHOTOS" -> photoPickerLauncher.launch("image/*")
@@ -222,7 +231,7 @@ fun ChatScreen(
 }
 
 @Composable
-fun ChatBubble(msg: MessageDto, isMe: Boolean, onAction: (String, Map<String, Any>?) -> Unit = { _, _ -> }) {
+fun ChatBubble(msg: MessageDto, isMe: Boolean, isLoading: Boolean = false, onAction: (String, Map<String, Any>?) -> Unit = { _, _ -> }) {
     val metadata = msg.metadata
     val type = metadata?.get("type") as? String
 
@@ -233,7 +242,7 @@ fun ChatBubble(msg: MessageDto, isMe: Boolean, onAction: (String, Map<String, An
         horizontalAlignment = if (isMe) Alignment.End else Alignment.Start
     ) {
         if (type != null) {
-            StructuredMessageCard(type, metadata, isMe, onAction)
+            StructuredMessageCard(type, metadata, isMe, isLoading, onAction)
         } else {
             Surface(
                 color = if (isMe) MaterialTheme.colorScheme.primary else Color(0xFFF1F0F0),
@@ -270,7 +279,7 @@ fun ChatBubble(msg: MessageDto, isMe: Boolean, onAction: (String, Map<String, An
 }
 
 @Composable
-fun StructuredMessageCard(type: String, metadata: Map<String, Any>, isMe: Boolean, onAction: (String, Map<String, Any>?) -> Unit) {
+fun StructuredMessageCard(type: String, metadata: Map<String, Any>, isMe: Boolean, isLoading: Boolean = false, onAction: (String, Map<String, Any>?) -> Unit) {
     Card(
         modifier = Modifier.widthIn(max = 280.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
@@ -282,13 +291,15 @@ fun StructuredMessageCard(type: String, metadata: Map<String, Any>, isMe: Boolea
                     Text("📷 Photo Request", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     Text("The provider requested photos for this task.", fontSize = 13.sp)
                     if (!isMe) {
-                        Button(
+                        PieceJobButton(
+                            text = "Upload Photos",
                             onClick = { onAction("UPLOAD_PHOTOS", metadata) },
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("Upload Photos", fontSize = 12.sp)
-                        }
+                            contentPadding = PaddingValues(0.dp),
+                            height = 36.dp,
+                            fontSize = 12.sp,
+                            isLoading = isLoading
+                        )
                     }
                 }
                 "PHOTO_UPLOAD" -> {
@@ -313,14 +324,16 @@ fun StructuredMessageCard(type: String, metadata: Map<String, Any>, isMe: Boolea
                         }
                     }
                     if (!isMe) {
-                        Button(
+                        PieceJobButton(
+                            text = "CONTINUE",
                             onClick = { onAction("MARK_SEEN", metadata) },
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("CONTINUE", fontSize = 12.sp)
-                        }
+                            containerColor = Color.Black,
+                            contentPadding = PaddingValues(0.dp),
+                            height = 36.dp,
+                            fontSize = 12.sp,
+                            isLoading = isLoading
+                        )
                     }
                 }
                 "PRICE_PROPOSAL" -> {

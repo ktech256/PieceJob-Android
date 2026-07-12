@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.piecejob.core.ui.auth.AuthViewModel
 import com.piecejob.core.ui.auth.AuthState
+import com.piecejob.core.ui.components.PieceJobButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,23 +107,15 @@ fun RegisterPhoneScreen(
                 }
             }
 
-            Button(
+            PieceJobButton(
+                text = "SEND VERIFICATION CODE",
                 onClick = { 
                     val fullPhone = "${selectedCountry?.phoneCode ?: "+27"}${phoneInput.removePrefix("0")}"
                     viewModel.requestOtp(fullPhone) 
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(58.dp),
-                shape = RoundedCornerShape(16.dp),
-                enabled = phoneInput.length >= 9 && authState !is AuthState.Loading
-            ) {
-                if (authState is AuthState.Loading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                } else {
-                    Text("SEND VERIFICATION CODE", fontSize = 15.sp, fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)
-                }
-            }
+                isLoading = authState is AuthState.Loading,
+                enabled = phoneInput.length >= 9
+            )
         }
     }
 }

@@ -44,6 +44,8 @@ import androidx.compose.ui.draw.clip
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.piecejob.core.ui.components.PieceJobButton
+import com.piecejob.core.ui.components.PieceJobOutlinedButton
 
 import com.piecejob.core.utils.formatPrivacyAddress
 
@@ -121,9 +123,11 @@ fun NegotiationScreen(
                     galleryLauncher.launch("image/*")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                OutlinedButton(onClick = { showPhotoPicker = false }, modifier = Modifier.fillMaxWidth()) {
-                    Text("CANCEL")
-                }
+                PieceJobOutlinedButton(
+                    text = "CANCEL",
+                    onClick = { showPhotoPicker = false },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }
@@ -162,7 +166,8 @@ fun NegotiationScreen(
                 }
             },
             confirmButton = {
-                Button(
+                PieceJobButton(
+                    text = "Send Proposal",
                     onClick = {
                         val amount = priceAmount.toDoubleOrNull()
                         if (amount != null) {
@@ -171,8 +176,12 @@ fun NegotiationScreen(
                             priceAmount = ""
                         }
                     },
-                    enabled = priceAmount.isNotBlank()
-                ) { Text("Send Proposal") }
+                    isLoading = isLoading,
+                    enabled = priceAmount.isNotBlank(),
+                    fullWidth = false,
+                    height = 40.dp,
+                    fontSize = 14.sp
+                )
             },
             dismissButton = {
                 TextButton(onClick = { showPriceDialog = false }) { Text("Cancel") }
@@ -221,73 +230,73 @@ fun NegotiationScreen(
                         ) {
                             when (phase) {
                                 "PHOTO_REQUEST" -> {
-                                    Button(
+                                    PieceJobButton(
+                                        text = "Request Task Photos",
                                         onClick = { viewModel.requestPhotos() },
                                         modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) {
-                                        Icon(Icons.Default.PhotoCamera, null, modifier = Modifier.size(16.dp))
-                                        Spacer(Modifier.width(4.dp))
-                                        Text("Request Task Photos", fontSize = 11.sp)
-                                    }
+                                        isLoading = isLoading,
+                                        icon = Icons.Default.PhotoCamera,
+                                        fontSize = 11.sp,
+                                        height = 48.dp
+                                    )
                                 }
                                 "WAITING_FOR_PHOTOS" -> {
-                                    Button(
+                                    PieceJobButton(
+                                        text = "Waiting for Photos...",
                                         onClick = { },
                                         modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(12.dp),
                                         enabled = false,
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
-                                    ) {
-                                        Text("Waiting for Photos...", fontSize = 11.sp)
-                                    }
+                                        containerColor = Color.Gray,
+                                        fontSize = 11.sp,
+                                        height = 48.dp
+                                    )
                                 }
                                 "PHOTOS_UPLOADED" -> {
-                                    Button(
+                                    PieceJobButton(
+                                        text = "CONTINUE",
                                         onClick = { viewModel.markPhotosSeen() },
                                         modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
-                                    ) {
-                                        Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
-                                        Spacer(Modifier.width(4.dp))
-                                        Text("CONTINUE", fontSize = 11.sp)
-                                    }
+                                        containerColor = Color.Black,
+                                        icon = Icons.Default.Check,
+                                        fontSize = 11.sp,
+                                        height = 48.dp,
+                                        isLoading = isLoading
+                                    )
                                 }
                                 "PRICE_PROPOSAL", "WAITING_FOR_PROVIDER" -> {
-                                    Button(
+                                    PieceJobButton(
+                                        text = if (phase == "WAITING_FOR_PROVIDER") "Send Counter Offer" else "What is your price?",
                                         onClick = { showPriceDialog = true },
                                         modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
-                                    ) {
-                                        Icon(Icons.Default.Sell, null, modifier = Modifier.size(16.dp))
-                                        Spacer(Modifier.width(4.dp))
-                                        Text(if (phase == "WAITING_FOR_PROVIDER") "Send Counter Offer" else "What is your price?", fontSize = 11.sp)
-                                    }
+                                        containerColor = Color(0xFFFFA000),
+                                        icon = Icons.Default.Sell,
+                                        fontSize = 11.sp,
+                                        height = 48.dp,
+                                        isLoading = isLoading
+                                    )
                                 }
                                 "WAITING_FOR_CUSTOMER" -> {
-                                    Button(
+                                    PieceJobButton(
+                                        text = "Waiting for Customer...",
                                         onClick = { },
                                         modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(12.dp),
                                         enabled = false,
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
-                                    ) {
-                                        Text("Waiting for Customer...", fontSize = 11.sp)
-                                    }
+                                        containerColor = Color.Gray,
+                                        fontSize = 11.sp,
+                                        height = 48.dp
+                                    )
                                 }
                                 "PRICE_ACCEPTED" -> {
-                                    Button(
+                                    PieceJobButton(
+                                        text = "START JOURNEY",
                                         onClick = { viewModel.confirmDispatch() },
                                         modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
-                                    ) {
-                                        Icon(Icons.Default.LocalShipping, null, modifier = Modifier.size(16.dp))
-                                        Spacer(Modifier.width(4.dp))
-                                        Text("START JOURNEY", fontSize = 11.sp)
-                                    }
+                                        containerColor = Color(0xFF2E7D32),
+                                        icon = Icons.Default.LocalShipping,
+                                        fontSize = 11.sp,
+                                        height = 48.dp,
+                                        isLoading = isLoading
+                                    )
                                 }
                             }
                         }
@@ -335,15 +344,13 @@ fun NegotiationScreen(
                         }
                         
                         if (phase == "WAITING_FOR_PHOTOS" && stagingUris.isEmpty()) {
-                            Button(
+                            PieceJobButton(
+                                text = "SELECT PHOTOS",
                                 onClick = { showPhotoPicker = true },
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(Icons.Default.PhotoCamera, null)
-                                Spacer(Modifier.width(8.dp))
-                                Text("SELECT PHOTOS")
-                            }
+                                icon = Icons.Default.PhotoCamera,
+                                height = 48.dp
+                            )
                         }
                     }
                 }
@@ -401,7 +408,7 @@ fun NegotiationScreen(
 
                     jobState?.activeProposal?.let { proposal ->
                         item {
-                            ActiveProposalHeader(proposal, currentUserId) { action ->
+                            ActiveProposalHeader(proposal, currentUserId, isLoading) { action ->
                                 when (action) {
                                     "ACCEPT" -> viewModel.respondToProposal(proposal.id, "ACCEPT")
                                     "REJECT" -> viewModel.respondToProposal(proposal.id, "REJECT")
@@ -668,7 +675,7 @@ fun InfoBadge(text: String) {
 }
 
 @Composable
-fun ActiveProposalHeader(proposal: PriceProposalDto, currentUserId: String, onAction: (String) -> Unit) {
+fun ActiveProposalHeader(proposal: PriceProposalDto, currentUserId: String, isLoading: Boolean = false, onAction: (String) -> Unit) {
     val isMe = proposal.senderId == currentUserId
     
     Card(
@@ -706,29 +713,35 @@ fun ActiveProposalHeader(proposal: PriceProposalDto, currentUserId: String, onAc
                     val isFinalRound = currentRound >= 4
 
                     if (isFinalRound) {
-                        OutlinedButton(
+                        PieceJobOutlinedButton(
+                            text = "REJECT",
                             onClick = { onAction("REJECT") },
                             modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(0.dp)
-                        ) { Text("REJECT", fontSize = 11.sp) }
+                            height = 36.dp,
+                            fontSize = 11.sp,
+                            isLoading = isLoading
+                        )
                     }
                     
-                    Button(
+                    PieceJobButton(
+                        text = "BARGAIN",
                         onClick = { onAction("COUNTER") },
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000)),
-                        contentPadding = PaddingValues(0.dp)
-                    ) { Text("BARGAIN", fontSize = 11.sp) }
+                        containerColor = Color(0xFFFFA000),
+                        height = 36.dp,
+                        fontSize = 11.sp,
+                        isLoading = isLoading
+                    )
                     
-                    Button(
+                    PieceJobButton(
+                        text = "ACCEPT",
                         onClick = { onAction("ACCEPT") },
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                        contentPadding = PaddingValues(0.dp)
-                    ) { Text("ACCEPT", fontSize = 11.sp) }
+                        containerColor = Color(0xFF2E7D32),
+                        height = 36.dp,
+                        fontSize = 11.sp,
+                        isLoading = isLoading
+                    )
                 }
             }
         }
@@ -825,13 +838,15 @@ fun PhotoStagingCard(
                 Column(modifier = Modifier.fillMaxWidth().background(Color(0xFFFFEBEE), RoundedCornerShape(8.dp)).padding(12.dp)) {
                     Text("Upload Failed", color = Color(0xFFD32F2F), fontWeight = FontWeight.Black, fontSize = 12.sp)
                     Text(error, color = Color(0xFFD32F2F), fontSize = 11.sp)
-                    Button(
+                    PieceJobButton(
+                        text = "RETRY",
                         onClick = onSend,
                         modifier = Modifier.padding(top = 8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
-                    ) {
-                        Text("RETRY", fontSize = 10.sp)
-                    }
+                        containerColor = Color(0xFFD32F2F),
+                        height = 36.dp,
+                        fontSize = 10.sp,
+                        isLoading = isLoading
+                    )
                 }
             } else if (isLoading) {
                 Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -840,14 +855,13 @@ fun PhotoStagingCard(
                     Text(progressText, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
             } else {
-                Button(
+                PieceJobButton(
+                    text = "SEND ${uris.size} PHOTOS",
                     onClick = onSend,
                     modifier = Modifier.fillMaxWidth(),
                     enabled = uris.isNotEmpty(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("SEND ${uris.size} PHOTOS", fontWeight = FontWeight.Black)
-                }
+                    isLoading = isLoading
+                )
             }
         }
     }

@@ -17,6 +17,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.piecejob.core.ui.theme.PieceJobTheme
+import com.piecejob.core.ui.components.PieceJobButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -122,7 +123,8 @@ fun LoginScreen(
             
             Spacer(modifier = Modifier.height(32.dp))
             
-            Button(
+            PieceJobButton(
+                text = "LOG IN",
                 onClick = { 
                     val fullIdentifier = if (identifier.all { it.isDigit() || it == ' ' }) {
                         "${selectedCountry?.phoneCode ?: "+27"}${identifier.trim().removePrefix("0")}"
@@ -131,18 +133,9 @@ fun LoginScreen(
                     }
                     viewModel.login(fullIdentifier, password) 
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(58.dp),
-                shape = RoundedCornerShape(16.dp),
-                enabled = state !is AuthState.Loading && identifier.isNotBlank() && password.isNotBlank()
-            ) {
-                if (state is AuthState.Loading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                } else {
-                    Text("LOG IN", fontSize = 15.sp, fontWeight = FontWeight.Black)
-                }
-            }
+                isLoading = state is AuthState.Loading,
+                enabled = identifier.isNotBlank() && password.isNotBlank()
+            )
             
             Spacer(modifier = Modifier.height(24.dp))
             
