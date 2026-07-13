@@ -195,9 +195,21 @@ class ChatViewModel @Inject constructor(
             val request = SendMessageRequest(jobId, receiverId, text)
             val res = repository.sendMessage(request)
             if (res.success && res.data != null) {
-                Log.d("FORENSIC", "CHAT_DATABASE_SAVE | Success. Updating temp message.")
-                // Replace temp message with real one
-                _messages.value = _messages.value.map { if (it.id == tempId) res.data else it }
+                val realMessage = res.data
+                Log.d("FORENSIC", "CHAT_DATABASE_SAVE | Success. RealID: ${realMessage.id}")
+                
+                // RACE CONDITION FIX: If the socket echo already arrived, the real message is already in list.
+                // In that case, we just remove the temp message.
+                _messages.value = _messages.value.let { currentList ->
+                    val alreadyHasReal = currentList.any { it.id == realMessage.id }
+                    if (alreadyHasReal) {
+                        Log.d("FORENSIC", "CHAT_DATABASE_SAVE | Socket already added real message. Removing temp.")
+                        currentList.filter { it.id != tempId }
+                    } else {
+                        Log.d("FORENSIC", "CHAT_DATABASE_SAVE | Replacing temp with real.")
+                        currentList.map { if (it.id == tempId) realMessage else it }
+                    }
+                }
             } else {
                 Log.e("FORENSIC", "CHAT_DATABASE_SAVE | Failed: ${res.message}")
                 // Remove temp message on failure

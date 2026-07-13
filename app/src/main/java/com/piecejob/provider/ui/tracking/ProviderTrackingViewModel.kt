@@ -179,6 +179,7 @@ class ProviderTrackingViewModel @Inject constructor(
         reminderTimer?.cancel()
         
         viewModelScope.launch {
+            _isLoading.value = true
             val jobId = _job.value?.id ?: return@launch
             val loc = _providerLocation.value
             val providerCoords = if (loc != null) listOf(loc.longitude, loc.latitude) else null
@@ -190,12 +191,14 @@ class ProviderTrackingViewModel @Inject constructor(
             } else {
                 _error.value = res.message ?: "Failed to start job"
             }
+            _isLoading.value = false
         }
     }
 
     fun completeJob() {
         android.util.Log.d("ForensicLog", "PROVIDER_COMPLETED_JOB | Job: ${_job.value?.id}")
         viewModelScope.launch {
+            _isLoading.value = true
             val jobId = _job.value?.id ?: return@launch
             val res = jobRepository.completeJob(jobId)
             if (res.success && res.data != null) {
@@ -206,11 +209,13 @@ class ProviderTrackingViewModel @Inject constructor(
             } else {
                 _error.value = res.message ?: "Failed to complete job"
             }
+            _isLoading.value = false
         }
     }
 
     fun cancelJob() {
         viewModelScope.launch {
+            _isLoading.value = true
             val jobId = _job.value?.id ?: return@launch
             val res = jobRepository.cancelJob(jobId)
             if (res.success) {
@@ -219,6 +224,7 @@ class ProviderTrackingViewModel @Inject constructor(
             } else {
                 _error.value = res.message ?: "Failed to cancel job"
             }
+            _isLoading.value = false
         }
     }
 

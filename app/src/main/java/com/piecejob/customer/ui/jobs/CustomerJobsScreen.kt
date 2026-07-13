@@ -154,17 +154,17 @@ fun CustomerJobCard(job: JobDto, onClick: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             if (!isCompleted && !isCancelled) {
-                val isNegotiating = job.status == "PROVIDER_ACCEPTED" || job.priceNegotiationRequired == true || job.photoSharingRequired == true || job.priceStatus == "PENDING"
-                if (isNegotiating) {
-                    PieceJobButton(
-                        text = "RESUME NEGOTIATION",
-                        onClick = onClick,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                        containerColor = Color(0xFFFFA000),
-                        height = 48.dp,
-                        fontSize = 12.sp
-                    )
-                }
+                // ISSUE 3 FIX: Differentiate between Negotiation phase and Active Tracking phase
+                val isInNegotiation = job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING"
+                
+                PieceJobButton(
+                    text = if (isInNegotiation) "RESUME NEGOTIATION" else "OPEN TRACKING",
+                    onClick = onClick,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    containerColor = if (isInNegotiation) Color(0xFFFFA000) else Color(0xFF1976D2),
+                    height = 48.dp,
+                    fontSize = 12.sp
+                )
             }
 
             // Amount Display Refinement (Issue 2 & 4)

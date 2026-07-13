@@ -24,6 +24,8 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.*
 import com.piecejob.core.data.remote.dto.JobDto
+import com.piecejob.core.ui.components.PieceJobButton
+import com.piecejob.core.ui.components.PieceJobOutlinedButton
 
 import androidx.activity.compose.BackHandler
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -463,58 +465,55 @@ fun ProviderTrackingScreen(
 
                             when (status) {
                                 "ACCEPTED" -> {
-                                    Button(
+                                    PieceJobButton(
+                                        text = "START JOURNEY",
                                         onClick = { viewModel.confirmDispatch() },
-                                        modifier = Modifier.weight(1f).height(56.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                        modifier = Modifier.weight(1f),
+                                        containerColor = Color(0xFF2E7D32),
+                                        isLoading = viewModel.isLoading.collectAsState().value,
+                                        height = 56.dp,
                                         shape = RoundedCornerShape(16.dp)
-                                    ) {
-                                        Text("START JOURNEY", fontWeight = FontWeight.Black)
-                                    }
+                                    )
                                 }
                                 "EN_ROUTE", "ARRIVED" -> {
                                     val isArrived = status == "ARRIVED"
-                                    Button(
+                                    PieceJobButton(
+                                        text = if (isArrived) "START WORK" else "DRIVING TO CUSTOMER", 
                                         onClick = { 
                                             if (isArrived) viewModel.startJob() 
                                         },
-                                        modifier = Modifier.weight(1f).height(56.dp),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (isArrived) Color(0xFF4CAF50) else Color(0xFFF5F5F5),
-                                            disabledContainerColor = Color(0xFFF5F5F5)
-                                        ),
-                                        shape = RoundedCornerShape(16.dp),
-                                        enabled = isArrived
-                                    ) {
-                                        Text(
-                                            text = if (isArrived) "START WORK" else "DRIVING TO CUSTOMER", 
-                                            fontWeight = FontWeight.Black,
-                                            color = if (isArrived) Color.White else Color.Gray
-                                        )
-                                    }
+                                        modifier = Modifier.weight(1f),
+                                        containerColor = if (isArrived) Color(0xFF4CAF50) else Color(0xFFF5F5F5),
+                                        contentColor = if (isArrived) Color.White else Color.Gray,
+                                        enabled = isArrived,
+                                        isLoading = viewModel.isLoading.collectAsState().value,
+                                        height = 56.dp,
+                                        shape = RoundedCornerShape(16.dp)
+                                    )
                                 }
                                 "STARTED" -> {
-                                    Button(
+                                    PieceJobButton(
+                                        text = "COMPLETE JOB",
                                         onClick = { viewModel.completeJob() },
-                                        modifier = Modifier.weight(1f).height(56.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                        modifier = Modifier.weight(1f),
+                                        containerColor = Color(0xFF2E7D32),
+                                        isLoading = viewModel.isLoading.collectAsState().value,
+                                        height = 56.dp,
                                         shape = RoundedCornerShape(16.dp)
-                                    ) {
-                                        Text("COMPLETE JOB", fontWeight = FontWeight.Black)
-                                    }
+                                    )
                                 }
                             }
                             
                             if (!isJourneyStarted && status != "COMPLETED" && status != "CANCELLED") {
-                                OutlinedButton(
-                                    onClick = { showCancelDialog = true },
-                                    modifier = Modifier.weight(0.6f).height(56.dp),
-                                    border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
-                                ) {
-                                    Text("CANCEL", fontWeight = FontWeight.Black)
-                                }
+                                PieceJobOutlinedButton(
+                                    text = "CANCEL",
+                                    onClick = { viewModel.cancelJob() }, // Standardized
+                                    modifier = Modifier.weight(0.6f),
+                                    contentColor = Color.Red,
+                                    isLoading = viewModel.isLoading.collectAsState().value,
+                                    height = 56.dp,
+                                    shape = RoundedCornerShape(16.dp)
+                                )
                             }
                         }
                         

@@ -21,6 +21,7 @@ import com.piecejob.customer.ui.dashboard.CustomerDashboardViewModel
 import com.piecejob.core.data.remote.ServiceDto
 import com.piecejob.core.ui.auth.AuthViewModel
 import com.piecejob.core.ui.auth.AuthState
+import com.piecejob.core.ui.components.PieceJobButton
 import com.piecejob.customer.ui.dashboard.ServiceDetailsDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -208,23 +209,16 @@ fun ProviderTradeSelectionScreen(
                     modifier = Modifier.padding(bottom = 16.dp, start = 4.dp)
                 )
                 
-                Button(
+                PieceJobButton(
+                    text = "COMPLETE REGISTRATION",
                     onClick = { 
                         authViewModel.selectedServices.value = selectedServices.toList()
                         authViewModel.register() 
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(58.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    enabled = selectedServices.isNotEmpty() && authState !is AuthState.Loading
-                ) {
-                    if (authState is AuthState.Loading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                    } else {
-                        Text("COMPLETE REGISTRATION", fontSize = 15.sp, fontWeight = FontWeight.Black)
-                    }
-                }
+                    isLoading = authState is AuthState.Loading,
+                    enabled = selectedServices.isNotEmpty(),
+                    height = 58.dp
+                )
             }
         }
     }

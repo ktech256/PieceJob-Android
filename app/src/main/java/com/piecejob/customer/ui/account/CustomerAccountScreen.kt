@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.piecejob.core.ui.navigation.Screen
+import com.piecejob.core.ui.components.PieceJobButton
 
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -106,17 +107,15 @@ fun CustomerAccountScreen(
 
         item {
             Spacer(modifier = Modifier.height(32.dp))
-            Button(
+            PieceJobButton(
+                text = "LOGOUT",
                 onClick = onLogout,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text("LOGOUT", fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-            }
+                    .padding(horizontal = 24.dp),
+                containerColor = Color(0xFFD32F2F),
+                height = 56.dp
+            )
             Spacer(modifier = Modifier.height(40.dp))
         }
     }

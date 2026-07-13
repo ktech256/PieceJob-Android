@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.piecejob.core.ui.components.PieceJobButton
+import com.piecejob.core.ui.components.PieceJobOutlinedButton
 import com.piecejob.core.utils.QRUtils
 import androidx.compose.ui.graphics.asImageBitmap
 import com.piecejob.core.utils.Constants
@@ -128,52 +130,48 @@ fun ReferralsScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Button(
+                        PieceJobButton(
+                            text = "LINK",
                             onClick = {
                                 val clipboardManager = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                 val clip = android.content.ClipData.newPlainText("Referral Link", referralLink)
                                 clipboardManager.setPrimaryClip(clip)
                                 android.widget.Toast.makeText(context, "Link copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = MaterialTheme.colorScheme.primary),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Link, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("LINK", fontWeight = FontWeight.Bold)
-                        }
+                            containerColor = Color.White,
+                            contentColor = MaterialTheme.colorScheme.primary,
+                            icon = Icons.Default.Link,
+                            modifier = Modifier.weight(1f),
+                            height = 48.dp,
+                            fontSize = 13.sp
+                        )
 
-                        OutlinedButton(
+                        PieceJobOutlinedButton(
+                            text = "CODE",
                             onClick = {
                                 val clipboardManager = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                 val clip = android.content.ClipData.newPlainText("Referral Code", referralCode)
                                 clipboardManager.setPrimaryClip(clip)
                                 android.widget.Toast.makeText(context, "Code copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
                             },
-                            border = BorderStroke(1.dp, Color.White),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("CODE", fontWeight = FontWeight.Bold)
-                        }
+                            contentColor = Color.White,
+                            icon = Icons.Default.ContentCopy,
+                            modifier = Modifier.weight(1f),
+                            height = 48.dp,
+                            fontSize = 13.sp
+                        )
                     }
                 }
             }
 
-            Button(
+            PieceJobButton(
+                text = "SHOW QR CODE",
                 onClick = { showQrDialog = true },
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF121212))
-            ) {
-                Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("SHOW QR CODE", fontWeight = FontWeight.Black)
-            }
+                containerColor = Color(0xFF121212),
+                icon = Icons.Default.QrCode,
+                height = 48.dp
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
             

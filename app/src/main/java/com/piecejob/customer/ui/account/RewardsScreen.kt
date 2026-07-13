@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.piecejob.core.ui.components.PieceJobButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,9 +87,15 @@ fun RewardOption(label: String, cost: String) {
             Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.width(16.dp))
             Text(text = label, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-            Button(onClick = { /* Redeem */ }, shape = RoundedCornerShape(8.dp)) {
-                Text(cost, fontSize = 10.sp)
-            }
+            PieceJobButton(
+                text = cost,
+                onClick = { /* Redeem */ },
+                height = 36.dp,
+                fontSize = 10.sp,
+                fullWidth = false,
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                shape = RoundedCornerShape(8.dp)
+            )
         }
     }
 }

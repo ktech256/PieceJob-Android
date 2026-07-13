@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.piecejob.core.ui.components.PieceJobButton
 
 @Composable
 fun ReferralScreen(
@@ -64,15 +65,10 @@ fun ReferralScreen(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        Button(
+        PieceJobButton(
+            text = "Invite Friends",
             onClick = { onInviteClick(referralCode) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = themeColor),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text("Invite Friends", fontWeight = FontWeight.Bold)
-        }
+            containerColor = themeColor
+        )
     }
 }
