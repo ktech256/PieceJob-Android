@@ -161,9 +161,20 @@ fun ProviderTrackingScreen(
         val status = j.status
         val pricePending = j.priceStatus == "PENDING"
         
-        if (status == "COMPLETED" || status == "CANCELLED" || status == "PROVIDER_ACCEPTED" || pricePending) {
-            nav.stopGuidance()
-            nav.clearDestinations()
+        val terminalStates = listOf("COMPLETED", "CANCELLED", "CUSTOMER_CANCELLED", "PROVIDER_CANCELLED", "EXPIRED", "FAILED", "TIMED_OUT", "NO_PROVIDER_FOUND", "RATED")
+        
+        if (terminalStates.contains(status) || pricePending || status == "PROVIDER_ACCEPTED") {
+            android.util.Log.d("ForensicLog", "NAV_CLEANUP | Job Terminal Status: $status. Terminating all navigation.")
+            try {
+                nav.stopGuidance()
+                nav.clearDestinations()
+                nav.setAudioGuidance(Navigator.AudioGuidance.SILENT)
+                // Note: We don't call cleanup() here because it's a singleton and 
+                // might affect other parts if the user hasn't fully exited.
+                // But stopGuidance + SILENT + clearDestinations should kill the directions.
+            } catch (e: Exception) {
+                android.util.Log.e("ForensicLog", "NAV_CLEANUP_ERROR | ${e.message}")
+            }
             return@LaunchedEffect
         }
 
@@ -192,15 +203,30 @@ fun ProviderTrackingScreen(
     }
 
     LaunchedEffect(job?.status) {
-        if (job?.status != null) {
-            android.util.Log.d("ForensicLog", "JOB_STATE_CHANGED | Job: $jobId | New Status: ${job?.status}")
+        val status = job?.status
+        if (status != null) {
+            android.util.Log.d("ForensicLog", "JOB_STATE_CHANGED | Job: $jobId | New Status: $status")
         }
-        if (job?.status == "COMPLETED" || job?.status == "CANCELLED" || job?.status == "RATED") {
-            if (job?.status == "COMPLETED") {
-                android.util.Log.d("ForensicLog", "TRACKING_EXIT | Job Completed. Moving to rating.")
+        
+        val terminalStates = listOf("COMPLETED", "CANCELLED", "CUSTOMER_CANCELLED", "PROVIDER_CANCELLED", "EXPIRED", "FAILED", "TIMED_OUT", "NO_PROVIDER_FOUND", "RATED")
+        
+        if (terminalStates.contains(status)) {
+            android.util.Log.d("ForensicLog", "TRACKING_EXIT | Terminal State $status. Cleaning up navigation.")
+            try {
+                navigator?.stopGuidance()
+                navigator?.clearDestinations()
+                navigator?.setAudioGuidance(Navigator.AudioGuidance.SILENT)
+                // Calling cleanup() is the most effective way to kill the background service and notification card
+                navigator?.cleanup()
+            } catch (e: Exception) {
+                android.util.Log.e("ForensicLog", "NAV_CLEANUP_ERROR | ${e.message}")
+            }
+
+            if (status == "COMPLETED") {
+                android.util.Log.d("ForensicLog", "TRACKING_EXIT | Moving to rating.")
                 onNavigateToRating(jobId)
             } else {
-                android.util.Log.d("ForensicLog", "TRACKING_EXIT | Job Cancelled. Returning.")
+                android.util.Log.d("ForensicLog", "TRACKING_EXIT | Returning.")
                 delay(1000)
                 onBack()
             }
