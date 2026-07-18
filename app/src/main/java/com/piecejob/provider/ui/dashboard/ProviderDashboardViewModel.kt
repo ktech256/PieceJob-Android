@@ -176,6 +176,15 @@ class ProviderDashboardViewModel @Inject constructor(
                 Log.e("ProviderDashboard", "Error parsing broadcast job", e)
             }
         }
+
+        viewModelScope.launch {
+            socketManager.providerStatusSyncFlow.collect { data ->
+                val isOnlineBackend = data.optBoolean("isOnline", false)
+                val statusBackend = data.optString("status", "OFFLINE")
+                Log.d("FORENSIC", "SYNCING_STATUS_FROM_BACKEND | isOnline: $isOnlineBackend | Status: $statusBackend")
+                _isOnline.value = isOnlineBackend
+            }
+        }
     }
 
     fun refresh() {
@@ -371,7 +380,10 @@ class ProviderDashboardViewModel @Inject constructor(
                 LocationService.activeJobId = null
                 socketManager.leaveJob(jobId)
                 _error.value = null
-                loadStats()
+                
+                // FORENSIC FIX: Refresh full dashboard state instead of just stats
+                // to ensure isOnline and currentAvailabilityStatus are synced from backend.
+                loadDashboard()
             } else {
                 _error.value = response.message ?: response.error?.message ?: "Failed to complete job"
             }

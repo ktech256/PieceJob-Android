@@ -38,6 +38,9 @@ class SocketManager @Inject constructor(
     private val _repairFcmFlow = MutableSharedFlow<JSONObject>(extraBufferCapacity = 10)
     val repairFcmFlow: SharedFlow<JSONObject> = _repairFcmFlow
 
+    private val _providerStatusSyncFlow = MutableSharedFlow<JSONObject>(extraBufferCapacity = 10)
+    val providerStatusSyncFlow: SharedFlow<JSONObject> = _providerStatusSyncFlow
+
     fun connect(baseUrl: String) {
         if (socket?.connected() == true) return
 
@@ -151,6 +154,16 @@ class SocketManager @Inject constructor(
                     _repairFcmFlow.tryEmit(data)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error in FORCE_REPAIR_FCM listener", e)
+                }
+            }
+
+            socket?.on("provider_status_sync") { args ->
+                try {
+                    val data = args[0] as JSONObject
+                    Log.d("FORENSIC", "PROVIDER_STATUS_SYNC received via Socket: $data")
+                    _providerStatusSyncFlow.tryEmit(data)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in provider_status_sync listener", e)
                 }
             }
 
