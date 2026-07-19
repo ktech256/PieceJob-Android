@@ -55,6 +55,19 @@ fun ProviderVerificationScreen(
     var showSourcePicker by remember { mutableStateOf(false) }
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
 
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                // We'll call startCamera again via another state or just hope user clicks again
+                // For better UX, we could use a effect or a flag.
+                Toast.makeText(context, "Permission granted. Tap again to start camera.", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Camera permission is required to take photos.", Toast.LENGTH_LONG).show()
+            }
+        }
+    )
+
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
@@ -67,6 +80,11 @@ fun ProviderVerificationScreen(
     )
 
     fun startCamera() {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            permissionLauncher.launch(android.Manifest.permission.CAMERA)
+            return
+        }
+
         try {
             val file = File(context.cacheDir, "temp_camera_${System.currentTimeMillis()}.jpg")
             if (!file.exists()) {

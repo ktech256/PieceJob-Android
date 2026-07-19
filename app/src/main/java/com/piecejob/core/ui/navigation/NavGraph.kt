@@ -90,6 +90,11 @@ fun NavGraph(
                 onNavigateToOtp = {
                     navController.navigate(Screen.Otp.passPhoneNumber(authViewModel.phoneNumber.value))
                 },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Welcome.route)
+                    }
+                },
                 onBack = { navController.popBackStack() }
             )
         }

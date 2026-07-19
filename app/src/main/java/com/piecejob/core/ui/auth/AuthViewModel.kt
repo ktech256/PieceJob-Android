@@ -100,6 +100,14 @@ class AuthViewModel @Inject constructor(
             Log.d(TAG, "requestOtp called for $phone")
             _authState.value = AuthState.Loading
             try {
+                // 1. Check if phone exists
+                val checkRes = repository.checkPhone(phone)
+                if (checkRes.success && checkRes.data?.exists == true) {
+                    _authState.value = AuthState.PhoneAlreadyRegistered
+                    return@launch
+                }
+
+                // 2. If not, request OTP
                 val response = repository.requestOtp(phone)
                 if (response.success) {
                     phoneNumber.value = phone
@@ -314,6 +322,7 @@ sealed class AuthState {
     object Loading : AuthState()
     object OtpSent : AuthState()
     object OtpVerified : AuthState()
+    object PhoneAlreadyRegistered : AuthState()
     data class Authenticated(val data: LoginResponse) : AuthState()
     data class Error(val message: String) : AuthState()
 }

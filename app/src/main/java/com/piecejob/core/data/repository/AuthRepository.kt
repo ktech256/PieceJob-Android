@@ -26,6 +26,14 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    suspend fun checkPhone(phoneNumber: String): ApiResponse<CheckPhoneResponse> {
+        return try {
+            api.checkPhone(phoneNumber)
+        } catch (e: Exception) {
+            handleError(e)
+        }
+    }
+
     suspend fun login(
         identifier: String,
         password: String,

@@ -14,6 +14,8 @@ data class LoginRequest(
 )
 data class LoginResponse(val token: String, val refreshToken: String, val user: UserDto)
 
+data class CheckPhoneResponse(val exists: Boolean)
+
 data class RefreshRequest(val refreshToken: String)
 data class RefreshResponse(val token: String, val refreshToken: String)
 

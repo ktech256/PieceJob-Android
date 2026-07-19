@@ -13,6 +13,9 @@ interface PieceJobApi {
     @POST("auth/verify-otp")
     suspend fun verifyOtp(@Body request: OtpVerifyRequest): ApiResponse<Unit>
 
+    @GET("auth/check-phone/{phoneNumber}")
+    suspend fun checkPhone(@Path("phoneNumber") phoneNumber: String): ApiResponse<com.piecejob.core.data.remote.dto.CheckPhoneResponse>
+
     @POST("auth/register/customer")
     suspend fun registerCustomer(@Body request: CustomerRegisterRequest): ApiResponse<Unit>
 

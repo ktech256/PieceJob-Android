@@ -23,6 +23,7 @@ import com.piecejob.core.ui.components.PieceJobButton
 fun RegisterPhoneScreen(
     viewModel: AuthViewModel,
     onNavigateToOtp: () -> Unit,
+    onNavigateToLogin: () -> Unit,
     onBack: () -> Unit
 ) {
     var phoneInput by remember { mutableStateOf("") }
@@ -33,6 +34,30 @@ fun RegisterPhoneScreen(
         if (authState is AuthState.OtpSent) {
             onNavigateToOtp()
         }
+    }
+
+    if (authState is AuthState.PhoneAlreadyRegistered) {
+        AlertDialog(
+            onDismissRequest = { viewModel.resetState() },
+            title = { Text("Already Registered", fontWeight = FontWeight.Bold) },
+            text = { Text("The phone number is already registered on PieceJob.") },
+            confirmButton = {
+                Button(
+                    onClick = { 
+                        viewModel.resetState()
+                        onNavigateToLogin() 
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("SIGN IN")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.resetState() }) {
+                    Text("USE ANOTHER NUMBER")
+                }
+            }
+        )
     }
 
     Scaffold(
