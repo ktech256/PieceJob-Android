@@ -70,9 +70,9 @@ fun ProviderAnalyticsScreen(
             item {
                 StatGrid(
                     listOf(
-                        "Acceptance" to "${((analytics?.acceptanceRate ?: 0.0) * 100).toInt()}%",
-                        "Completion" to "${((analytics?.completionRate ?: 0.0) * 100).toInt()}%",
-                        "Arrival" to "${((analytics?.arrivalRate ?: 0.0) * 100).toInt()}%"
+                        "Acceptance" to "${(analytics?.acceptanceRate ?: 0.0).toInt()}%",
+                        "Completion" to "${(analytics?.completionRate ?: 0.0).toInt()}%",
+                        "Arrival" to "${(analytics?.arrivalRate ?: 0.0).toInt()}%"
                     )
                 )
             }

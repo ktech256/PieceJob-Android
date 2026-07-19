@@ -632,7 +632,7 @@ fun PerformanceCard(rating: Double, ratingCount: Int, isProbation: Boolean, reli
             Spacer(modifier = Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
                 MetricItem("Arrival", "${arrival.toInt()}%", Icons.Default.Timer, Color(0xFF4CAF50))
-                MetricItem("Cancellations", cancellation.toInt().toString(), Icons.Default.Cancel, Color(0xFFD32F2F))
+                MetricItem("Cancellation", "${cancellation.toInt()}%", Icons.Default.Cancel, Color(0xFFD32F2F))
             }
         }
     }
