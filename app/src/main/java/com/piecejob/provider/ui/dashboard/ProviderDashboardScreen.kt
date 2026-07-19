@@ -534,7 +534,7 @@ fun RankingAndBadgesCard(rank: Int, badges: List<String>) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Text("National Ranking", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                    Text("#$rank", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color(0xFF1976D2))
+                    Text(if (rank > 0) "#$rank" else "Not Ranked Yet", fontSize = if (rank > 0) 24.sp else 18.sp, fontWeight = FontWeight.Black, color = Color(0xFF1976D2))
                 }
                 Icon(Icons.Default.TrendingUp, null, tint = Color(0xFF1976D2))
             }
@@ -610,6 +610,14 @@ fun PerformanceCard(rating: Double, ratingCount: Int, isProbation: Boolean, reli
                     }
                 }
             }
+            if (isProbation) {
+                Text(
+                    text = "Rating activates after 5 completed jobs.",
+                    fontSize = 10.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 MetricItem(
@@ -619,11 +627,11 @@ fun PerformanceCard(rating: Double, ratingCount: Int, isProbation: Boolean, reli
                     color = Color(0xFFFFA000)
                 )
                 MetricItem("Reliability", "${reliability.toInt()}%", Icons.Default.Shield, Color(0xFF1976D2))
-                MetricItem("Acceptance", "${(acceptance * 100).toInt()}%", Icons.Default.ThumbUp, Color(0xFF1976D2))
+                MetricItem("Acceptance", "${acceptance.toInt()}%", Icons.Default.ThumbUp, Color(0xFF1976D2))
             }
             Spacer(modifier = Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                MetricItem("Arrival", "${(arrival * 100).toInt()}%", Icons.Default.Timer, Color(0xFF4CAF50))
+                MetricItem("Arrival", "${arrival.toInt()}%", Icons.Default.Timer, Color(0xFF4CAF50))
                 MetricItem("Cancellations", cancellation.toInt().toString(), Icons.Default.Cancel, Color(0xFFD32F2F))
             }
         }
@@ -652,9 +660,9 @@ fun OperationalEfficiencyCard(stats: ProviderStatsDto?, currencySymbol: String) 
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                EfficiencyItem("Acceptance", "${(stats?.acceptanceRate?.times(100))?.toInt() ?: 0}%")
-                EfficiencyItem("Completion", "${(stats?.completionRate?.times(100))?.toInt() ?: 0}%")
-                EfficiencyItem("Arrival", "${(stats?.arrivalRate?.times(100))?.toInt() ?: 0}%")
+                EfficiencyItem("Acceptance", "${stats?.acceptanceRate?.toInt() ?: 0}%")
+                EfficiencyItem("Completion", "${stats?.completionRate?.toInt() ?: 0}%")
+                EfficiencyItem("Arrival", "${stats?.arrivalRate?.toInt() ?: 0}%")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
