@@ -11,6 +11,11 @@ data class ProviderStatsDto(
     val acceptanceRate: Double,
     val completionRate: Double,
     val arrivalRate: Double,
+    val reliabilityScore: Double,
+    val cancellationScore: Double,
+    val onTimeResponseScore: Double,
+    val healthScore: Double,
+    val healthStatus: String,
     val tier: String,
     val tierProgress: Double, // 0.0 to 1.0
     val rating: Double,

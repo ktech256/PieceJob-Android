@@ -296,8 +296,18 @@ fun ProviderDashboardScreen(
             item {
                 PerformanceCard(
                     rating = stats?.rating ?: 0.0,
+                    reliability = stats?.reliabilityScore ?: 100.0,
                     acceptance = stats?.acceptanceRate ?: 0.0,
-                    arrival = stats?.arrivalRate ?: 0.0
+                    arrival = stats?.arrivalRate ?: 0.0,
+                    cancellation = stats?.cancellationScore ?: 0.0
+                )
+            }
+
+            // CARD 2.1: PROVIDER HEALTH SCORE
+            item {
+                HealthScoreCard(
+                    score = stats?.healthScore ?: 100.0,
+                    status = stats?.healthStatus ?: "Excellent"
                 )
             }
 
@@ -486,7 +496,7 @@ fun StatsCard(title: String, mainValue: String, subValues: List<String>, icon: I
 }
 
 @Composable
-fun PerformanceCard(rating: Double, acceptance: Double, arrival: Double) {
+fun PerformanceCard(rating: Double, reliability: Double, acceptance: Double, arrival: Double, cancellation: Double) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -497,8 +507,52 @@ fun PerformanceCard(rating: Double, acceptance: Double, arrival: Double) {
             Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 MetricItem("Rating", String.format("%.1f", rating), Icons.Default.Star, Color(0xFFFFA000))
+                MetricItem("Reliability", "${reliability.toInt()}%", Icons.Default.Shield, Color(0xFF1976D2))
                 MetricItem("Acceptance", "${(acceptance * 100).toInt()}%", Icons.Default.ThumbUp, Color(0xFF1976D2))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
                 MetricItem("Arrival", "${(arrival * 100).toInt()}%", Icons.Default.Timer, Color(0xFF4CAF50))
+                MetricItem("Cancellations", cancellation.toInt().toString(), Icons.Default.Cancel, Color(0xFFD32F2F))
+            }
+        }
+    }
+}
+
+@Composable
+fun HealthScoreCard(score: Double, status: String) {
+    val color = when {
+        score >= 90 -> Color(0xFF4CAF50) // Green
+        score >= 80 -> Color(0xFF1976D2) // Blue
+        score >= 70 -> Color(0xFFFFA000) // Yellow
+        score >= 60 -> Color(0xFFF57C00) // Orange
+        else -> Color(0xFFD32F2F) // Red
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text("Provider Health Score", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color)
+                Text(status, fontSize = 24.sp, fontWeight = FontWeight.Black, color = color)
+            }
+            Box(contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(
+                    progress = (score / 100).toFloat(),
+                    modifier = Modifier.size(64.dp),
+                    color = color,
+                    trackColor = color.copy(alpha = 0.1f),
+                    strokeWidth = 6.dp
+                )
+                Text("${score.toInt()}%", fontWeight = FontWeight.Black, fontSize = 14.sp, color = color)
             }
         }
     }

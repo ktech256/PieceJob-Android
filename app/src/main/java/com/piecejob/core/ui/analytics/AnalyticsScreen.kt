@@ -28,30 +28,140 @@ fun ProviderAnalyticsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
-            .padding(16.dp)
+            .background(Color(0xFFF4F5F7))
     ) {
-        Text("Performance & Insights", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(24.dp))
-
-        if (isLoading) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        // Custom Header
+        Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF121212)).padding(top = 56.dp, bottom = 24.dp, start = 24.dp, end = 24.dp)) {
+            Column {
+                Text("Performance & Insights", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color.White)
+                Text("Enterprise Quality Management", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            }
         }
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        if (isLoading) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Color(0xFFD32F2F))
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Health Score Focus
+            item {
+                HealthScoreCard(
+                    score = analytics?.healthScore ?: 100.0,
+                    status = analytics?.healthStatus ?: "Excellent"
+                )
+            }
+
+            // Core Operations
             item {
                 StatGrid(
                     listOf(
-                        "Jobs" to (analytics?.totalJobsCompleted?.toString() ?: "0"),
-                        "Acceptance" to "${((analytics?.acceptanceRate ?: 0f) * 100).toInt()}%",
-                        "Completion" to "${((analytics?.completionRate ?: 0f) * 100).toInt()}%"
+                        "Accepted" to (analytics?.totalJobsAccepted?.toString() ?: "0"),
+                        "Completed" to (analytics?.totalJobsCompleted?.toString() ?: "0"),
+                        "Cancelled" to (analytics?.totalJobsCancelled?.toString() ?: "0")
                     )
                 )
+            }
+
+            // Efficiency
+            item {
+                StatGrid(
+                    listOf(
+                        "Acceptance" to "${((analytics?.acceptanceRate ?: 0.0) * 100).toInt()}%",
+                        "Completion" to "${((analytics?.completionRate ?: 0.0) * 100).toInt()}%",
+                        "Arrival" to "${((analytics?.arrivalRate ?: 0.0) * 100).toInt()}%"
+                    )
+                )
+            }
+
+            // Rankings
+            item {
+                RankingCard(
+                    national = analytics?.currentRank ?: 0,
+                    city = analytics?.cityRank ?: 0,
+                    province = analytics?.provinceRank ?: 0
+                )
+            }
+
+            // Timeline Info
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Operational Metrics", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        MetricRow("Avg Arrival Time", analytics?.averageArrivalTime ?: "N/A")
+                        MetricRow("Avg Job Duration", analytics?.averageJobDuration ?: "N/A")
+                        MetricRow("Most Requested", analytics?.mostRequestedService ?: "N/A")
+                        MetricRow("Active Since", analytics?.activeSince ?: "N/A")
+                    }
+                }
             }
             
             item {
                 TierProgressionCard(progress = analytics?.tierProgression ?: 0)
             }
+        }
+    }
+}
+
+@Composable
+fun MetricRow(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+        Text(value, fontSize = 12.sp, fontWeight = FontWeight.Black)
+    }
+}
+
+@Composable
+fun RankingCard(national: Int, city: Int, province: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Row(modifier = Modifier.padding(20.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            RankingItem("National", national)
+            RankingItem("Province", province)
+            RankingItem("City", city)
+        }
+    }
+}
+
+@Composable
+fun RankingItem(label: String, rank: Int) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+        Text("#$rank", fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFF1976D2))
+    }
+}
+
+@Composable
+fun HealthScoreCard(score: Double, status: String) {
+    val color = when {
+        score >= 90 -> Color(0xFF4CAF50)
+        score >= 80 -> Color(0xFF1976D2)
+        score >= 70 -> Color(0xFFFFA000)
+        else -> Color(0xFFD32F2F)
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.3f))
+    ) {
+        Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Column {
+                Text("Health Score", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color)
+                Text(status, fontSize = 24.sp, fontWeight = FontWeight.Black, color = color)
+            }
+            Text("${score.toInt()}%", fontSize = 32.sp, fontWeight = FontWeight.Black, color = color)
         }
     }
 }
