@@ -11,10 +11,6 @@ android {
     namespace = "com.piecejob"
     compileSdk = 35
 
-    configurations.all {
-        exclude(group = "com.google.android.gms", module = "play-services-maps")
-    }
-
     defaultConfig {
         applicationId = "com.piecejob"
         minSdk = 24

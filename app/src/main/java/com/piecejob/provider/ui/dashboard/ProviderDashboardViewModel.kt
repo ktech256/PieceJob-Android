@@ -178,7 +178,7 @@ class ProviderDashboardViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            socketManager.providerStatusSyncFlow.collect { data ->
+            socketManager.getProviderStatusSyncFlow().collect { data ->
                 val isOnlineBackend = data.optBoolean("isOnline", false)
                 val statusBackend = data.optString("status", "OFFLINE")
                 Log.d("FORENSIC", "SYNCING_STATUS_FROM_BACKEND | isOnline: $isOnlineBackend | Status: $statusBackend")

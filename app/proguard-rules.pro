@@ -19,3 +19,13 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Keep PieceJob Core communication and socket classes
+-keep class com.piecejob.core.socket.** { *; }
+-keep class com.piecejob.core.communication.** { *; }
+-keep class com.piecejob.core.data.remote.dto.** { *; }
+
+# Keep Dagger Hilt
+-keep class * extends androidx.lifecycle.ViewModel
+-keep class * { @dagger.hilt.android.lifecycle.HiltViewModel <methods>; }
+-keep class * { @javax.inject.Inject <methods>; }

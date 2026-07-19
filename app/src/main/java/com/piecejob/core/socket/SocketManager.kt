@@ -39,7 +39,7 @@ class SocketManager @Inject constructor(
     val repairFcmFlow: SharedFlow<JSONObject> = _repairFcmFlow
 
     private val _providerStatusSyncFlow = MutableSharedFlow<JSONObject>(extraBufferCapacity = 10)
-    val providerStatusSyncFlow: SharedFlow<JSONObject> = _providerStatusSyncFlow
+    fun getProviderStatusSyncFlow(): SharedFlow<JSONObject> = _providerStatusSyncFlow
 
     fun connect(baseUrl: String) {
         if (socket?.connected() == true) return

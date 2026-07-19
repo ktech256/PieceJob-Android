@@ -299,7 +299,7 @@ fun ProviderDashboardScreen(
                     reliability = stats?.reliabilityScore ?: 100.0,
                     acceptance = stats?.acceptanceRate ?: 0.0,
                     arrival = stats?.arrivalRate ?: 0.0,
-                    cancellation = stats?.cancellationScore ?: 0.0
+                    cancellation = stats?.cancellationScore ?: 100.0
                 )
             }
 
@@ -309,6 +309,19 @@ fun ProviderDashboardScreen(
                     score = stats?.healthScore ?: 100.0,
                     status = stats?.healthStatus ?: "Excellent"
                 )
+            }
+
+            // CARD 2.2: RANKINGS & BADGES
+            item {
+                RankingAndBadgesCard(
+                    rank = stats?.rankNational ?: 0,
+                    badges = stats?.recentBadges ?: emptyList()
+                )
+            }
+
+            // CARD 2.3: OPERATIONAL EFFICIENCY
+            item {
+                OperationalEfficiencyCard(stats)
             }
 
             // CARD 3: TIER PROGRESSION
@@ -520,41 +533,62 @@ fun PerformanceCard(rating: Double, reliability: Double, acceptance: Double, arr
 }
 
 @Composable
-fun HealthScoreCard(score: Double, status: String) {
-    val color = when {
-        score >= 90 -> Color(0xFF4CAF50) // Green
-        score >= 80 -> Color(0xFF1976D2) // Blue
-        score >= 70 -> Color(0xFFFFA000) // Yellow
-        score >= 60 -> Color(0xFFF57C00) // Orange
-        else -> Color(0xFFD32F2F) // Red
-    }
-
+fun OperationalEfficiencyCard(stats: ProviderStatsDto?) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.3f))
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text("Provider Health Score", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color)
-                Text(status, fontSize = 24.sp, fontWeight = FontWeight.Black, color = color)
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text("Operational Efficiency", fontSize = 14.sp, fontWeight = FontWeight.Black)
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                EfficiencyItem("Accepted", stats?.jobsAccepted?.toString() ?: "0")
+                EfficiencyItem("Completed", stats?.jobsCompleted?.toString() ?: "0")
+                EfficiencyItem("Cancelled", stats?.cancellationCount?.toString() ?: "0")
             }
-            Box(contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    progress = (score / 100).toFloat(),
-                    modifier = Modifier.size(64.dp),
-                    color = color,
-                    trackColor = color.copy(alpha = 0.1f),
-                    strokeWidth = 6.dp
-                )
-                Text("${score.toInt()}%", fontWeight = FontWeight.Black, fontSize = 14.sp, color = color)
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = Color(0xFFF4F5F7))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                EfficiencyItem("Acceptance", "${(stats?.acceptanceRate?.times(100))?.toInt() ?: 0}%")
+                EfficiencyItem("Completion", "${(stats?.completionRate?.times(100))?.toInt() ?: 0}%")
+                EfficiencyItem("Arrival", "${(stats?.arrivalRate?.times(100))?.toInt() ?: 0}%")
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Financial Performance", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            MetricRow("Lifetime Earnings", "$currencySymbol ${String.format("%.2f", stats?.earningsLifetime ?: 0.0)}")
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Activity Timeline", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            MetricRow("Avg Arrival Time", stats?.averageArrivalTime ?: "N/A")
+            MetricRow("Avg Job Duration", stats?.averageJobDuration ?: "N/A")
+            MetricRow("Most Requested", stats?.mostRequestedService ?: "N/A")
+            MetricRow("Active Since", stats?.activeSince?.split("T")?.get(0) ?: "N/A")
+            MetricRow("Last Active", stats?.lastActive?.split("T")?.get(0) ?: "N/A")
         }
+    }
+}
+
+@Composable
+fun MetricRow(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+        Text(value, fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color(0xFF121212))
+    }
+}
+
+@Composable
+fun EfficiencyItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, fontWeight = FontWeight.Black, fontSize = 18.sp, color = Color(0xFF121212))
+        Text(label, fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
     }
 }
 
