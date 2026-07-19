@@ -406,11 +406,12 @@ fun AssignedProviderPanel(
                     fontSize = 20.sp,
                     lineHeight = 22.sp
                 )
+                val isNew = (job.providerInfo?.ratingCount ?: 0) < 5
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(14.dp))
                     Text(
-                        text = " ${job.providerInfo?.ratingAvg ?: "4.9"} • ${job.providerInfo?.jobsCompleted ?: "12"} Jobs",
-                        color = Color.Gray,
+                        text = if (isNew) " ⭐⭐⭐⭐⭐ • New Provider" else " ${job.providerInfo?.ratingAvg ?: "5.0"} • ${job.providerInfo?.jobsCompleted ?: "0"} Jobs",
+                        color = if (isNew) Color(0xFF1976D2) else Color.Gray,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )

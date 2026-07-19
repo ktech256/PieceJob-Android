@@ -73,6 +73,7 @@ data class TopProviderDto(
     val name: String,
     val photo: String?,
     val rating: Double,
+    val ratingCount: Int,
     val tier: String,
     val services: List<String>,
     val distance: Double? = null

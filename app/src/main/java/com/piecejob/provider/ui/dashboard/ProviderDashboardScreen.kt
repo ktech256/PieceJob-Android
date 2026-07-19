@@ -297,6 +297,8 @@ fun ProviderDashboardScreen(
             item {
                 PerformanceCard(
                     rating = stats?.rating ?: 0.0,
+                    ratingCount = stats?.ratingCount ?: 0,
+                    isProbation = stats?.isProbationActive ?: true,
                     reliability = stats?.reliabilityScore ?: 100.0,
                     acceptance = stats?.acceptanceRate ?: 0.0,
                     arrival = stats?.arrivalRate ?: 0.0,
@@ -587,17 +589,35 @@ fun StatsCard(title: String, mainValue: String, subValues: List<String>, icon: I
 }
 
 @Composable
-fun PerformanceCard(rating: Double, reliability: Double, acceptance: Double, arrival: Double, cancellation: Double) {
+fun PerformanceCard(rating: Double, ratingCount: Int, isProbation: Boolean, reliability: Double, acceptance: Double, arrival: Double, cancellation: Double) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Text("Performance Overview", fontSize = 14.sp, fontWeight = FontWeight.Black)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Performance Overview", fontSize = 14.sp, fontWeight = FontWeight.Black)
+                if (isProbation) {
+                    Surface(color = Color(0xFFE3F2FD), shape = RoundedCornerShape(8.dp)) {
+                        Text(
+                            text = "New Provider ($ratingCount/5 jobs)",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF1976D2)
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                MetricItem("Rating", String.format("%.1f", rating), Icons.Default.Star, Color(0xFFFFA000))
+                MetricItem(
+                    label = if (isProbation) "No ratings yet" else "Rating",
+                    value = if (isProbation) "⭐⭐⭐⭐⭐" else String.format("%.1f", rating),
+                    icon = Icons.Default.Star,
+                    color = Color(0xFFFFA000)
+                )
                 MetricItem("Reliability", "${reliability.toInt()}%", Icons.Default.Shield, Color(0xFF1976D2))
                 MetricItem("Acceptance", "${(acceptance * 100).toInt()}%", Icons.Default.ThumbUp, Color(0xFF1976D2))
             }

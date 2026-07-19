@@ -26,6 +26,8 @@ data class ProviderStatsDto(
     val tier: String,
     val tierProgress: Double, // 0.0 to 1.0
     val rating: Double,
+    val ratingCount: Int,
+    val isProbationActive: Boolean,
     val rankNational: Int,
     val rankProvince: Int,
     val rankCity: Int,
@@ -159,6 +161,7 @@ data class ProviderDto(
     val firstName: String?,
     val lastName: String?,
     val ratingAvg: Double,
+    val ratingCount: Int,
     val jobsCompleted: Int,
     val location: LocationDto,
     val isOnline: Boolean

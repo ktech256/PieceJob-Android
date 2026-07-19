@@ -450,7 +450,21 @@ fun SearchResultItem(result: Any, onClick: (Any) -> Unit) {
 
     ListItem(
         headlineContent = { Text(name, fontWeight = FontWeight.Bold) },
-        supportingContent = { Text(type, fontSize = 12.sp, color = Color.Gray) },
+        supportingContent = { 
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(type, fontSize = 12.sp, color = Color.Gray)
+                if (result is com.piecejob.core.data.remote.dto.TopProviderDto) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    val isNew = result.ratingCount < 5
+                    if (isNew) {
+                        Text("⭐ New Provider", fontSize = 11.sp, color = Color(0xFF1976D2), fontWeight = FontWeight.Bold)
+                    } else {
+                        Icon(Icons.Default.Star, null, tint = Color(0xFFFFA000), modifier = Modifier.size(12.dp))
+                        Text(String.format(" %.1f", result.rating), fontSize = 12.sp, color = Color(0xFFFFA000), fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        },
         leadingContent = { Icon(icon, contentDescription = null, tint = if (result is com.piecejob.core.data.remote.dto.SavedLocationDto) Color(0xFFFFA000) else Color.LightGray) },
         modifier = Modifier.clickable { onClick(result) }.padding(horizontal = 24.dp)
     )
@@ -926,9 +940,15 @@ fun TopProviderCard(provider: com.piecejob.core.data.remote.dto.TopProviderDto) 
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(provider.name, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, maxLines = 1)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(12.dp))
-                Text(" ${String.format("%.1f", provider.rating)} • ${provider.tier}", fontSize = 11.sp, color = Color(0xFFFFA000), fontWeight = FontWeight.Bold)
+            val isNew = provider.ratingCount < 5
+            if (isNew) {
+                Text("⭐⭐⭐⭐⭐", fontSize = 11.sp, color = Color(0xFFFFA000))
+                Text("New Provider", fontSize = 11.sp, color = Color(0xFF1976D2), fontWeight = FontWeight.Bold)
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(12.dp))
+                    Text(" ${String.format("%.1f", provider.rating)} • ${provider.tier}", fontSize = 11.sp, color = Color(0xFFFFA000), fontWeight = FontWeight.Bold)
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
             val distLabel = if (provider.distance != null) {

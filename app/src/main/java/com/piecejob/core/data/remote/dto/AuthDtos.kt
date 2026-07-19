@@ -73,6 +73,7 @@ data class UserDto(
     val countryCode: String,
     val tier: String? = null,
     val ratingAvg: Double? = null,
+    val ratingCount: Int? = null,
     val isShadowBanned: Boolean? = false,
     val profilePhoto: String? = null,
     val city: String? = null,

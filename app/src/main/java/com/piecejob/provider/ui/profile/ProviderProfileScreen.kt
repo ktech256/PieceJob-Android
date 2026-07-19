@@ -37,9 +37,11 @@ fun ProviderProfileScreen(
     ) {
         item {
             ProfileHeader(
-                name = "Provider Name",
+                name = "${stats?.tier ?: "BRONZE"} PARTNER",
                 tier = stats?.tier ?: "BRONZE",
                 rating = stats?.rating ?: 0.0,
+                ratingCount = stats?.ratingCount ?: 0,
+                isProbation = stats?.isProbationActive ?: true,
                 isVerified = stats?.verificationStatus == "APPROVED"
             )
         }
@@ -97,7 +99,7 @@ fun ProviderProfileScreen(
 }
 
 @Composable
-fun ProfileHeader(name: String, tier: String, rating: Double, isVerified: Boolean) {
+fun ProfileHeader(name: String, tier: String, rating: Double, ratingCount: Int, isProbation: Boolean, isVerified: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -124,8 +126,12 @@ fun ProfileHeader(name: String, tier: String, rating: Double, isVerified: Boolea
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = "•", color = Color.Gray)
             Spacer(modifier = Modifier.width(8.dp))
-            Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(14.dp))
-            Text(text = String.format("%.1f", rating), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            if (isProbation) {
+                Text(text = "NEW PROVIDER ($ratingCount/5)", color = Color(0xFF1976D2), fontWeight = FontWeight.Black, fontSize = 12.sp)
+            } else {
+                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(14.dp))
+                Text(text = String.format("%.1f", rating), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))

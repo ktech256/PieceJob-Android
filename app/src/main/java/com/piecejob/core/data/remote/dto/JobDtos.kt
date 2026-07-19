@@ -71,6 +71,7 @@ data class ProviderInfoDto(
     @SerializedName("lastName") val lastName: String,
     @SerializedName("phoneNumber") val phoneNumber: String? = null,
     @SerializedName("ratingAvg") val ratingAvg: Double? = null,
+    @SerializedName("ratingCount") val ratingCount: Int? = null,
     @SerializedName("jobsCompleted") val jobsCompleted: Int? = null,
     @SerializedName("profilePicture") val profilePicture: String? = null
 )
