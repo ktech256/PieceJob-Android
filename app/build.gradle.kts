@@ -11,6 +11,10 @@ android {
     namespace = "com.piecejob"
     compileSdk = 35
 
+    configurations.all {
+        exclude(group = "com.google.android.gms", module = "play-services-maps")
+    }
+
     defaultConfig {
         applicationId = "com.piecejob"
         minSdk = 24
@@ -92,7 +96,9 @@ dependencies {
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
     implementation(libs.play.services.places)
-    implementation(libs.google.navigation)
+    implementation(libs.google.navigation) {
+        exclude(group = "com.google.android.gms", module = "play-services-maps")
+    }
 
     // Socket.io
     implementation(libs.socket.io)

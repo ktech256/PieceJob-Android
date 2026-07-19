@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.piecejob.core.data.remote.dto.JobDto
+import com.piecejob.core.data.remote.dto.ProviderStatsDto
 import com.piecejob.core.ui.components.PieceJobButton
 import com.piecejob.core.ui.components.PieceJobOutlinedButton
 
@@ -321,7 +322,7 @@ fun ProviderDashboardScreen(
 
             // CARD 2.3: OPERATIONAL EFFICIENCY
             item {
-                OperationalEfficiencyCard(stats)
+                OperationalEfficiencyCard(stats, currencySymbol)
             }
 
             // CARD 3: TIER PROGRESSION
@@ -482,6 +483,83 @@ fun ReferralDashboardCard(campaign: com.piecejob.core.data.remote.dto.ReferralCa
 }
 
 @Composable
+fun HealthScoreCard(score: Double, status: String) {
+    val color = when {
+        score >= 90 -> Color(0xFF4CAF50) // Green
+        score >= 80 -> Color(0xFF1976D2) // Blue
+        score >= 70 -> Color(0xFFFFA000) // Yellow
+        score >= 60 -> Color(0xFFF57C00) // Orange
+        else -> Color(0xFFD32F2F) // Red
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text("Provider Health Score", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color)
+                Text(status, fontSize = 24.sp, fontWeight = FontWeight.Black, color = color)
+            }
+            Box(contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(
+                    progress = { (score / 100).toFloat() },
+                    modifier = Modifier.size(64.dp),
+                    color = color,
+                    trackColor = color.copy(alpha = 0.1f),
+                    strokeWidth = 6.dp
+                )
+                Text("${score.toInt()}%", fontWeight = FontWeight.Black, fontSize = 14.sp, color = color)
+            }
+        }
+    }
+}
+
+@Composable
+fun RankingAndBadgesCard(rank: Int, badges: List<String>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Column {
+                    Text("National Ranking", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    Text("#$rank", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color(0xFF1976D2))
+                }
+                Icon(Icons.Default.TrendingUp, null, tint = Color(0xFF1976D2))
+            }
+            if (badges.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Recent Achievements", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    badges.forEach { badge ->
+                        Surface(
+                            color = Color(0xFFFFF8E1),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.WorkspacePremium, null, tint = Color(0xFFFFA000), modifier = Modifier.size(12.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(badge, fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFFE65100))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun StatsCard(title: String, mainValue: String, subValues: List<String>, icon: ImageVector, color: Color) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -533,7 +611,7 @@ fun PerformanceCard(rating: Double, reliability: Double, acceptance: Double, arr
 }
 
 @Composable
-fun OperationalEfficiencyCard(stats: ProviderStatsDto?) {
+fun OperationalEfficiencyCard(stats: ProviderStatsDto?, currencySymbol: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
