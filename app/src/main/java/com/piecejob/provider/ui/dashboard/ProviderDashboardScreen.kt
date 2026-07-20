@@ -296,21 +296,21 @@ fun ProviderDashboardScreen(
             // CARD 2: PERFORMANCE OVERVIEW
             item {
                 PerformanceCard(
-                    rating = stats?.rating ?: 0.0,
+                    rating = stats?.rating,
                     ratingCount = stats?.ratingCount ?: 0,
                     isProbation = stats?.isProbationActive ?: true,
-                    reliability = stats?.reliabilityScore ?: 100.0,
-                    acceptance = stats?.acceptanceRate ?: 0.0,
-                    arrival = stats?.arrivalRate ?: 0.0,
-                    cancellation = stats?.cancellationScore ?: 100.0
+                    reliability = stats?.reliabilityScore,
+                    acceptance = stats?.acceptanceRate,
+                    arrival = stats?.arrivalRate,
+                    cancellation = stats?.cancellationScore
                 )
             }
 
             // CARD 2.1: PROVIDER HEALTH SCORE
             item {
                 HealthScoreCard(
-                    score = stats?.healthScore ?: 100.0,
-                    status = stats?.healthStatus ?: "Excellent"
+                    score = stats?.healthScore,
+                    status = stats?.healthStatus ?: "Pending"
                 )
             }
 
@@ -485,8 +485,9 @@ fun ReferralDashboardCard(campaign: com.piecejob.core.data.remote.dto.ReferralCa
 }
 
 @Composable
-fun HealthScoreCard(score: Double, status: String) {
+fun HealthScoreCard(score: Double?, status: String) {
     val color = when {
+        score == null -> Color.Gray
         score >= 90 -> Color(0xFF4CAF50) // Green
         score >= 80 -> Color(0xFF1976D2) // Blue
         score >= 70 -> Color(0xFFFFA000) // Yellow
@@ -505,19 +506,19 @@ fun HealthScoreCard(score: Double, status: String) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text("Provider Health Score", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color)
-                Text(status, fontSize = 24.sp, fontWeight = FontWeight.Black, color = color)
+                Text(status, fontSize = 20.sp, fontWeight = FontWeight.Black, color = color)
             }
             Box(contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(
-                    progress = { (score / 100).toFloat() },
+                    progress = { if (score == null) 0f else (score / 100).toFloat() },
                     modifier = Modifier.size(64.dp),
                     color = color,
                     trackColor = color.copy(alpha = 0.1f),
                     strokeWidth = 6.dp
                 )
-                Text("${score.toInt()}%", fontWeight = FontWeight.Black, fontSize = 14.sp, color = color)
+                Text(if (score == null) "N/A" else "${score.toInt()}%", fontWeight = FontWeight.Black, fontSize = 14.sp, color = color)
             }
         }
     }
@@ -589,7 +590,7 @@ fun StatsCard(title: String, mainValue: String, subValues: List<String>, icon: I
 }
 
 @Composable
-fun PerformanceCard(rating: Double, ratingCount: Int, isProbation: Boolean, reliability: Double, acceptance: Double, arrival: Double, cancellation: Double) {
+fun PerformanceCard(rating: Double?, ratingCount: Int, isProbation: Boolean, reliability: Double?, acceptance: Double?, arrival: Double?, cancellation: Double?) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -622,17 +623,17 @@ fun PerformanceCard(rating: Double, ratingCount: Int, isProbation: Boolean, reli
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 MetricItem(
                     label = if (isProbation) "No ratings yet" else "Rating",
-                    value = if (isProbation) "⭐⭐⭐⭐⭐" else String.format("%.1f", rating),
+                    value = if (isProbation || rating == null) "—" else String.format("%.1f", rating),
                     icon = Icons.Default.Star,
                     color = Color(0xFFFFA000)
                 )
-                MetricItem("Reliability", "${reliability.toInt()}%", Icons.Default.Shield, Color(0xFF1976D2))
-                MetricItem("Acceptance", "${acceptance.toInt()}%", Icons.Default.ThumbUp, Color(0xFF1976D2))
+                MetricItem("Reliability", if (reliability == null) "N/A" else "${reliability.toInt()}%", Icons.Default.Shield, Color(0xFF1976D2))
+                MetricItem("Acceptance", if (acceptance == null) "N/A" else "${acceptance.toInt()}%", Icons.Default.ThumbUp, Color(0xFF1976D2))
             }
             Spacer(modifier = Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                MetricItem("Arrival", "${arrival.toInt()}%", Icons.Default.Timer, Color(0xFF4CAF50))
-                MetricItem("Cancellation", "${cancellation.toInt()}%", Icons.Default.Cancel, Color(0xFFD32F2F))
+                MetricItem("Arrival", if (arrival == null) "N/A" else "${arrival.toInt()}%", Icons.Default.Timer, Color(0xFF4CAF50))
+                MetricItem("Cancellation", if (cancellation == null) "N/A" else "${cancellation.toInt()}%", Icons.Default.Cancel, Color(0xFFD32F2F))
             }
         }
     }
@@ -660,9 +661,9 @@ fun OperationalEfficiencyCard(stats: ProviderStatsDto?, currencySymbol: String) 
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                EfficiencyItem("Acceptance", "${stats?.acceptanceRate?.toInt() ?: 0}%")
-                EfficiencyItem("Completion", "${stats?.completionRate?.toInt() ?: 0}%")
-                EfficiencyItem("Arrival", "${stats?.arrivalRate?.toInt() ?: 0}%")
+                EfficiencyItem("Acceptance", if (stats?.acceptanceRate == null) "N/A" else "${stats.acceptanceRate.toInt()}%")
+                EfficiencyItem("Completion", if (stats?.completionRate == null) "N/A" else "${stats.completionRate.toInt()}%")
+                EfficiencyItem("Arrival", if (stats?.arrivalRate == null) "N/A" else "${stats.arrivalRate.toInt()}%")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
