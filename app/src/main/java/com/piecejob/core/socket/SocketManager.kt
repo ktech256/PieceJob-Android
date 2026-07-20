@@ -105,6 +105,18 @@ class SocketManager @Inject constructor(
                 }
             }
 
+            socket?.on("JOB_ASSIGNED_ELSEWHERE") { args ->
+                try {
+                    val data = args[0] as JSONObject
+                    Log.d("FORENSIC", "GLOBAL_SOCKET_RECEIVED | JOB_ASSIGNED_ELSEWHERE | Job: ${data.optString("jobId")}")
+                    // Signal dismissal by adding a special field
+                    data.put("termination", true)
+                    _broadcastEventFlow.tryEmit(data)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in JOB_ASSIGNED_ELSEWHERE listener", e)
+                }
+            }
+
             socket?.on("JOB_ACCEPTED") { args ->
                 try {
                     val data = args[0] as JSONObject

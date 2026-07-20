@@ -73,51 +73,69 @@ class ProviderMainViewModel @Inject constructor(
     }
 
     private fun setupSocketListeners() {
-        socketManager.onNewBroadcast { data ->
-            android.util.Log.d("FCM_AUDIT", "ENTRY: setupSocketListeners -> onNewBroadcast")
-            android.util.Log.d("SOCKET_AUDIT", "NEW_JOB_BROADCAST received via Socket: $data")
-            val incomingJob = IncomingJob(
-                jobId = data.optString("jobId"),
-                serviceCode = data.optString("serviceCode", "Service Request"),
-                serviceName = data.optString("serviceName"),
-                customerName = data.optString("recipientName"),
-                address = data.optString("address").takeIf { it.isNotEmpty() }
-                    ?: data.optJSONObject("location")?.optString("address").takeIf { it?.isNotEmpty() == true }
-                    ?: "Nearby Location",
-                distance = data.optString("distance").takeIf { it.isNotEmpty() } ?: "Nearby",
-                expiresAt = System.currentTimeMillis() + 60000
-            )
-            android.util.Log.d("FCM_AUDIT", "Triggering banner display for Job ${incomingJob.jobId}")
-            notificationState.showJobRequest(incomingJob)
-            android.util.Log.d("FCM_AUDIT", "Triggering AlertManager via Socket")
-            alertManager.start()
+        viewModelScope.launch {
+            socketManager.broadcastEventFlow.collect { data ->
+                val jobId = data.optString("jobId")
+                
+                if (data.optBoolean("termination", false)) {
+                    android.util.Log.d("ACCEPT_FLOW", "TERMINATION Signal Received via Socket for Job: $jobId")
+                    if (notificationState.activeJobRequest.value?.jobId == jobId) {
+                        notificationState.dismissJobRequest()
+                        alertManager.stop()
+                    }
+                } else {
+                    android.util.Log.d("FCM_AUDIT", "NEW_JOB_BROADCAST received via Flow: $data")
+                    val incomingJob = IncomingJob(
+                        jobId = jobId,
+                        serviceCode = data.optString("serviceCode", "Service Request"),
+                        serviceName = data.optString("serviceName"),
+                        customerName = data.optString("recipientName"),
+                        address = data.optString("address").takeIf { it.isNotEmpty() }
+                            ?: data.optJSONObject("location")?.optString("address").takeIf { it?.isNotEmpty() == true }
+                            ?: "Nearby Location",
+                        distance = data.optString("distance").takeIf { it.isNotEmpty() } ?: "Nearby",
+                        expiresAt = System.currentTimeMillis() + 60000
+                    )
+                    notificationState.showJobRequest(incomingJob)
+                    alertManager.start()
+                }
+            }
         }
     }
 
     fun acceptJob(jobId: String) {
         viewModelScope.launch {
+            android.util.Log.d("ACCEPT_FLOW", "Accept Button Clicked for Job: $jobId")
+            // Immediate UI/Alert cleanup
+            alertManager.stop()
             notificationState.setAccepting(true)
-            val res = jobRepository.acceptJob(jobId)
-            if (res.success && res.data != null) {
-                notificationState.dismissJobRequest()
-                alertManager.stop()
+            
+            try {
+                val res = jobRepository.acceptJob(jobId)
+                android.util.Log.d("ACCEPT_FLOW", "Accept API Result: ${res.success}")
                 
-                val job = res.data
-                if (job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING" || job.priceNegotiationRequired == true || job.photoSharingRequired == true) {
-                    // Navigate to Negotiation Session
-                    _navigationEvent.send("NEGOTIATION:${jobId}:${job.customerId}")
+                if (res.success && res.data != null) {
+                    notificationState.dismissJobRequest()
+                    val job = res.data
+                    if (job.status == "PROVIDER_ACCEPTED" || job.priceStatus == "PENDING" || job.priceNegotiationRequired == true || job.photoSharingRequired == true) {
+                        _navigationEvent.send("NEGOTIATION:${jobId}:${job.customerId}")
+                    } else {
+                        _navigationEvent.send("TRACKING:${jobId}")
+                    }
                 } else {
-                    // Navigate to Tracking for Dispatch
-                    _navigationEvent.send("TRACKING:${jobId}")
+                    android.util.Log.e("ACCEPT_FLOW", "Accept failed: ${res.message}")
+                    notificationState.setAccepting(false)
                 }
-            } else {
+            } catch (e: Exception) {
+                android.util.Log.e("ACCEPT_FLOW", "Accept CRASH: ${e.message}", e)
                 notificationState.setAccepting(false)
             }
         }
     }
 
     fun declineJob(jobId: String) {
-        notificationState.dismissJobRequest()
+        android.util.Log.d("ACCEPT_FLOW", "Decline Button Clicked for Job: $jobId")
         alertManager.stop()
+        notificationState.dismissJobRequest()
     }
 }
