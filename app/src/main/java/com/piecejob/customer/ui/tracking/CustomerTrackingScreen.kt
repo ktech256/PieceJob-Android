@@ -470,7 +470,7 @@ fun AssignedProviderPanel(
         if (job.status == "ACCEPTED" || job.status == "EN_ROUTE" || job.status == "ARRIVED" || job.status == "STARTED") {
             Button(
                 onClick = {
-                    val trackingLink = "https://track.piecejob.co/${job.trackingToken ?: ""}"
+                    val trackingLink = "https://piecejob.co/track/${job.trackingToken ?: ""}"
                     val shareMsg = "Track your PieceJob provider here: $trackingLink"
                     val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                         type = "text/plain"

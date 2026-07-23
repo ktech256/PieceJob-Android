@@ -68,8 +68,31 @@ fun CustomerDashboardScreen(
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
 
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                android.util.Log.d("FORENSIC", "DASHBOARD_RESUMED | Refreshing data")
+                viewModel.refresh()
+                viewModel.loadActiveJob()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.loadActiveJob()
+    }
+
+    // Auto-Navigation to Tracking if job is in a trackable state
+    LaunchedEffect(activeJob) {
+        val job = activeJob ?: return@LaunchedEffect
+        val trackableStatuses = listOf("ACCEPTED", "EN_ROUTE", "ARRIVED", "STARTED", "IN_PROGRESS")
+        if (trackableStatuses.contains(job.status)) {
+            android.util.Log.d("FORENSIC", "DASHBOARD_AUTO_NAV | Auto-navigating to tracking for Job: ${job.id}")
+            onNavigateToTracking(job.id)
+        }
     }
 
     var selectedServiceForDetails by remember { mutableStateOf<ServiceDto?>(null) }

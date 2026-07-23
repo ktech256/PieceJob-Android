@@ -455,41 +455,68 @@ fun RecipientSelectionStep(viewModel: BookingViewModel) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     var activeTab by remember { mutableStateOf(0) } // 0: Saved, 1: Manual
-    var recipientName by remember { mutableStateOf("") }
-    var recipientPhone by remember { mutableStateOf("") }
+    var recipientName by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var recipientPhone by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
 
     val contactLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.PickContact()
     ) { uri ->
-        uri?.let {
+        uri?.let { contactUri ->
             val contentResolver = context.contentResolver
-            val cursor = contentResolver.query(it, null, null, null, null)
-            cursor?.use { c ->
-                if (c.moveToFirst()) {
-                    val nameIndex = c.getColumnIndex(android.provider.ContactsContract.Contacts.DISPLAY_NAME)
-                    val idIndex = c.getColumnIndex(android.provider.ContactsContract.Contacts._ID)
-                    val name = if (nameIndex >= 0) c.getString(nameIndex) else ""
-                    val id = if (idIndex >= 0) c.getString(idIndex) else ""
+            try {
+                contentResolver.query(contactUri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idIndex = cursor.getColumnIndex(android.provider.ContactsContract.Contacts._ID)
+                        val nameIndex = cursor.getColumnIndex(android.provider.ContactsContract.Contacts.DISPLAY_NAME)
+                        
+                        val id = if (idIndex >= 0) cursor.getString(idIndex) else null
+                        val name = if (nameIndex >= 0) cursor.getString(nameIndex) else ""
 
-                    recipientName = name
+                        recipientName = name
 
-                    // Fetch Phone
-                    val pCursor = contentResolver.query(
-                        android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                        null,
-                        android.provider.ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
-                        arrayOf(id),
-                        null
-                    )
-                    pCursor?.use { pc ->
-                        if (pc.moveToFirst()) {
-                            val pIndex = pc.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
-                            recipientPhone = if (pIndex >= 0) pc.getString(pIndex) else ""
+                        if (id != null) {
+                            // Query for phone numbers
+                            contentResolver.query(
+                                android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                                null,
+                                android.provider.ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                                arrayOf(id),
+                                null
+                            )?.use { pCursor ->
+                                if (pCursor.moveToFirst()) {
+                                    val pIndex = pCursor.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
+                                    if (pIndex >= 0) {
+                                        recipientPhone = pCursor.getString(pIndex)
+                                    }
+                                }
+                            }
                         }
+                        activeTab = 1 // Switch to manual to show the imported details
                     }
-                    activeTab = 1 // Switch to manual to show the imported details
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("CONTACT_PICKER", "Error picking contact", e)
+                android.widget.Toast.makeText(context, "Failed to load contact details", android.widget.Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            contactLauncher.launch(null)
+        } else {
+            android.widget.Toast.makeText(context, "Permission required to access contacts", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun pickContact() {
+        val permission = android.Manifest.permission.READ_CONTACTS
+        if (androidx.core.content.ContextCompat.checkSelfPermission(context, permission) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            contactLauncher.launch(null)
+        } else {
+            permissionLauncher.launch(permission)
         }
     }
 
@@ -541,9 +568,12 @@ fun RecipientSelectionStep(viewModel: BookingViewModel) {
                             Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Person, contentDescription = null, tint = Color.Gray)
                                 Spacer(modifier = Modifier.width(16.dp))
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(recipient.name, fontWeight = FontWeight.Bold)
                                     Text(recipient.phone, fontSize = 12.sp, color = Color.Gray)
+                                }
+                                IconButton(onClick = { recipient.id?.let { viewModel.deleteRecipient(it) } }) {
+                                    Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = Color.LightGray)
                                 }
                             }
                         }
@@ -553,7 +583,7 @@ fun RecipientSelectionStep(viewModel: BookingViewModel) {
                 Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
                     PieceJobOutlinedButton(
                         text = "CHOOSE FROM CONTACTS",
-                        onClick = { contactLauncher.launch(null) },
+                        onClick = { pickContact() },
                         modifier = Modifier.fillMaxWidth(),
                         icon = Icons.Default.ContactPage
                     )
@@ -915,6 +945,7 @@ fun PaymentWebViewStep(viewModel: BookingViewModel) {
 fun getStepTitle(step: BookingStep): String {
     return when (step) {
         BookingStep.ADDRESS_SELECTION -> "Select Location"
+        BookingStep.RECIPIENT_CHOICE -> "Who needs help?"
         BookingStep.RECIPIENT_SELECTION -> "Service Recipient"
         BookingStep.CATEGORY_SELECTION -> "Select Category"
         BookingStep.SERVICE_SELECTION -> "Select Service"

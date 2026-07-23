@@ -15,6 +15,7 @@ import com.piecejob.core.data.repository.ServiceRepository
 import com.piecejob.core.data.repository.ProviderRepository
 import com.piecejob.core.data.repository.SettingsRepository
 import com.piecejob.core.data.remote.dto.ProviderDto
+import com.piecejob.core.data.remote.dto.RecipientDto
 import com.piecejob.core.data.remote.PaymentMethodDto
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
@@ -352,6 +353,11 @@ class BookingViewModel @Inject constructor(
     }
 
     fun confirmRecipient() {
+        if (_currentStep.value == BookingStep.RECIPIENT_SELECTION) {
+            _currentStep.value = BookingStep.CATEGORY_SELECTION
+            return
+        }
+
         val currentGps = _currentGpsCoordinates.value
         val selectedCoords = selectedCoordinates.value
 
@@ -383,6 +389,17 @@ class BookingViewModel @Inject constructor(
             if (res.success) {
                 savedRecipients.value = res.data ?: emptyList()
             }
+        }
+    }
+
+    fun deleteRecipient(recipientId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val res = userRepository.deleteRecipient(recipientId)
+            if (res.success) {
+                savedRecipients.value = res.data ?: emptyList()
+            }
+            _isLoading.value = false
         }
     }
 
@@ -566,7 +583,8 @@ class BookingViewModel @Inject constructor(
 
     fun previousStep() {
         when (_currentStep.value) {
-            BookingStep.RECIPIENT_SELECTION -> _currentStep.value = BookingStep.ADDRESS_SELECTION
+            BookingStep.RECIPIENT_CHOICE -> _currentStep.value = BookingStep.ADDRESS_SELECTION
+            BookingStep.RECIPIENT_SELECTION -> _currentStep.value = BookingStep.RECIPIENT_CHOICE
             BookingStep.CATEGORY_SELECTION -> _currentStep.value = if (isForSomeoneElse.value) BookingStep.RECIPIENT_SELECTION else BookingStep.ADDRESS_SELECTION
             BookingStep.SERVICE_SELECTION -> _currentStep.value = BookingStep.CATEGORY_SELECTION
             BookingStep.BOOKING_FEE -> _currentStep.value = BookingStep.SERVICE_SELECTION

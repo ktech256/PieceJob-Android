@@ -127,6 +127,9 @@ interface PieceJobApi {
     @GET("users/recipients")
     suspend fun getSavedRecipients(): ApiResponse<List<RecipientDto>>
 
+    @DELETE("users/recipients/{id}")
+    suspend fun deleteRecipient(@Path("id") id: String): ApiResponse<List<RecipientDto>>
+
     @PATCH("users/privacy")
     suspend fun updatePrivacy(@Body request: PrivacySettingsDto): ApiResponse<PrivacySettingsDto>
 

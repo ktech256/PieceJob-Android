@@ -53,6 +53,18 @@ fun ProviderMainScreen(
     val activeJobRequest by viewModel.notificationState.activeJobRequest.collectAsState()
     val isAccepting by viewModel.notificationState.isAccepting.collectAsState()
 
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                android.util.Log.d("FORENSIC", "PROVIDER_MAIN_SCREEN_RESUMED | Refreshing active job")
+                viewModel.refreshActiveJob()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { event ->
             Log.d("NavGraphTrace", "Auto-navigating: $event")

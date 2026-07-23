@@ -202,6 +202,14 @@ class UserRepository @Inject constructor(
         }
     }
 
+    suspend fun deleteRecipient(recipientId: String): ApiResponse<List<RecipientDto>> {
+        return try {
+            api.deleteRecipient(recipientId)
+        } catch (e: Exception) {
+            ApiResponse(false, e.message, null, ApiError("500", e.message ?: "Unknown error"))
+        }
+    }
+
     suspend fun updatePrivacy(profileVisibility: String, shareLocation: Boolean, dataSharing: Boolean, marketingPreferences: Boolean): ApiResponse<PrivacySettingsDto> {
         return try {
             api.updatePrivacy(PrivacySettingsDto(profileVisibility, shareLocation, dataSharing, marketingPreferences))

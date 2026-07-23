@@ -294,12 +294,42 @@ class CustomerDashboardViewModel @Inject constructor(
     }
 
     fun loadActiveJob() {
-        // Redundant call removed. loadDashboard() already fetches active jobs.
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val response = jobRepository.getActiveJob()
+                if (response.success && response.data != null) {
+                    val job = response.data
+                    _activeJob.value = job
+                    
+                    // Also update activeJobs list if needed
+                    val currentList = _activeJobs.value.toMutableList()
+                    val idx = currentList.indexOfFirst { it.id == job.id }
+                    if (idx != -1) {
+                        currentList[idx] = job
+                    } else {
+                        currentList.add(0, job)
+                    }
+                    _activeJobs.value = currentList
+                    
+                    Log.d("FORENSIC", "VM | Active job synced: ${job.id} | Status: ${job.status}")
+                }
+            } catch (e: Exception) {
+                Log.e("FORENSIC", "VM | loadActiveJob Error", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
 
     fun loadServices(gender: String? = null, lat: Double? = null, lng: Double? = null) {
         viewModelScope.launch {
             performServiceLoad(gender, lat, lng)
         }
+    }
+
+    fun refresh() {
+        Log.d("FORENSIC", "VM | Refreshing Dashboard")
+        loadDashboard(lastLoadedLocation?.latitude, lastLoadedLocation?.longitude)
     }
 }

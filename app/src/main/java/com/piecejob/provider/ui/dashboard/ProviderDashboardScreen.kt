@@ -52,6 +52,18 @@ fun ProviderDashboardScreen(
     
     val context = LocalContext.current
 
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                android.util.Log.d("FORENSIC", "PROVIDER_DASHBOARD_RESUMED | Refreshing data")
+                viewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     // ✅ Refresh data every time we return to dashboard to catch active job state
     LaunchedEffect(Unit) {
         viewModel.refresh()

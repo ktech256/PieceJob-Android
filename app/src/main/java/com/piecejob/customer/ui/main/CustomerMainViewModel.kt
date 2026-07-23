@@ -34,6 +34,11 @@ class CustomerMainViewModel @Inject constructor(
         }
     }
 
+    fun refreshActiveJob() {
+        android.util.Log.d("FORENSIC", "MainVM | Explicit refresh requested")
+        checkForActiveJob()
+    }
+
     private fun checkForActiveJob() {
         viewModelScope.launch {
             val response = jobRepository.getActiveJob()
