@@ -388,6 +388,7 @@ fun AssignedProviderPanel(
     onCallOpen: (String, String, String, String?) -> Unit,
     onSosTrigger: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -452,7 +453,7 @@ fun AssignedProviderPanel(
                 }
                 
                 FilledIconButton(
-                    onClick = { if (!isTerminalState) { job?.providerId?.let { onChatOpen(it) } } },
+                    onClick = { if (!isTerminalState) { job.providerId?.let { onChatOpen(it) } } },
                     modifier = Modifier.size(48.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = if (isTerminalState) Color.LightGray else Color(0xFFE3F2FD)
@@ -464,8 +465,31 @@ fun AssignedProviderPanel(
             }
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
-        
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (job.status == "ACCEPTED" || job.status == "EN_ROUTE" || job.status == "ARRIVED" || job.status == "STARTED") {
+            Button(
+                onClick = {
+                    val trackingLink = "https://track.piecejob.co/${job.trackingToken ?: ""}"
+                    val shareMsg = "Track your PieceJob provider here: $trackingLink"
+                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_TEXT, shareMsg)
+                    }
+                    context.startActivity(android.content.Intent.createChooser(intent, "Share Tracking"))
+                },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2)),
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("SHARE PROVIDER TRACKING", fontSize = 11.sp, fontWeight = FontWeight.Black)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(
                 onClick = onSosTrigger,

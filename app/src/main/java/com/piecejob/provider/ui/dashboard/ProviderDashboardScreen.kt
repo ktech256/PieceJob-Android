@@ -947,6 +947,15 @@ fun ActiveJobCard(job: JobDto, isLoading: Boolean, onArrive: (String) -> Unit, o
                 Column {
                     Text(text = job.serviceName ?: job.serviceCode ?: "Unknown Service", fontSize = 18.sp, fontWeight = FontWeight.Black)
                     Text(text = job.location?.address ?: "Client Location", fontSize = 13.sp, color = Color.Gray, maxLines = 1)
+                    if (job.isForSomeoneElse == true) {
+                        Text(
+                            text = "For: ${job.recipientName ?: "Someone Else"}", 
+                            fontSize = 11.sp, 
+                            fontWeight = FontWeight.Bold, 
+                            color = Color(0xFFE65100),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
                 }
             }
             

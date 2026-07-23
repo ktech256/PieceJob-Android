@@ -57,7 +57,8 @@ data class JobDto(
     @SerializedName("paymentReference") val paymentReference: String? = null,
     @SerializedName("cancellationReason") val cancellationReason: String? = null,
     @SerializedName("cancelledBy") val cancelledBy: String? = null,
-    @SerializedName("cancelledByName") val cancelledByName: String? = null
+    @SerializedName("cancelledByName") val cancelledByName: String? = null,
+    @SerializedName("trackingToken") val trackingToken: String? = null
 )
 
 data class PayBookingFeeResponse(
