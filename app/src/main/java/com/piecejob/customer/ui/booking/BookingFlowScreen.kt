@@ -197,8 +197,7 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
                     isMapLoaded = true 
                 },
                 onMapClick = { latLng ->
-                    val formatted = "Selected: ${String.format(java.util.Locale.US, "%.4f, %.4f", latLng.latitude, latLng.longitude)}"
-                    viewModel.setAddress(formatted, listOf(latLng.longitude, latLng.latitude))
+                    viewModel.onLocationSelected(latLng.latitude, latLng.longitude)
                 },
                 onPOIClick = { poi ->
                     viewModel.setAddress(poi.name, listOf(poi.latLng.longitude, poi.latLng.latitude))
@@ -225,6 +224,10 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
                     Marker(
                         state = MarkerState(position = LatLng(coords[1], coords[0])),
                         title = "Service Location",
+                        draggable = true,
+                        onDragEnd = { latLng ->
+                            viewModel.onLocationSelected(latLng.latitude, latLng.longitude)
+                        },
                         icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_RED)
                     )
                 }
@@ -337,7 +340,8 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
                         icon = Icons.Default.MyLocation,
                         fontSize = 10.sp,
                         height = 56.dp,
-                        isLoading = isLoading
+                        isLoading = isLoading,
+                        contentPadding = PaddingValues(horizontal = 4.dp)
                     )
 
                     // "Continue" Button (75%)

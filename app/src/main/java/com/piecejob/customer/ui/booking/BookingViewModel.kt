@@ -141,6 +141,11 @@ class BookingViewModel @Inject constructor(
         }
     }
 
+    fun onLocationSelected(lat: Double, lng: Double) {
+        // Trigger reverse geocoding to show a human-readable address instead of raw coordinates
+        reverseGeocode(lat, lng)
+    }
+
     private fun reverseGeocode(lat: Double, lng: Double) {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             _isLoading.value = true

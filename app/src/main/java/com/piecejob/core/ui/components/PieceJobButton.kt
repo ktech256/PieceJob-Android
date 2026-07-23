@@ -53,17 +53,24 @@ fun PieceJobButton(
         } else {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 if (icon != null) {
-                    Icon(icon, contentDescription = null, modifier = Modifier.size(height * 0.35f))
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp) // Standard Material size for better alignment
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
                 Text(
                     text = text,
                     fontSize = fontSize,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.5.sp,
+                    maxLines = 1,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }
@@ -108,17 +115,24 @@ fun PieceJobOutlinedButton(
         } else {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 if (icon != null) {
-                    Icon(icon, contentDescription = null, modifier = Modifier.size(height * 0.35f))
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp) // Standard Material size for better alignment
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
                 Text(
                     text = text,
                     fontSize = fontSize,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.5.sp,
+                    maxLines = 1,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }
