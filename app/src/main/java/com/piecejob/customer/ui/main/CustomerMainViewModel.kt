@@ -18,24 +18,18 @@ class CustomerMainViewModel @Inject constructor(
     private val _navigationEvent = Channel<String>(Channel.BUFFERED)
     val navigationEvent: Flow<String> = _navigationEvent.receiveAsFlow()
 
-    // FORENSIC GUARD: Prevent re-navigating to the same job/status in the same session
-    companion object {
-        private var lastHandledJobId: String? = null
-        private var lastHandledStatus: String? = null
-        private var initialCheckDone: Boolean = false
-    }
+    private var lastHandledJobId: String? = null
+    private var lastHandledStatus: String? = null
+    private var isRestorationHandled: Boolean = false
 
     init {
-        // Only perform the automatic startup check once per app session
-        // to prevent the Dashboard -> Negotiation -> Rating -> Dashboard loop.
-        if (!initialCheckDone) {
-            checkForActiveJob()
-            initialCheckDone = true
-        }
+        // Initial restoration on startup
+        refreshActiveJob()
     }
 
     fun refreshActiveJob() {
-        android.util.Log.d("FORENSIC", "MainVM | Explicit refresh requested")
+        android.util.Log.d("FORENSIC", "MainVM | Explicit refresh requested. Resetting handled flag.")
+        isRestorationHandled = false
         checkForActiveJob()
     }
 
@@ -45,14 +39,15 @@ class CustomerMainViewModel @Inject constructor(
             if (response.success && response.data != null) {
                 val job = response.data
                 
-                // Only navigate if this is a NEW job or a CHANGE in status from what we last handled
-                if (job.id == lastHandledJobId && job.status == lastHandledStatus) {
-                    android.util.Log.d("FORENSIC", "MainVM | Active job state unchanged ($lastHandledStatus). Skipping auto-nav.")
+                // If we've already navigated to this EXACT state in this "foreground session", stop.
+                if (isRestorationHandled && job.id == lastHandledJobId && job.status == lastHandledStatus) {
+                    android.util.Log.d("FORENSIC", "MainVM | Active job state unchanged and already handled. Skipping auto-nav.")
                     return@launch
                 }
 
                 lastHandledJobId = job.id
                 lastHandledStatus = job.status
+                isRestorationHandled = true
 
                 // PRIORITY 1: Pending Rating (only if newest job is COMPLETED)
                 if (job.status == "COMPLETED") {
@@ -62,12 +57,11 @@ class CustomerMainViewModel @Inject constructor(
                 else if (listOf("EN_ROUTE", "ARRIVED", "STARTED", "IN_PROGRESS").contains(job.status)) {
                     _navigationEvent.send(job.id)
                 }
-                // NOTE: PROVIDER_ACCEPTED and ACCEPTED (Negotiation) are handled PASSIVELY via Dashboard cards
-                // to allow recovery without forced navigation loops on app restart.
             } else {
                 // Clear state if no active job found
                 lastHandledJobId = null
                 lastHandledStatus = null
+                isRestorationHandled = true // Consider "handled" if nothing to restore
             }
         }
     }

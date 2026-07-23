@@ -85,16 +85,6 @@ fun CustomerDashboardScreen(
         viewModel.loadActiveJob()
     }
 
-    // Auto-Navigation to Tracking if job is in a trackable state
-    LaunchedEffect(activeJob) {
-        val job = activeJob ?: return@LaunchedEffect
-        val trackableStatuses = listOf("ACCEPTED", "EN_ROUTE", "ARRIVED", "STARTED", "IN_PROGRESS")
-        if (trackableStatuses.contains(job.status)) {
-            android.util.Log.d("FORENSIC", "DASHBOARD_AUTO_NAV | Auto-navigating to tracking for Job: ${job.id}")
-            onNavigateToTracking(job.id)
-        }
-    }
-
     var selectedServiceForDetails by remember { mutableStateOf<ServiceDto?>(null) }
 
     if (selectedServiceForDetails != null) {

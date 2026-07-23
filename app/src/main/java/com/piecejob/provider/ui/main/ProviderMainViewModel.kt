@@ -25,22 +25,19 @@ class ProviderMainViewModel @Inject constructor(
     private val _navigationEvent = Channel<String>(Channel.BUFFERED)
     val navigationEvent: Flow<String> = _navigationEvent.receiveAsFlow()
 
-    companion object {
-        private var lastHandledJobId: String? = null
-        private var lastHandledStatus: String? = null
-        private var initialCheckDone: Boolean = false
-    }
+    private var lastHandledJobId: String? = null
+    private var lastHandledStatus: String? = null
+    private var isRestorationHandled: Boolean = false
 
     init {
         setupSocketListeners()
-        if (!initialCheckDone) {
-            checkForActiveJob()
-            initialCheckDone = true
-        }
+        // Initial restoration on startup
+        refreshActiveJob()
     }
 
     fun refreshActiveJob() {
-        android.util.Log.d("FORENSIC", "ProviderMainVM | Explicit refresh requested")
+        android.util.Log.d("FORENSIC", "ProviderMainVM | Explicit refresh requested. Resetting handled flag.")
+        isRestorationHandled = false
         checkForActiveJob()
     }
 
@@ -50,13 +47,14 @@ class ProviderMainViewModel @Inject constructor(
             if (response.success && response.data != null) {
                 val job = response.data
                 
-                if (job.id == lastHandledJobId && job.status == lastHandledStatus) {
-                    android.util.Log.d("FORENSIC", "ProviderMainVM | State unchanged. Skipping nav.")
+                if (isRestorationHandled && job.id == lastHandledJobId && job.status == lastHandledStatus) {
+                    android.util.Log.d("FORENSIC", "ProviderMainVM | State unchanged and handled. Skipping nav.")
                     return@launch
                 }
 
                 lastHandledJobId = job.id
                 lastHandledStatus = job.status
+                isRestorationHandled = true
 
                 // PRIORITY 1: Active Job Tracking
                 if (listOf("ACCEPTED", "EN_ROUTE", "ARRIVED", "STARTED", "IN_PROGRESS").contains(job.status)) {
@@ -73,6 +71,7 @@ class ProviderMainViewModel @Inject constructor(
             } else {
                 lastHandledJobId = null
                 lastHandledStatus = null
+                isRestorationHandled = true
             }
         }
     }
