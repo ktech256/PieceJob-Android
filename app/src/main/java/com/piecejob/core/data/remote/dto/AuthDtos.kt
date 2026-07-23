@@ -265,3 +265,11 @@ data class EmergencyContactDto(
     @SerializedName("_id", alternate = ["id"])
     val _id: String? = null
 )
+
+data class RecipientDto(
+    @SerializedName("_id", alternate = ["id"]) val id: String? = null,
+    val name: String,
+    val phone: String,
+    val relationship: String? = null,
+    val createdAt: String? = null
+)

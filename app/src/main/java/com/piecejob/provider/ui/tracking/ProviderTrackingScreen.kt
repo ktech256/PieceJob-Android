@@ -68,6 +68,7 @@ fun ProviderTrackingScreen(
     val providerLocation by viewModel.providerLocation.collectAsState()
     val eta by viewModel.eta.collectAsState()
     val distance by viewModel.distance.collectAsState()
+    val revealRecipient by viewModel.revealRecipientInfo.collectAsState()
     val showReminder by viewModel.showStartReminder.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -467,7 +468,7 @@ fun ProviderTrackingScreen(
                                         ),
                                         enabled = !isTerminalState
                                     ) {
-                                        Icon(Icons.Default.Phone, contentDescription = "Call", tint = if (isTerminalState) Color.Gray else Color(0xFF2E7D32))
+                                        Icon(Icons.Default.Phone, contentDescription = "Call Customer", tint = if (isTerminalState) Color.Gray else Color(0xFF2E7D32))
                                     }
                                     
                                     FilledIconButton(
@@ -478,10 +479,59 @@ fun ProviderTrackingScreen(
                                         ),
                                         enabled = !isTerminalState
                                     ) {
-                                        Icon(Icons.Default.Email, contentDescription = "Message", tint = if (isTerminalState) Color.Gray else Color(0xFF1976D2))
+                                        Icon(Icons.Default.Email, contentDescription = "Message Customer", tint = if (isTerminalState) Color.Gray else Color(0xFF1976D2))
                                     }
                                 }
                             }
+
+                        if (currentJob.isForSomeoneElse == true) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color(0xFFFFF8E1),
+                                border = BorderStroke(1.dp, Color(0xFFFFA000).copy(alpha = 0.5f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        modifier = Modifier.size(40.dp),
+                                        shape = CircleShape,
+                                        color = Color.White
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.People, contentDescription = null, tint = Color(0xFFFFA000))
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("RECIPIENT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFFE65100))
+                                        Text(currentJob.recipientName ?: "Someone Else", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        if (revealRecipient && !currentJob.recipientPhone.isNullOrBlank()) {
+                                            Text(currentJob.recipientPhone!!, fontSize = 13.sp, color = Color.DarkGray)
+                                        } else if (!currentJob.recipientPhone.isNullOrBlank()) {
+                                            Text("Phone hidden until arrival", fontSize = 11.sp, color = Color.Gray, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                                        }
+                                    }
+                                    
+                                    if (revealRecipient && !currentJob.recipientPhone.isNullOrBlank()) {
+                                        IconButton(
+                                            onClick = {
+                                                val intent = android.content.Intent(android.content.Intent.ACTION_DIAL).apply {
+                                                    data = android.net.Uri.parse("tel:${currentJob.recipientPhone}")
+                                                }
+                                                context.startActivity(intent)
+                                            },
+                                            modifier = Modifier.background(Color(0xFFFFA000), CircleShape).size(36.dp)
+                                        ) {
+                                            Icon(Icons.Default.PhoneEnabled, contentDescription = "Call Recipient", tint = Color.White, modifier = Modifier.size(18.dp))
+                                        }
+                                    }
+                                }
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(24.dp))
                         

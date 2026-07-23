@@ -124,6 +124,9 @@ interface PieceJobApi {
     @PATCH("users/preferences")
     suspend fun updatePreferences(@Body request: Map<String, String?>): ApiResponse<UserDto>
 
+    @GET("users/recipients")
+    suspend fun getSavedRecipients(): ApiResponse<List<RecipientDto>>
+
     @PATCH("users/privacy")
     suspend fun updatePrivacy(@Body request: PrivacySettingsDto): ApiResponse<PrivacySettingsDto>
 

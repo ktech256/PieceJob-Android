@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.google.android.gms.maps.model.CameraPosition
@@ -35,6 +36,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import com.piecejob.core.data.remote.ServiceDto
 import com.piecejob.core.data.remote.dto.ProviderDto
+import com.piecejob.core.data.remote.dto.RecipientDto
 import com.piecejob.core.ui.components.PieceJobButton
 import com.piecejob.core.ui.components.PieceJobOutlinedButton
 import com.piecejob.customer.ui.dashboard.ServiceDetailsDialog
@@ -86,6 +88,7 @@ fun BookingFlowScreen(
         ) {
             when (currentStep) {
                 BookingStep.ADDRESS_SELECTION -> AddressSelectionStep(viewModel, initialLat, initialLng)
+                BookingStep.RECIPIENT_CHOICE -> RecipientChoiceStep(viewModel)
                 BookingStep.RECIPIENT_SELECTION -> RecipientSelectionStep(viewModel)
                 BookingStep.CATEGORY_SELECTION -> CategorySelectionStep(viewModel)
                 BookingStep.SERVICE_SELECTION -> ServiceSelectionStep(viewModel)
@@ -327,9 +330,9 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
                 ) {
                     // "Your Location" Button (35%)
                     PieceJobButton(
-                        text = "YOUR LOCATION",
+                        text = "GPS",
                         onClick = { viewModel.fetchCurrentLocation(isManualSelection = true) },
-                        modifier = Modifier.weight(0.35f),
+                        modifier = Modifier.weight(0.25f),
                         containerColor = Color(0xFF25D366), // WhatsApp Green
                         icon = Icons.Default.MyLocation,
                         fontSize = 10.sp,
@@ -337,15 +340,28 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
                         isLoading = isLoading
                     )
 
-                    // "Continue" Button (65%)
+                    // "Continue" Button (75%)
                     PieceJobButton(
                         text = "CONTINUE",
                         onClick = { viewModel.confirmRecipient() },
                         enabled = (addressText.isNotBlank() && selectedCoords != null),
-                        modifier = Modifier.weight(0.65f),
+                        modifier = Modifier.weight(0.75f),
                         containerColor = Color(0xFFD32F2F),
                         height = 56.dp,
                         isLoading = isLoading
+                    )
+                }
+
+                TextButton(
+                    onClick = { viewModel.selectRecipient(true) },
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp)
+                ) {
+                    Text(
+                        "Requesting for someone else?",
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline
                     )
                 }
             }
@@ -354,44 +370,229 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
 }
 
 @Composable
+fun RecipientChoiceStep(viewModel: BookingViewModel) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Who is this service for?",
+            fontWeight = FontWeight.Black,
+            fontSize = 24.sp,
+            modifier = Modifier.padding(bottom = 32.dp)
+        )
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { viewModel.selectRecipient(false) },
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
+        ) {
+            Row(
+                modifier = Modifier.padding(24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    modifier = Modifier.size(56.dp),
+                    shape = CircleShape,
+                    color = Color.White
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFFD32F2F))
+                    }
+                }
+                Spacer(modifier = Modifier.width(20.dp))
+                Column {
+                    Text("Myself", fontWeight = FontWeight.Black, fontSize = 18.sp)
+                    Text("The professional will come to you", fontSize = 12.sp, color = Color.Gray)
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { viewModel.selectRecipient(true) },
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFDECEA))
+        ) {
+            Row(
+                modifier = Modifier.padding(24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    modifier = Modifier.size(56.dp),
+                    shape = CircleShape,
+                    color = Color.White
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.People, contentDescription = null, tint = Color(0xFFD32F2F))
+                    }
+                }
+                Spacer(modifier = Modifier.width(20.dp))
+                Column {
+                    Text("Someone Else", fontWeight = FontWeight.Black, fontSize = 18.sp)
+                    Text("Elderly, child, or someone in another area", fontSize = 12.sp, color = Color.Gray)
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
+            }
+        }
+    }
+}
+
+@Composable
 fun RecipientSelectionStep(viewModel: BookingViewModel) {
+    val savedRecipients by viewModel.savedRecipients.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    var activeTab by remember { mutableStateOf(0) } // 0: Saved, 1: Manual
     var recipientName by remember { mutableStateOf("") }
     var recipientPhone by remember { mutableStateOf("") }
-    val isLoading by viewModel.isLoading.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-        Text("Who is this service for?", fontWeight = FontWeight.Black, fontSize = 22.sp)
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        OutlinedTextField(
-            value = recipientName,
-            onValueChange = { recipientName = it },
-            label = { Text("Recipient Name") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(
-            value = recipientPhone,
-            onValueChange = { recipientPhone = it },
-            label = { Text("Recipient Phone (Optional)") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
-        )
-        
-        Spacer(modifier = Modifier.weight(1f))
-        
-        PieceJobButton(
-            text = "CONTINUE",
-            onClick = { 
-                viewModel.recipientName.value = recipientName
-                viewModel.recipientPhone.value = recipientPhone
-                viewModel.confirmRecipient()
-            },
-            enabled = recipientName.isNotBlank(),
-            height = 56.dp,
-            isLoading = isLoading
-        )
+    val contactLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.PickContact()
+    ) { uri ->
+        uri?.let {
+            val contentResolver = context.contentResolver
+            val cursor = contentResolver.query(it, null, null, null, null)
+            cursor?.use { c ->
+                if (c.moveToFirst()) {
+                    val nameIndex = c.getColumnIndex(android.provider.ContactsContract.Contacts.DISPLAY_NAME)
+                    val idIndex = c.getColumnIndex(android.provider.ContactsContract.Contacts._ID)
+                    val name = if (nameIndex >= 0) c.getString(nameIndex) else ""
+                    val id = if (idIndex >= 0) c.getString(idIndex) else ""
+
+                    recipientName = name
+
+                    // Fetch Phone
+                    val pCursor = contentResolver.query(
+                        android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                        null,
+                        android.provider.ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                        arrayOf(id),
+                        null
+                    )
+                    pCursor?.use { pc ->
+                        if (pc.moveToFirst()) {
+                            val pIndex = pc.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
+                            recipientPhone = if (pIndex >= 0) pc.getString(pIndex) else ""
+                        }
+                    }
+                    activeTab = 1 // Switch to manual to show the imported details
+                }
+            }
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(
+            selectedTabIndex = activeTab,
+            containerColor = Color.White,
+            contentColor = Color(0xFFD32F2F),
+            indicator = { tabPositions ->
+                TabRowDefaults.SecondaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[activeTab]),
+                    color = Color(0xFFD32F2F)
+                )
+            }
+        ) {
+            Tab(selected = activeTab == 0, onClick = { activeTab = 0 }) {
+                Text("SAVED", modifier = Modifier.padding(16.dp), fontSize = 11.sp, fontWeight = FontWeight.Black)
+            }
+            Tab(selected = activeTab == 1, onClick = { activeTab = 1 }) {
+                Text("MANUAL", modifier = Modifier.padding(16.dp), fontSize = 11.sp, fontWeight = FontWeight.Black)
+            }
+        }
+
+        Box(modifier = Modifier.weight(1f)) {
+            if (activeTab == 0) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    if (savedRecipients.isEmpty()) {
+                        item {
+                            Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                                Text("No saved recipients yet.", color = Color.Gray)
+                            }
+                        }
+                    }
+                    items(savedRecipients) { recipient ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                viewModel.recipientName.value = recipient.name
+                                viewModel.recipientPhone.value = recipient.phone
+                                viewModel.confirmRecipient()
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEEEEEE))
+                        ) {
+                            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Person, contentDescription = null, tint = Color.Gray)
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column {
+                                    Text(recipient.name, fontWeight = FontWeight.Bold)
+                                    Text(recipient.phone, fontSize = 12.sp, color = Color.Gray)
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+                    PieceJobOutlinedButton(
+                        text = "CHOOSE FROM CONTACTS",
+                        onClick = { contactLauncher.launch(null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        icon = Icons.Default.ContactPage
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    OutlinedTextField(
+                        value = recipientName,
+                        onValueChange = { recipientName = it },
+                        label = { Text("Recipient Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = recipientPhone,
+                        onValueChange = { recipientPhone = it },
+                        label = { Text("Recipient Phone Number") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                    )
+                    
+                    Spacer(modifier = Modifier.weight(1f))
+                    
+                    PieceJobButton(
+                        text = "CONTINUE",
+                        onClick = { 
+                            viewModel.recipientName.value = recipientName
+                            viewModel.recipientPhone.value = recipientPhone
+                            viewModel.confirmRecipient()
+                        },
+                        enabled = recipientName.isNotBlank() && recipientPhone.isNotBlank(),
+                        height = 56.dp,
+                        isLoading = isLoading
+                    )
+                }
+            }
+        }
     }
 }
 

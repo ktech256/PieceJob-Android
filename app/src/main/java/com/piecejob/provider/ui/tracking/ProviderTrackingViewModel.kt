@@ -36,6 +36,9 @@ class ProviderTrackingViewModel @Inject constructor(
     private val _showStartReminder = MutableStateFlow(false)
     val showStartReminder: StateFlow<Boolean> = _showStartReminder
 
+    private val _revealRecipientInfo = MutableStateFlow(false)
+    val revealRecipientInfo: StateFlow<Boolean> = _revealRecipientInfo
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -128,13 +131,17 @@ class ProviderTrackingViewModel @Inject constructor(
     }
 
     private fun checkArrival(currentLatLng: LatLng) {
-        if (_job.value?.status != "EN_ROUTE") return
-        
         val dest = _job.value?.location?.coordinates ?: return
         if (dest.size < 2 || (dest[0] == 0.0 && dest[1] == 0.0)) return
         val destLatLng = LatLng(dest[1], dest[0])
         
         val dist = calculateDistance(currentLatLng, destLatLng)
+        
+        // Phase 6: Reveal info if < 50m or status is ARRIVED/STARTED/IN_PROGRESS
+        val isArrivedStatus = listOf("ARRIVED", "STARTED", "IN_PROGRESS").contains(_job.value?.status)
+        _revealRecipientInfo.value = dist <= 50 || isArrivedStatus
+
+        if (_job.value?.status != "EN_ROUTE") return
         if (dist <= 50) { // 50 meter radius
             markArrival()
         }

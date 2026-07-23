@@ -34,6 +34,7 @@ import javax.inject.Inject
 
 enum class BookingStep {
     ADDRESS_SELECTION,
+    RECIPIENT_CHOICE,
     RECIPIENT_SELECTION,
     CATEGORY_SELECTION,
     SERVICE_SELECTION,
@@ -56,6 +57,7 @@ class BookingViewModel @Inject constructor(
     private val serviceRepository: ServiceRepository,
     private val providerRepository: ProviderRepository,
     private val settingsRepository: SettingsRepository,
+    private val userRepository: com.piecejob.core.data.repository.UserRepository,
     private val walletRepository: com.piecejob.core.data.repository.WalletRepository,
     private val configRepository: com.piecejob.core.data.repository.ConfigRepository,
     private val socketManager: SocketManager,
@@ -85,6 +87,7 @@ class BookingViewModel @Inject constructor(
     val isForSomeoneElse = MutableStateFlow(false)
     val recipientName = MutableStateFlow("")
     val recipientPhone = MutableStateFlow("")
+    val savedRecipients = MutableStateFlow<List<RecipientDto>>(emptyList())
 
     // Step 3 & 4: Service
     val categories = MutableStateFlow<List<com.piecejob.core.data.remote.ServiceCategoryDto>>(emptyList())
@@ -339,14 +342,48 @@ class BookingViewModel @Inject constructor(
     fun selectRecipient(someoneElse: Boolean) {
         isForSomeoneElse.value = someoneElse
         if (!someoneElse) {
+            recipientName.value = ""
+            recipientPhone.value = ""
             _currentStep.value = BookingStep.CATEGORY_SELECTION
         } else {
+            loadSavedRecipients()
             _currentStep.value = BookingStep.RECIPIENT_SELECTION
         }
     }
 
     fun confirmRecipient() {
-        _currentStep.value = BookingStep.CATEGORY_SELECTION
+        val currentGps = _currentGpsCoordinates.value
+        val selectedCoords = selectedCoordinates.value
+
+        if (currentGps != null && selectedCoords != null) {
+            val results = FloatArray(1)
+            android.location.Location.distanceBetween(
+                currentGps[1], currentGps[0],
+                selectedCoords[1], selectedCoords[0],
+                results
+            )
+            val distance = results[0]
+
+            if (distance > 50) {
+                // Smart Detection: Distance > 50m, ask who it's for
+                _currentStep.value = BookingStep.RECIPIENT_CHOICE
+            } else {
+                // Within 50m, proceed to Category Selection
+                _currentStep.value = BookingStep.CATEGORY_SELECTION
+            }
+        } else {
+            // Fallback if GPS unavailable
+            _currentStep.value = BookingStep.CATEGORY_SELECTION
+        }
+    }
+
+    private fun loadSavedRecipients() {
+        viewModelScope.launch {
+            val res = userRepository.getSavedRecipients()
+            if (res.success) {
+                savedRecipients.value = res.data ?: emptyList()
+            }
+        }
     }
 
     fun selectCategory(categoryCode: String) {
