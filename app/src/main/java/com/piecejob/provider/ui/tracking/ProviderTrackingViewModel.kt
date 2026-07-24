@@ -239,13 +239,27 @@ class ProviderTrackingViewModel @Inject constructor(
         viewModelScope.launch {
             socketManager.statusEventFlow.collect { event ->
                 if (event.jobId == _job.value?.id) {
+                    // Update status immediately for UI responsiveness
                     _job.value = _job.value?.copy(status = event.status)
+                    
                     if (event.status == "STARTED") {
                         _showStartReminder.value = false
                         autoStartTimer?.cancel()
                         reminderTimer?.cancel()
                     }
+                    
+                    // Refresh full object to get startedAt, agreedPrice, etc.
+                    refreshJob(event.jobId)
                 }
+            }
+        }
+    }
+
+    private fun refreshJob(jobId: String) {
+        viewModelScope.launch {
+            val res = jobRepository.getJobById(jobId)
+            if (res.success && res.data != null) {
+                _job.value = res.data
             }
         }
     }

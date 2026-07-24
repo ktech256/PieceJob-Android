@@ -2,6 +2,7 @@ package com.piecejob.customer.ui.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.piecejob.core.data.local.SessionManager
 import com.piecejob.core.data.repository.JobRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -12,42 +13,38 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CustomerMainViewModel @Inject constructor(
-    private val jobRepository: JobRepository
+    private val jobRepository: JobRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _navigationEvent = Channel<String>(Channel.BUFFERED)
     val navigationEvent: Flow<String> = _navigationEvent.receiveAsFlow()
 
-    private var lastHandledJobId: String? = null
-    private var lastHandledStatus: String? = null
-    private var isRestorationHandled: Boolean = false
-
     init {
-        // Initial restoration on startup
-        refreshActiveJob()
-    }
-
-    fun refreshActiveJob() {
-        android.util.Log.d("FORENSIC", "MainVM | Explicit refresh requested. Resetting handled flag.")
-        isRestorationHandled = false
-        checkForActiveJob()
-    }
-
-    private fun checkForActiveJob() {
+        // Observe True App Resume events from MainActivity
         viewModelScope.launch {
+            sessionManager.appResumeEvent.collect {
+                android.util.Log.d("FORENSIC", "MainVM | App Resume Event Received. Checking for restoration.")
+                checkForActiveJob(isAutoRestore = true)
+            }
+        }
+
+        // Initial check on cold start
+        checkForActiveJob(isAutoRestore = true)
+    }
+
+    private fun checkForActiveJob(isAutoRestore: Boolean) {
+        viewModelScope.launch {
+            // Guard: Only perform automatic navigation if restoration is permitted
+            if (isAutoRestore && !sessionManager.shouldPerformRestoration()) {
+                android.util.Log.d("FORENSIC", "MainVM | Restoration blocked by guard.")
+                return@launch
+            }
+
             val response = jobRepository.getActiveJob()
             if (response.success && response.data != null) {
                 val job = response.data
-                
-                // If we've already navigated to this EXACT state in this "foreground session", stop.
-                if (isRestorationHandled && job.id == lastHandledJobId && job.status == lastHandledStatus) {
-                    android.util.Log.d("FORENSIC", "MainVM | Active job state unchanged and already handled. Skipping auto-nav.")
-                    return@launch
-                }
-
-                lastHandledJobId = job.id
-                lastHandledStatus = job.status
-                isRestorationHandled = true
+                android.util.Log.d("FORENSIC", "MainVM | Active job found for restoration: ${job.id} | Status: ${job.status}")
 
                 // PRIORITY 1: Pending Rating (only if newest job is COMPLETED)
                 if (job.status == "COMPLETED") {
@@ -57,11 +54,6 @@ class CustomerMainViewModel @Inject constructor(
                 else if (listOf("EN_ROUTE", "ARRIVED", "STARTED", "IN_PROGRESS").contains(job.status)) {
                     _navigationEvent.send(job.id)
                 }
-            } else {
-                // Clear state if no active job found
-                lastHandledJobId = null
-                lastHandledStatus = null
-                isRestorationHandled = true // Consider "handled" if nothing to restore
             }
         }
     }

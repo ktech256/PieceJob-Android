@@ -40,6 +40,8 @@ import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import com.google.android.libraries.navigation.Navigator.RouteStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -279,40 +281,22 @@ fun ProviderTrackingScreen(
     val isNegotiating = false // Removed RESUME NEGOTIATION overlay as per Issue 2 requirement
 
     Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-            factory = { navigationView },
-            modifier = Modifier.fillMaxSize()
-        )
-        
-        /* 
-        // Issue 2: Remove RESUME NEGOTIATION overlay from tracking screens
-        if (isNegotiating) {
-            Box(
-                modifier = Modifier.fillMaxSize().background(Color.White),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
-                    Icon(Icons.Default.HourglassEmpty, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFFFA000))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Negotiation Session Active", fontWeight = FontWeight.Black, fontSize = 20.sp)
-                    Text(
-                        text = if (job?.status == "ACCEPTED") "Price agreed. Please confirm dispatch to start navigation." else "Navigation and exact location are locked until task details and price are agreed.",
-                        textAlign = TextAlign.Center,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Button(
-                        onClick = { onChatOpen(job?.customerId ?: "") },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))
-                    ) {
-                        Text("RESUME NEGOTIATION", fontWeight = FontWeight.Black)
-                    }
-                }
-            }
-        }
-        */
+        val isWorkInProgress = job?.status == "STARTED" || job?.status == "IN_PROGRESS"
+
+        if (isWorkInProgress && job != null) {
+            ProviderWorkInProgressDashboard(
+                job = job!!,
+                onChatOpen = onChatOpen,
+                onCallOpen = onCallOpen,
+                onBack = onBack,
+                onCompleteJob = { viewModel.completeJob() },
+                onSosTrigger = { /* SOS trigger */ }
+            )
+        } else {
+            AndroidView(
+                factory = { navigationView },
+                modifier = Modifier.fillMaxSize()
+            )
 
         // Overlay: Top Header
         Column(
@@ -607,9 +591,247 @@ fun ProviderTrackingScreen(
                 }
             }
         }
+    }
 
-        if (error != null) {
+    if (error != null) {
             // Snackbar removed as per Issue 1. Legitimate errors are logged and visible via UI state changes.
         }
     }
+}
+
+@Composable
+fun ProviderWorkInProgressDashboard(
+    job: com.piecejob.core.data.remote.dto.JobDto,
+    onChatOpen: (String) -> Unit,
+    onCallOpen: (String, String, String, String?) -> Unit,
+    onBack: () -> Unit,
+    onCompleteJob: () -> Unit,
+    onSosTrigger: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF8F9FA))
+            .statusBarsPadding()
+            .navigationBarsPadding()
+    ) {
+        // Top Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                Text(text = "Work in Progress", fontWeight = FontWeight.Black, fontSize = 20.sp)
+                Text(text = "Job #${job.id.takeLast(6).uppercase()}", color = Color.Gray, fontSize = 12.sp)
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Surface(
+                color = Color(0xFFE8F5E9),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(8.dp).background(Color(0xFF2E7D32), CircleShape))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = "LIVE", color = Color(0xFF2E7D32), fontWeight = FontWeight.Black, fontSize = 10.sp)
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 24.dp)
+                .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // Timer
+            JobTimer(job.startedAtUtc ?: job.startedAt)
+            Text(text = "ELAPSED TIME", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // Customer Info
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            modifier = Modifier.size(64.dp),
+                            shape = CircleShape,
+                            color = Color(0xFFFDECEA)
+                        ) {
+                            if (job.customerInfo?.profilePicture != null) {
+                                coil.compose.AsyncImage(
+                                    model = job.customerInfo.profilePicture,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            } else {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFFD32F2F), modifier = Modifier.size(32.dp))
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = job.customerInfo?.let { "${it.firstName} ${it.lastName}" } ?: job.recipientName ?: "Customer", fontWeight = FontWeight.Black, fontSize = 18.sp)
+                            Text(text = "Service: ${job.serviceName ?: "General"}", color = Color.Gray, fontSize = 13.sp)
+                        }
+                        
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilledIconButton(
+                                onClick = { 
+                                    job.customerId?.let { id -> 
+                                        onCallOpen(id, "${job.customerInfo?.firstName} ${job.customerInfo?.lastName}", job.customerInfo?.phoneNumber ?: job.recipientPhone ?: "", job.customerInfo?.profilePicture)
+                                    }
+                                },
+                                colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFE8F5E9))
+                            ) {
+                                Icon(Icons.Default.Phone, null, tint = Color(0xFF2E7D32))
+                            }
+                            FilledIconButton(
+                                onClick = { job.customerId?.let { onChatOpen(it) } },
+                                colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFE3F2FD))
+                            ) {
+                                Icon(Icons.Default.Message, null, tint = Color(0xFF1976D2))
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Financial Info
+            val gross = (job.agreedPrice ?: 0.0)
+            val fee = (job.serviceFee ?: 0.0)
+            val net = gross - fee
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Text(text = "Earnings Summary", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(text = "Gross Payment", color = Color.Gray)
+                        Text(text = "${job.currency ?: ""} ${String.format(java.util.Locale.US, "%.2f", gross)}", fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(text = "PieceJob Service Fee", color = Color.Gray)
+                        Text(text = "- ${job.currency ?: ""} ${String.format(java.util.Locale.US, "%.2f", fee)}", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = Color(0xFFF8F9FA))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(text = "Your Net Earnings", fontWeight = FontWeight.Black)
+                        Text(text = "${job.currency ?: ""} ${String.format(java.util.Locale.US, "%.2f", Math.max(0.0, net))}", fontWeight = FontWeight.Black, fontSize = 18.sp, color = Color(0xFF2E7D32))
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Timeline
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Text(text = "Job Timeline", fontWeight = FontWeight.Black, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    TimelineItem("Requested", job.createdAt ?: "", isLast = false)
+                    TimelineItem("Started Work", job.startedAt ?: "", isLast = true)
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            PieceJobButton(
+                text = "COMPLETE PIECEJOB",
+                onClick = onCompleteJob,
+                modifier = Modifier.fillMaxWidth().height(64.dp),
+                containerColor = Color(0xFF2E7D32),
+                shape = RoundedCornerShape(20.dp)
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(onClick = onSosTrigger) {
+                Text(text = "EMERGENCY SOS", color = Color(0xFFD32F2F), fontWeight = FontWeight.Black)
+            }
+            
+            Spacer(modifier = Modifier.height(48.dp))
+        }
+    }
+}
+
+@Composable
+fun TimelineItem(label: String, time: String, isLast: Boolean) {
+    Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(modifier = Modifier.size(12.dp).background(Color(0xFFD32F2F), CircleShape))
+            if (!isLast) {
+                Box(modifier = Modifier.width(2.dp).weight(1f).background(Color(0xFFEEEEEE)))
+            }
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.padding(bottom = if (isLast) 0.dp else 24.dp)) {
+            Text(text = label, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Text(text = com.piecejob.core.utils.formatDateTimeString(time), color = Color.Gray, fontSize = 12.sp)
+        }
+    }
+}
+
+@Composable
+fun JobTimer(startedAtIso: String?) {
+    var elapsedMillis by remember { mutableLongStateOf(0L) }
+    
+    LaunchedEffect(startedAtIso) {
+        if (startedAtIso == null) return@LaunchedEffect
+        
+        val startedAt = try {
+            val df = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
+            df.timeZone = java.util.TimeZone.getTimeZone("UTC")
+            df.parse(startedAtIso)?.time ?: System.currentTimeMillis()
+        } catch (e: Exception) {
+            System.currentTimeMillis()
+        }
+        
+        while (true) {
+            elapsedMillis = System.currentTimeMillis() - startedAt
+            delay(1000)
+        }
+    }
+    
+    val totalSeconds = Math.max(0L, elapsedMillis / 1000)
+    val seconds = totalSeconds % 60
+    val minutes = (totalSeconds / 60) % 60
+    val hours = totalSeconds / 3600
+    
+    Text(
+        text = String.format(java.util.Locale.US, "%02d:%02d:%02d", hours, minutes, seconds),
+        fontSize = 48.sp,
+        fontWeight = FontWeight.Black,
+        color = Color.Black
+    )
 }

@@ -98,12 +98,25 @@ class JobTrackingViewModel @Inject constructor(
                 if (currentStatus == null || (statusPriority[fetchedJob.status] ?: 0) >= (statusPriority[currentStatus] ?: 0)) {
                     _job.value = fetchedJob
                     Log.d("FORENSIC", "STATEFLOW_INITIALIZED | Status: ${fetchedJob.status}")
+                    
+                    // Initialize provider location if available from acceptance metadata
+                    fetchedJob.providerLocationAtAcceptance?.let { loc ->
+                        if (loc.coordinates.size >= 2 && _providerLocation.value == null) {
+                            val lat = loc.coordinates[1]
+                            val lng = loc.coordinates[0]
+                            _providerLocation.value = lat to lng
+                            calculateLiveMetrics(lat, lng)
+                        }
+                    }
                 } else {
                     Log.w("FORENSIC", "INITIAL_FETCH_IGNORED | Socket already moved to $currentStatus")
                 }
                 
                 if (isSearching(_job.value?.status ?: "")) {
                     startNearbyProvidersPolling()
+                } else {
+                    // Trigger immediate route/ETA calculation if assigned
+                    fetchRoutePolyline()
                 }
             } else {
                 _error.value = response.error?.message ?: "Failed to load job details"
@@ -159,11 +172,19 @@ class JobTrackingViewModel @Inject constructor(
                                     Log.e("JobTracking", "Error parsing provider info from socket", e)
                                 }
                             }
+                            
+                            // Immediately initialize provider location if assigned
+                            if (updatedJob.providerInfo != null && _providerLocation.value == null) {
+                                // Try to get coordinates from providerInfo if available, 
+                                // but usually they are in a separate field or fetched via refresh
+                            }
+
                             _job.value = updatedJob
                             Log.d("FORENSIC", "TRACKING_STATE_UPDATED | New Status: ${event.status}")
                         }
                     }
 
+                    // FORCE REFRESH: Fetch full object to get providerLocationAtAcceptance and other metadata
                     refreshJobDetails(jobId)
                     
                     if (!isSearching(event.status)) {
@@ -176,11 +197,12 @@ class JobTrackingViewModel @Inject constructor(
 
     private fun calculateLiveMetrics(lat: Double, lng: Double) {
         val dest = _job.value?.location?.coordinates ?: return
+        if (dest.size < 2) return
         val destLat = dest[1]
         val destLng = dest[0]
 
         val distMeters = calculateDistance(lat, lng, destLat, destLng)
-        _distance.value = if (distMeters < 1000) "${distMeters.toInt()} m" else String.format("%.1f km", distMeters / 1000)
+        _distance.value = if (distMeters < 1000) "${distMeters.toInt()} m" else String.format(java.util.Locale.US, "%.1f km", distMeters / 1000)
 
         // Assume 40km/h average speed (11.1 m/s)
         val timeSeconds = distMeters / 11.1
@@ -216,6 +238,17 @@ class JobTrackingViewModel @Inject constructor(
 
                 if (newPriority >= currentPriority || currentPriority == -1) {
                     _job.value = newJob
+                    
+                    // Update location and metrics from the refreshed job object
+                    newJob.providerLocationAtAcceptance?.let { loc ->
+                        if (_providerLocation.value == null) {
+                            val lat = loc.coordinates[1]
+                            val lng = loc.coordinates[0]
+                            _providerLocation.value = lat to lng
+                            calculateLiveMetrics(lat, lng)
+                        }
+                    }
+
                     // If assigned but no route yet, fetch one
                     if (!isSearching(newJob.status)) {
                         fetchRoutePolyline()
@@ -231,6 +264,7 @@ class JobTrackingViewModel @Inject constructor(
         val job = _job.value ?: return
         val providerLoc = _providerLocation.value ?: return
         val dest = job.location?.coordinates ?: return
+        if (dest.size < 2) return
         
         viewModelScope.launch {
             try {

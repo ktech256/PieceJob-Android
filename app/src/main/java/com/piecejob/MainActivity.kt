@@ -62,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (authViewModel.isLoggedIn()) {
             syncFcmToken()
+            sessionManager.triggerAppResume()
         }
     }
 
@@ -299,7 +300,9 @@ class MainActivity : AppCompatActivity() {
                                 ?: event.providerInfo?.optString("id") 
                                 ?: ""
                             if (providerId.isNotEmpty()) {
-                                navController.navigate(Screen.Negotiation.passArgs(event.jobId, providerId))
+                                navController.navigate(Screen.Negotiation.passArgs(event.jobId, providerId)) {
+                                    launchSingleTop = true
+                                }
                             }
                         }
 

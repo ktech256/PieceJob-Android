@@ -2,6 +2,7 @@ package com.piecejob.provider.ui.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.piecejob.core.data.local.SessionManager
 import com.piecejob.core.data.repository.JobRepository
 import com.piecejob.core.notification.AlertManager
 import com.piecejob.core.notification.manager.IncomingJob
@@ -19,42 +20,44 @@ class ProviderMainViewModel @Inject constructor(
     private val jobRepository: JobRepository,
     private val socketManager: SocketManager,
     private val alertManager: AlertManager,
+    private val sessionManager: SessionManager,
     val notificationState: NotificationState
 ) : ViewModel() {
 
     private val _navigationEvent = Channel<String>(Channel.BUFFERED)
     val navigationEvent: Flow<String> = _navigationEvent.receiveAsFlow()
 
-    private var lastHandledJobId: String? = null
-    private var lastHandledStatus: String? = null
-    private var isRestorationHandled: Boolean = false
-
     init {
         setupSocketListeners()
-        // Initial restoration on startup
-        refreshActiveJob()
+        
+        // 1. Initial restoration on startup
+        checkForActiveJob(isAutoRestore = true)
+
+        // 2. Observe True App Resume events from MainActivity
+        viewModelScope.launch {
+            sessionManager.appResumeEvent.collect {
+                android.util.Log.d("FORENSIC", "ProviderMainVM | App Resume Event Received. Resetting guard.")
+                checkForActiveJob(isAutoRestore = true)
+            }
+        }
     }
 
     fun refreshActiveJob() {
-        android.util.Log.d("FORENSIC", "ProviderMainVM | Explicit refresh requested. Resetting handled flag.")
-        isRestorationHandled = false
-        checkForActiveJob()
+        android.util.Log.d("FORENSIC", "ProviderMainVM | Explicit refresh requested.")
+        checkForActiveJob(isAutoRestore = false)
     }
 
-    private fun checkForActiveJob() {
+    private fun checkForActiveJob(isAutoRestore: Boolean) {
         viewModelScope.launch {
+            if (isAutoRestore && !sessionManager.shouldPerformRestoration()) {
+                android.util.Log.d("FORENSIC", "ProviderMainVM | Restoration blocked by guard.")
+                return@launch
+            }
+
             val response = jobRepository.getActiveJob()
             if (response.success && response.data != null) {
                 val job = response.data
-                
-                if (isRestorationHandled && job.id == lastHandledJobId && job.status == lastHandledStatus) {
-                    android.util.Log.d("FORENSIC", "ProviderMainVM | State unchanged and handled. Skipping nav.")
-                    return@launch
-                }
-
-                lastHandledJobId = job.id
-                lastHandledStatus = job.status
-                isRestorationHandled = true
+                android.util.Log.d("FORENSIC", "ProviderMainVM | Active job found: ${job.id} | Status: ${job.status}")
 
                 // PRIORITY 1: Active Job Tracking
                 if (listOf("ACCEPTED", "EN_ROUTE", "ARRIVED", "STARTED", "IN_PROGRESS").contains(job.status)) {
@@ -68,10 +71,6 @@ class ProviderMainViewModel @Inject constructor(
                 else if (job.status == "COMPLETED") {
                     _navigationEvent.send("RATING:${job.id}")
                 }
-            } else {
-                lastHandledJobId = null
-                lastHandledStatus = null
-                isRestorationHandled = true
             }
         }
     }

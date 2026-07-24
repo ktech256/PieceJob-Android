@@ -25,3 +25,8 @@ fun formatDateTimeString(isoString: String?): String {
         isoString.take(16).replace("T", " ")
     }
 }
+
+fun formatRating(rating: Double?): String {
+    return if (rating == null || rating == 0.0) "5.0"
+    else String.format(java.util.Locale.US, "%.1f", rating)
+}

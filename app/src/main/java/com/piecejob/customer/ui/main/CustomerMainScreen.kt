@@ -38,41 +38,47 @@ sealed class CustomerBottomBarScreen(
 fun CustomerMainScreen(
     onLogout: () -> Unit,
     onNavigateToSubScreen: (String) -> Unit,
+    currentOuterRoute: String? = null,
     viewModel: CustomerMainViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
 
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                android.util.Log.d("FORENSIC", "MAIN_SCREEN_RESUMED | Refreshing active job")
-                viewModel.refreshActiveJob()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { event ->
+            android.util.Log.d("FORENSIC", "MainScreen | Nav Event Received: $event | Outer Route: $currentOuterRoute")
+
             if (event.startsWith("NEGOTIATION:")) {
                 val parts = event.split(":")
                 if (parts.size >= 3) {
-                    onNavigateToSubScreen(Screen.Negotiation.passArgs(parts[1], parts[2]))
+                    val targetRoute = Screen.Negotiation.passArgs(parts[1], parts[2])
+                    if (currentOuterRoute != targetRoute) {
+                        onNavigateToSubScreen(targetRoute)
+                    }
                 }
             } else if (event.startsWith("CHAT:")) {
                 val parts = event.split(":")
                 if (parts.size >= 3) {
-                    onNavigateToSubScreen(Screen.Chat.passArgs(parts[1], parts[2]))
+                    val targetRoute = Screen.Chat.passArgs(parts[1], parts[2])
+                    if (currentOuterRoute != targetRoute) {
+                        onNavigateToSubScreen(targetRoute)
+                    }
                 }
             } else if (event.startsWith("RATING:")) {
                 val parts = event.split(":")
                 if (parts.size >= 2) {
-                    onNavigateToSubScreen(Screen.Rating.passJobId(parts[1]))
+                    val targetRoute = Screen.Rating.passJobId(parts[1])
+                    if (currentOuterRoute != targetRoute) {
+                        onNavigateToSubScreen(targetRoute)
+                    }
                 }
             } else {
-                onNavigateToSubScreen(Screen.CustomerTracking.passJobId(event))
+                val targetRoute = Screen.CustomerTracking.passJobId(event)
+                // PREVENT NAVIGATION LOOP: Don't navigate if we are already there on the outer navigator
+                if (currentOuterRoute == targetRoute || currentOuterRoute?.contains("tracking") == true) {
+                    android.util.Log.d("FORENSIC", "MainScreen | Already on tracking screen ($currentOuterRoute). Ignoring auto-nav.")
+                } else {
+                    onNavigateToSubScreen(targetRoute)
+                }
             }
         }
     }

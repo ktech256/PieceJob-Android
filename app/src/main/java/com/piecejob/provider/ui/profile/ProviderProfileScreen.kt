@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.piecejob.core.ui.navigation.Screen
+import com.piecejob.core.utils.formatRating
 import com.piecejob.provider.ui.dashboard.ProviderDashboardViewModel
 
 @Composable
@@ -130,7 +131,7 @@ fun ProfileHeader(name: String, tier: String, rating: Double, ratingCount: Int, 
                 Text(text = "NEW PROVIDER ($ratingCount/5)", color = Color(0xFF1976D2), fontWeight = FontWeight.Black, fontSize = 12.sp)
             } else {
                 Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(14.dp))
-                Text(text = String.format("%.1f", rating), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text(text = formatRating(rating), fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
         }
 

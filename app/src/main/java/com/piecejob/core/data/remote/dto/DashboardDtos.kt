@@ -56,6 +56,7 @@ data class ActivityDto(
     val completedAt: String? = null,
     val cancelledAt: String? = null,
     val cancelledBy: String? = null,
+    val cancelledByName: String? = null,
     val createdAt: String
 )
 

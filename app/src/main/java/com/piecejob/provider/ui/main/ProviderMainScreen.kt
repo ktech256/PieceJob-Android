@@ -47,48 +47,51 @@ fun ProviderMainScreen(
     onSosTrigger: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToSubScreen: (String) -> Unit,
+    currentOuterRoute: String? = null,
     viewModel: ProviderMainViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
     val activeJobRequest by viewModel.notificationState.activeJobRequest.collectAsState()
     val isAccepting by viewModel.notificationState.isAccepting.collectAsState()
 
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                android.util.Log.d("FORENSIC", "PROVIDER_MAIN_SCREEN_RESUMED | Refreshing active job")
-                viewModel.refreshActiveJob()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { event ->
-            Log.d("NavGraphTrace", "Auto-navigating: $event")
+            Log.d("NavGraphTrace", "Auto-navigating: $event | Outer Route: $currentOuterRoute")
+            
             if (event.startsWith("NEGOTIATION:")) {
                 val parts = event.split(":")
                 if (parts.size >= 3) {
-                    onNavigateToSubScreen(Screen.Negotiation.passArgs(parts[1], parts[2]))
+                    val targetRoute = Screen.Negotiation.passArgs(parts[1], parts[2])
+                    if (currentOuterRoute != targetRoute) onNavigateToSubScreen(targetRoute)
                 }
             } else if (event.startsWith("CHAT:")) {
                 val parts = event.split(":")
                 if (parts.size >= 3) {
-                    onNavigateToSubScreen(Screen.Chat.passArgs(parts[1], parts[2]))
+                    val targetRoute = Screen.Chat.passArgs(parts[1], parts[2])
+                    if (currentOuterRoute != targetRoute) onNavigateToSubScreen(targetRoute)
                 }
             } else if (event.startsWith("TRACKING:")) {
                 val jobId = event.removePrefix("TRACKING:")
-                onNavigateToSubScreen(Screen.ProviderTracking.passJobId(jobId))
+                val targetRoute = Screen.ProviderTracking.passJobId(jobId)
+                if (currentOuterRoute == targetRoute || currentOuterRoute?.contains("tracking") == true) {
+                    Log.d("NavGraphTrace", "Already on tracking screen ($currentOuterRoute). Ignoring.")
+                } else {
+                    onNavigateToSubScreen(targetRoute)
+                }
             } else if (event.startsWith("RATING:")) {
                 val parts = event.split(":")
                 if (parts.size >= 2) {
-                    onNavigateToSubScreen(Screen.Rating.passJobId(parts[1]))
+                    val targetRoute = Screen.Rating.passJobId(parts[1])
+                    if (currentOuterRoute != targetRoute) onNavigateToSubScreen(targetRoute)
                 }
             } else {
                 // Backward compatibility for pure jobId
-                onNavigateToSubScreen(Screen.ProviderTracking.passJobId(event))
+                val targetRoute = Screen.ProviderTracking.passJobId(event)
+                if (currentOuterRoute == targetRoute || currentOuterRoute?.contains("tracking") == true) {
+                    Log.d("NavGraphTrace", "Already on tracking screen ($currentOuterRoute). Ignoring.")
+                } else {
+                    onNavigateToSubScreen(targetRoute)
+                }
             }
         }
     }

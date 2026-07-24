@@ -146,6 +146,7 @@ fun NavGraph(
         }
 
         composable(route = Screen.Dashboard.route) {
+            val currentOuterRoute = navController.currentBackStackEntry?.destination?.route
             if (BuildConfig.FLAVOR == "provider") {
                 ProviderMainScreen(
                     onSosTrigger = { navController.navigate(Screen.ReportIssue.route) },
@@ -156,8 +157,11 @@ fun NavGraph(
                         }
                     },
                     onNavigateToSubScreen = { route ->
-                        navController.navigate(route)
-                    }
+                        navController.navigate(route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    currentOuterRoute = currentOuterRoute
                 )
             } else {
                 CustomerMainScreen(
@@ -168,8 +172,11 @@ fun NavGraph(
                         }
                     },
                     onNavigateToSubScreen = { route ->
-                        navController.navigate(route)
-                    }
+                        navController.navigate(route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    currentOuterRoute = currentOuterRoute
                 )
             }
         }
@@ -217,6 +224,7 @@ fun NavGraph(
                 onTrackingStart = { jobId ->
                     navController.navigate(Screen.CustomerTracking.passJobId(jobId)) {
                         popUpTo(Screen.Dashboard.route)
+                        launchSingleTop = true
                     }
                 },
                 onBack = { navController.popBackStack() }

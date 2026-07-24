@@ -16,7 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -97,8 +96,13 @@ fun BookingFlowScreen(
                 BookingStep.PAYMENT_WEBVIEW -> PaymentWebViewStep(viewModel)
                 BookingStep.TRACKING -> {
                     val job by viewModel.createdJob.collectAsState()
+                    var navigationHandled by remember { mutableStateOf(false) }
                     LaunchedEffect(job) {
-                        job?.id?.let { onTrackingStart(it) }
+                        if (job != null && !navigationHandled) {
+                            navigationHandled = true
+                            android.util.Log.d("NAV_AUDIT", "NAVIGATING_TO_TRACKING | Job: ${job?.id}")
+                            onTrackingStart(job!!.id)
+                        }
                     }
                 }
             }
@@ -221,13 +225,18 @@ fun AddressSelectionStep(viewModel: BookingViewModel, initialLat: Double?, initi
                 }
 
                 selectedCoords?.let { coords ->
+                    val markerState = rememberMarkerState(position = LatLng(coords[1], coords[0]))
+                    
+                    LaunchedEffect(markerState.dragState) {
+                        if (markerState.dragState == DragState.END) {
+                            viewModel.onLocationSelected(markerState.position.latitude, markerState.position.longitude)
+                        }
+                    }
+
                     Marker(
-                        state = MarkerState(position = LatLng(coords[1], coords[0])),
+                        state = markerState,
                         title = "Service Location",
                         draggable = true,
-                        onDragEnd = { latLng ->
-                            viewModel.onLocationSelected(latLng.latitude, latLng.longitude)
-                        },
                         icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_RED)
                     )
                 }

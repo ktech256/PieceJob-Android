@@ -28,6 +28,7 @@ import com.piecejob.core.ui.components.PieceJobOutlinedButton
 
 import com.piecejob.core.utils.formatPrivacyAddress
 import com.piecejob.core.utils.formatDateTimeString
+import com.piecejob.core.utils.formatRating
 
 @Composable
 fun ProviderDashboardScreen(
@@ -635,7 +636,7 @@ fun PerformanceCard(rating: Double?, ratingCount: Int, isProbation: Boolean, rel
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 MetricItem(
                     label = if (isProbation) "No ratings yet" else "Rating",
-                    value = if (isProbation || rating == null) "—" else String.format("%.1f", rating),
+                    value = if (isProbation || rating == null) "—" else formatRating(rating),
                     icon = Icons.Default.Star,
                     color = Color(0xFFFFA000)
                 )

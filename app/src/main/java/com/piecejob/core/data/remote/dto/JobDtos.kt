@@ -51,6 +51,7 @@ data class JobDto(
     @SerializedName("providerRatingDismissed") val providerRatingDismissed: Boolean?,
     @SerializedName("createdAt") val createdAt: String?,
     @SerializedName("startedAt") val startedAt: String? = null,
+    @SerializedName("startedAtUtc") val startedAtUtc: String? = null,
     @SerializedName("completedAt") val completedAt: String? = null,
     @SerializedName("cancelledAt") val cancelledAt: String? = null,
     @SerializedName("providerEarnings") val providerEarnings: Double? = null,
@@ -58,7 +59,8 @@ data class JobDto(
     @SerializedName("cancellationReason") val cancellationReason: String? = null,
     @SerializedName("cancelledBy") val cancelledBy: String? = null,
     @SerializedName("cancelledByName") val cancelledByName: String? = null,
-    @SerializedName("trackingToken") val trackingToken: String? = null
+    @SerializedName("trackingToken") val trackingToken: String? = null,
+    @SerializedName("providerLocationAtAcceptance") val providerLocationAtAcceptance: LocationDto? = null
 )
 
 data class PayBookingFeeResponse(

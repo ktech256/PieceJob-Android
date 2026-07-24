@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.piecejob.core.data.remote.dto.ReviewDto
+import com.piecejob.core.utils.formatRating
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,7 +97,7 @@ fun ReviewItem(review: ReviewDto) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = review.rating.toString(), fontWeight = FontWeight.Black, fontSize = 14.sp)
+                    Text(text = formatRating(review.rating.toDouble()), fontWeight = FontWeight.Black, fontSize = 14.sp)
                 }
             }
             

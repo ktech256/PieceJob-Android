@@ -5,12 +5,41 @@ import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 @Singleton
 class SessionManager @Inject constructor(
     @ApplicationContext context: Context
 ) {
     private val prefs: SharedPreferences = context.getSharedPreferences("piecejob_prefs", Context.MODE_PRIVATE)
+
+    private val _appResumeEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val appResumeEvent = _appResumeEvent.asSharedFlow()
+
+    // FORENSIC GUARD: Centralized navigation state for auto-restoration
+    private var isAppInResumedState = false
+
+    fun triggerAppResume() {
+        android.util.Log.d("FORENSIC", "SESSION_MANAGER | App Resume Event Fired")
+        isAppInResumedState = true
+        _appResumeEvent.tryEmit(Unit)
+    }
+
+    /**
+     * Determines if an active job session should be automatically restored to the screen.
+     * Restoration is permitted ONLY ONCE per foreground session (app launch or resume from background).
+     */
+    fun shouldPerformRestoration(): Boolean {
+        return if (isAppInResumedState) {
+            android.util.Log.d("FORENSIC", "SESSION_MANAGER | restoration permitted for this session.")
+            isAppInResumedState = false
+            true
+        } else {
+            android.util.Log.d("FORENSIC", "SESSION_MANAGER | restoration already handled or not applicable.")
+            false
+        }
+    }
 
     fun saveAuthToken(token: String) {
         prefs.edit().putString("auth_token", token).apply()
@@ -185,5 +214,6 @@ class SessionManager @Inject constructor(
     fun clearSession() {
         prefs.edit().remove("auth_token").apply()
         clearStagedDocs()
+        isAppInResumedState = false
     }
 }

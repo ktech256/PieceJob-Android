@@ -1,5 +1,6 @@
 package com.piecejob.customer.ui.dashboard
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,8 +35,8 @@ import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.OpenInNew
 import com.piecejob.core.data.remote.ServiceDto
 import com.piecejob.core.ui.components.PieceJobButton
-
 import com.piecejob.core.utils.formatDateTimeString
+import com.piecejob.core.utils.formatRating
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -173,7 +174,8 @@ fun CustomerDashboardScreen(
                     onTrack = { onNavigateToTracking(job.id) },
                     onResume = {
                         onNavigateToSubScreen(com.piecejob.core.ui.navigation.Screen.Negotiation.passArgs(job.id, job.providerId ?: ""))
-                    }
+                    },
+                    onNavigateToChat = onNavigateToChat
                 )
             }
         }
@@ -468,12 +470,12 @@ fun SearchResultItem(result: Any, onClick: (Any) -> Unit) {
                 Text(type, fontSize = 12.sp, color = Color.Gray)
                 if (result is com.piecejob.core.data.remote.dto.TopProviderDto) {
                     Spacer(modifier = Modifier.width(8.dp))
-                    val isNew = result.ratingCount < 5
+                    val isNew = result.ratingCount <= 5
                     if (isNew) {
                         Text("⭐ New Provider", fontSize = 11.sp, color = Color(0xFF1976D2), fontWeight = FontWeight.Bold)
                     } else {
                         Icon(Icons.Default.Star, null, tint = Color(0xFFFFA000), modifier = Modifier.size(12.dp))
-                        Text(String.format(" %.1f", result.rating), fontSize = 12.sp, color = Color(0xFFFFA000), fontWeight = FontWeight.Bold)
+                        Text(" ${formatRating(result.rating)}", fontSize = 12.sp, color = Color(0xFFFFA000), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -673,157 +675,234 @@ fun RecentServiceAvatar(label: String, onClick: () -> Unit = {}) {
 }
 
 @Composable
+fun ActiveJobChip(status: String, color: Color) {
+    Surface(
+        color = color.copy(alpha = 0.1f),
+        shape = RoundedCornerShape(8.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Box(modifier = Modifier.size(6.dp).background(color, CircleShape))
+            Text(
+                text = status.uppercase(),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Black,
+                color = color,
+                letterSpacing = 0.5.sp
+            )
+        }
+    }
+}
+
+@Composable
 fun ActiveJobCard(
     job: com.piecejob.core.data.remote.dto.JobDto,
     onTrack: () -> Unit,
-    onResume: () -> Unit
+    onResume: () -> Unit,
+    onNavigateToChat: (String, String) -> Unit = { _, _ -> }
 ) {
-    val isNegotiation = job.status == "PROVIDER_ACCEPTED" || job.status == "ACCEPTED"
+    val context = androidx.compose.ui.platform.LocalContext.current
     
-    var statusLabel = ""
-    var statusIcon = Icons.Default.Timer
-    var statusColor = Color.Gray
-    var actionLabel = "OPEN"
-    var actionIcon = Icons.Default.ChevronRight
-
-    when (job.status) {
-        "PROVIDER_ACCEPTED" -> {
-            statusLabel = "Negotiation (Round ${job.negotiationRounds ?: 1} of 4)"
-            statusIcon = Icons.Default.Chat
-            statusColor = Color(0xFFFFA000)
-            actionLabel = "RESUME"
-            actionIcon = Icons.Default.OpenInNew
-        }
-        "ACCEPTED" -> {
-            statusLabel = "Price agreed (Wait for dispatch)"
-            statusIcon = Icons.Default.CheckCircle
-            statusColor = Color(0xFF2E7D32)
-            actionLabel = "RESUME"
-            actionIcon = Icons.Default.OpenInNew
-        }
-        "EN_ROUTE" -> {
-            statusLabel = "Provider is on the way"
-            statusIcon = Icons.Default.DirectionsCar
-            statusColor = Color(0xFFE65100)
-            actionLabel = "TRACK"
-            actionIcon = Icons.Default.Navigation
-        }
-        "ARRIVED" -> {
-            statusLabel = "Provider has arrived"
-            statusIcon = Icons.Default.LocationOn
-            statusColor = Color(0xFF4CAF50)
-            actionLabel = "TRACK"
-            actionIcon = Icons.Default.Navigation
-        }
-        "STARTED", "IN_PROGRESS" -> {
-            statusLabel = "Work has started"
-            statusIcon = Icons.Default.Handyman
-            statusColor = Color(0xFF2E7D32)
-            actionLabel = "TRACK"
-            actionIcon = Icons.Default.Navigation
-        }
-        "COMPLETED" -> {
-            statusLabel = "Work completed"
-            statusIcon = Icons.Default.Verified
-            statusColor = Color(0xFF1976D2)
-            actionLabel = "OPEN"
-            actionIcon = Icons.Default.RateReview
-        }
-        else -> {
-            statusLabel = job.status
-            statusIcon = Icons.Default.Timer
-            statusColor = Color.Gray
-            actionLabel = "OPEN"
-            actionIcon = Icons.Default.ChevronRight
-        }
+    // Status Logic
+    val (statusLabel, statusColor) = when (job.status) {
+        "BROADCASTED", "BROADCASTING", "REQUEST_CREATED" -> "Searching" to Color.Gray
+        "PROVIDER_ACCEPTED" -> "Negotiation" to Color(0xFFFFA000)
+        "ACCEPTED" -> "Accepted" to Color(0xFFE65100)
+        "EN_ROUTE" -> "En Route" to Color(0xFF1976D2)
+        "ARRIVED" -> "Arrived" to Color(0xFF2E7D32)
+        "STARTED", "IN_PROGRESS" -> "In Progress" to Color(0xFF2E7D32)
+        "COMPLETED", "RATED" -> "Completed" to Color(0xFF2E7D32)
+        "CANCELLED" -> "Cancelled" to Color(0xFFD32F2F)
+        else -> job.status to Color.Gray
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(24.dp),
+            .padding(horizontal = 24.dp, vertical = 8.dp)
+            .animateContentSize(),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
+            // HEADER: Status Chip + Job ID
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = statusIcon,
-                        contentDescription = null,
-                        tint = statusColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = statusLabel,
-                        fontWeight = FontWeight.Black,
-                        color = statusColor,
-                        fontSize = 11.sp,
-                        letterSpacing = 1.sp
-                    )
-                }
-                
-                // Subtle Progress Indicator
-                val progress = when(job.status) {
-                    "PROVIDER_ACCEPTED" -> 0.1f
-                    "ACCEPTED" -> 0.3f
-                    "EN_ROUTE" -> 0.5f
-                    "ARRIVED" -> 0.7f
-                    "STARTED", "IN_PROGRESS" -> 0.9f
-                    "COMPLETED" -> 1.0f
-                    else -> 0.0f
-                }
-                LinearProgressIndicator(
-                    progress = progress,
-                    modifier = Modifier.width(40.dp).height(4.dp).clip(CircleShape),
-                    color = statusColor,
-                    trackColor = statusColor.copy(alpha = 0.1f)
+                ActiveJobChip(statusLabel, statusColor)
+                Text(
+                    text = "#${job.id.takeLast(6).uppercase()}",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.LightGray
                 )
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(verticalAlignment = Alignment.CenterVertically) {
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // PROVIDER INFO: Horizontal Layout
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Surface(
-                    modifier = Modifier.size(44.dp),
-                    shape = CircleShape,
+                    modifier = Modifier.size(56.dp),
+                    shape = RoundedCornerShape(18.dp),
                     color = Color(0xFFF8F9FA)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.LightGray)
+                    if (job.providerInfo?.profilePicture != null) {
+                        coil.compose.AsyncImage(
+                            model = job.providerInfo.profilePicture,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    } else {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Person, contentDescription = null, tint = Color.LightGray)
+                        }
                     }
                 }
+
                 Spacer(modifier = Modifier.width(16.dp))
+
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = job.serviceName ?: job.serviceCode ?: "Active Job",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 16.sp
+                        text = job.providerInfo?.let { "${it.firstName} ${it.lastName}" } ?: "Searching for Pro...",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 17.sp,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = if (job.providerInfo != null) "${job.providerInfo.firstName} ${job.providerInfo.lastName.take(1)}." else "Provider assigned",
-                        fontSize = 13.sp,
-                        color = Color.Gray,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = job.serviceName ?: job.serviceCode ?: "Active PieceJob",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                        if (job.providerInfo != null) {
+                            Text(" • ", color = Color.LightGray)
+                            Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(12.dp))
+                            val isNew = (job.providerInfo.jobsCompleted ?: 0) <= 5
+                            Text(
+                                text = if (isNew) " New Provider" else " ${formatRating(job.providerInfo.ratingAvg)}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                color = if (isNew) Color(0xFF1976D2) else Color(0xFFFFA000)
+                            )
+                        }
+                    }
                 }
                 
-                PieceJobButton(
-                    text = actionLabel,
-                    onClick = { if (isNegotiation) onResume() else onTrack() },
-                    icon = actionIcon,
-                    containerColor = Color(0xFF121212),
-                    height = 40.dp,
-                    fontSize = 11.sp,
-                    fullWidth = false,
-                    contentPadding = PaddingValues(horizontal = 16.dp)
-                )
+                if (job.providerId != null && (job.status == "EN_ROUTE" || job.status == "ARRIVED")) {
+                    FilledIconButton(
+                        onClick = {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_DIAL).apply {
+                                data = android.net.Uri.parse("tel:${job.providerInfo?.phoneNumber}")
+                            }
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.size(44.dp),
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color(0xFFFDECEA))
+                    ) {
+                        Icon(Icons.Default.Phone, contentDescription = "Call", tint = Color(0xFFD32F2F), modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // DYNAMIC BUTTONS
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                when (job.status) {
+                    "BROADCASTED", "BROADCASTING", "REQUEST_CREATED" -> {
+                        PieceJobButton(
+                            text = "SEARCHING...",
+                            onClick = {},
+                            enabled = false,
+                            modifier = Modifier.weight(1f),
+                            height = 48.dp,
+                            fontSize = 12.sp
+                        )
+                    }
+                    "PROVIDER_ACCEPTED", "ACCEPTED" -> {
+                        PieceJobButton(
+                            text = "RESUME",
+                            onClick = onResume,
+                            modifier = Modifier.weight(1f),
+                            height = 48.dp,
+                            fontSize = 12.sp,
+                            containerColor = Color(0xFFFFA000),
+                            icon = Icons.Default.Chat
+                        )
+                    }
+                    "EN_ROUTE", "ARRIVED" -> {
+                        PieceJobButton(
+                            text = "TRACK LIVE",
+                            onClick = onTrack,
+                            modifier = Modifier.weight(1f),
+                            height = 48.dp,
+                            fontSize = 12.sp,
+                            containerColor = Color(0xFF121212),
+                            icon = Icons.Default.Navigation
+                        )
+                    }
+                    "STARTED", "IN_PROGRESS" -> {
+                        PieceJobButton(
+                            text = "VIEW PROGRESS",
+                            onClick = onTrack,
+                            modifier = Modifier.weight(1f),
+                            height = 48.dp,
+                            fontSize = 12.sp,
+                            containerColor = Color(0xFF121212),
+                            icon = Icons.Default.Handyman
+                        )
+                    }
+                    "COMPLETED" -> {
+                        PieceJobButton(
+                            text = "RATE PRO",
+                            onClick = onTrack,
+                            modifier = Modifier.weight(1f),
+                            height = 48.dp,
+                            fontSize = 12.sp,
+                            containerColor = Color(0xFF2E7D32),
+                            icon = Icons.Default.Star
+                        )
+                    }
+                    "CANCELLED" -> {
+                        PieceJobButton(
+                            text = "BOOK AGAIN",
+                            onClick = {}, // TODO: Implement re-book
+                            modifier = Modifier.weight(1f),
+                            height = 48.dp,
+                            fontSize = 12.sp,
+                            containerColor = Color(0xFF121212)
+                        )
+                    }
+                }
+                
+                if (job.providerId != null && job.status != "COMPLETED" && job.status != "CANCELLED") {
+                    androidx.compose.material3.OutlinedButton(
+                        onClick = { onNavigateToChat(job.id, job.providerId) },
+                        modifier = Modifier.height(48.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        Icon(Icons.Default.Message, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
+                }
             }
         }
     }
@@ -953,14 +1032,14 @@ fun TopProviderCard(provider: com.piecejob.core.data.remote.dto.TopProviderDto) 
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(provider.name, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, maxLines = 1)
-            val isNew = provider.ratingCount < 5
+            val isNew = provider.ratingCount <= 5
             if (isNew) {
                 Text("⭐⭐⭐⭐⭐", fontSize = 11.sp, color = Color(0xFFFFA000))
                 Text("New Provider", fontSize = 11.sp, color = Color(0xFF1976D2), fontWeight = FontWeight.Bold)
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFA000), modifier = Modifier.size(12.dp))
-                    Text(" ${String.format("%.1f", provider.rating)} • ${provider.tier}", fontSize = 11.sp, color = Color(0xFFFFA000), fontWeight = FontWeight.Bold)
+                    Text(" ${formatRating(provider.rating)} • ${provider.tier}", fontSize = 11.sp, color = Color(0xFFFFA000), fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(4.dp))
@@ -1054,7 +1133,7 @@ fun ActivityItem(act: com.piecejob.core.data.remote.dto.ActivityDto, currency: S
             Spacer(modifier = Modifier.height(8.dp))
 
             if (isCancelled) {
-                val actor = if (act.cancelledBy == currentUserId) "You" else "Provider"
+                val actor = if (act.cancelledBy == currentUserId) "You" else (act.cancelledByName ?: "Provider")
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
                         Text("Cancelled:", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.Gray)
