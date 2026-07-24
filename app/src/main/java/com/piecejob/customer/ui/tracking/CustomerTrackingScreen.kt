@@ -6,6 +6,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -241,7 +243,6 @@ fun CustomerTrackingScreen(
                             "ACCEPTED" -> "$providerName accepted your request!"
                             "EN_ROUTE" -> "$providerName is on the way"
                             "ARRIVED" -> "$providerName has arrived"
-                            "STARTED", "IN_PROGRESS" -> "$providerName started the work"
                             "COMPLETED" -> "Job Completed!"
                             "CANCELLED" -> "Job Cancelled"
                             else -> "Connecting..."
@@ -295,7 +296,7 @@ fun CustomerTrackingScreen(
                         
                         Spacer(modifier = Modifier.height(24.dp))
                         
-                        if (job?.status != "COMPLETED" && job?.status != "STARTED" && job?.status != "CANCELLED" && job?.status != "IN_PROGRESS") {
+                        if (job?.status != "COMPLETED" && job?.status != "CANCELLED") {
                             Button(
                                 onClick = { showCancelDialog = true },
                                 modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -304,23 +305,10 @@ fun CustomerTrackingScreen(
                             ) {
                                 Text(text = "Cancel Request", color = Color.DarkGray, fontWeight = FontWeight.Black)
                             }
-                        } else if (job?.status == "STARTED" || job?.status == "IN_PROGRESS") {
-                            Text(
-                                text = "Job is in progress and cannot be cancelled.",
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
                         }
                     }
                 }
             }
-        }
-    }
-}
-        if (error != null) {
-            // Snackbar removed for consistency with Provider app.
         }
     }
 }
@@ -372,7 +360,7 @@ fun WorkInProgressDashboard(
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 24.dp)
-                .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(32.dp))
@@ -467,7 +455,7 @@ fun WorkInProgressDashboard(
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(text = "Balance Payable to Pro", fontWeight = FontWeight.Black)
-                        Text(text = "${job.currency ?: ""} ${String.format(java.util.Locale.US, "%.2f", Math.max(0.0, outstanding))}", fontWeight = FontWeight.Black, fontSize = 18.sp, color = Color(0xFFD32F2F))
+                        Text(text = "${job.currency ?: ""} ${String.format(java.util.Locale.US, "%.2f", outstanding.coerceAtLeast(0.0))}", fontWeight = FontWeight.Black, fontSize = 18.sp, color = Color(0xFFD32F2F))
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(text = "Payable directly to the provider upon job completion.", fontSize = 11.sp, color = Color.Gray)
@@ -486,8 +474,8 @@ fun WorkInProgressDashboard(
                     Text(text = "Job Timeline", fontWeight = FontWeight.Black, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    TimelineItem("Requested", job.createdAt ?: "", isFirst = true, isLast = false)
-                    TimelineItem("Started Work", job.startedAt ?: "", isFirst = false, isLast = true)
+                    TimelineItem("Requested", job.createdAt ?: "", isLast = false)
+                    TimelineItem("Started Work", job.startedAt ?: "", isLast = true)
                 }
             }
             
@@ -508,7 +496,7 @@ fun WorkInProgressDashboard(
 }
 
 @Composable
-fun TimelineItem(label: String, time: String, isFirst: Boolean = false, isLast: Boolean = false) {
+fun TimelineItem(label: String, time: String, isLast: Boolean = false) {
     Row(modifier = Modifier.height(IntrinsicSize.Min)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(modifier = Modifier.size(12.dp).background(Color(0xFFD32F2F), CircleShape))

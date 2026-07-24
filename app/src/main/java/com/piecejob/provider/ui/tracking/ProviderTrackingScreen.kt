@@ -347,14 +347,14 @@ fun ProviderTrackingScreen(
                     Icon(Icons.Default.Navigation, contentDescription = null, tint = Color(0xFF1976D2))
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        val isArrivedOrStarted = job?.status == "ARRIVED" || job?.status == "STARTED"
+                        val isArrived = job?.status == "ARRIVED"
                         Text(
-                            text = if (isArrivedOrStarted) "You have arrived" else "ETA: ${sdkEtaText.ifBlank { eta }}", 
+                            text = if (isArrived) "You have arrived" else "ETA: ${sdkEtaText.ifBlank { eta }}", 
                             fontWeight = FontWeight.Black, 
                             fontSize = 18.sp
                         )
                         Text(
-                            text = if (isArrivedOrStarted) "Customer is waiting" else "Distance: ${sdkDistanceText.ifBlank { distance }}", 
+                            text = if (isArrived) "Customer is waiting" else "Distance: ${sdkDistanceText.ifBlank { distance }}", 
                             color = Color.Gray, 
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
@@ -521,7 +521,7 @@ fun ProviderTrackingScreen(
                         
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             val status = currentJob.status
-                            val isJourneyStarted = status == "EN_ROUTE" || status == "ARRIVED" || status == "STARTED" || status == "IN_PROGRESS"
+                            val isJourneyStarted = status == "EN_ROUTE" || status == "ARRIVED"
 
                             when (status) {
                                 "ACCEPTED" -> {
@@ -551,17 +551,6 @@ fun ProviderTrackingScreen(
                                         shape = RoundedCornerShape(16.dp)
                                     )
                                 }
-                                "STARTED" -> {
-                                    PieceJobButton(
-                                        text = "COMPLETE JOB",
-                                        onClick = { viewModel.completeJob() },
-                                        modifier = Modifier.weight(1f),
-                                        containerColor = Color(0xFF2E7D32),
-                                        isLoading = viewModel.isLoading.collectAsState().value,
-                                        height = 56.dp,
-                                        shape = RoundedCornerShape(16.dp)
-                                    )
-                                }
                             }
                             
                             if (!isJourneyStarted && status != "COMPLETED" && status != "CANCELLED") {
@@ -577,6 +566,7 @@ fun ProviderTrackingScreen(
                             }
                         }
                         
+                        /* 
                         if (currentJob.status == "STARTED") {
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
@@ -587,6 +577,7 @@ fun ProviderTrackingScreen(
                                 color = Color.Gray
                             )
                         }
+                        */
                     }
                 }
             }
